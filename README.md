@@ -1,4 +1,4 @@
-# Boober
+# Visor
 
 Interaction layer for SoundClouds global process state referred to as registry.
 
@@ -7,15 +7,15 @@ Interaction layer for SoundClouds global process state referred to as registry.
 ``` go
 package main
 
-import "soundcloud/boober"
+import "soundcloud/visor"
 
 func main() {
-  client, err := boober.Dial("coordinator:8046")
+  client, err := visor.Dial("coordinator:8046")
   if err != nil {
     panic(err)
   }
 
-  c := make(chan boober.Event)
+  c := make(chan visor.Event)
 
   go client.WatchEvent(c)
 
@@ -25,7 +25,7 @@ func main() {
 }
 ```
 
-## Boober API
+## Visor API
 
 ### Dial(addr string) (*Client, error)
 
