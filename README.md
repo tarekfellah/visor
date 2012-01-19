@@ -101,7 +101,7 @@ Removes a `Revision` from the `App`.
 
 ### (a *App) EnvironmentVariables() (*map[string]string, error)
 
-Returns the stored `Environment` ans a `Map`.
+Returns the stored `Environment` as a `Map`.
 
 ### (a *App) GetEnvironmentVariable(k string) (string, error)
 
@@ -110,6 +110,32 @@ Returns the value for the variable stored at `k`.
 ### (a *App) SetEnvironmentVariable(k string, v string) (error)
 
 Stores the value `v` for the key `k`.
+
+## Revision API
+
+### (r *Revision) Register() (error)
+
+Registers the `Revision` for it's `App`.
+
+### (r *Revision) Unregister() (error)
+
+Removes the `Revision` from it's `App`.
+
+### (r *Revision) Scale(p string, s int) (error)
+
+Sets the scaling factor of the process type `p` to the amount of `s`.
+
+### (r *Revision) Instances() ([]visor.Instance, error)
+
+Returns all `Instances` for the `Revision`.
+
+### (r *Revision) RegisterInstance(p string, addr string) (*visor.Instance, error)
+
+Registers new `Instance` for `Revision`.
+
+### (r *Revision) UnregisterInstance(*visor.Instance) (error)
+
+Remvoes the `Instance` from the `Revision`.
 
 ## Development
 
