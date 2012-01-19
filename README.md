@@ -1,6 +1,6 @@
 # Boober
 
-Interaction layer for SoundClouds global process state.
+Interaction layer for SoundClouds global process state referred to as registry.
 
 ## Usage
 
@@ -11,7 +11,7 @@ import "soundcloud/boober"
 
 func main() {
   client, err := boober.Dial("coordinator:8046")
-  if (err != nil) {
+  if err != nil {
     panic(err)
   }
 
@@ -25,7 +25,45 @@ func main() {
 }
 ```
 
-## API
+## Boober API
+
+### Dial(addr string) (*Client, error)
+
+Establishes a connection to the registry state and returns a `Client`.
+
+## Client API
+
+### (c *Client) Close() (error)
+
+Disconnects `Client` gracefully.
+
+### (c *Client) Apps() ([]App, error)
+
+Returns all `Apps` registered in registry.
+
+### (c *Client) RegisterApp(**TODO**) (*App, error)
+
+Registers a new application with the registry.
+
+### (c *Client) UnregisterApp(app *App) (error)
+
+Removes application from the registry.
+
+### (c *Client) Instances() ([]Instance, error)
+
+Returns all Instances registered.
+
+### (c *Client) HostInstances(addr string) ([]Instance, error)
+
+Returns all Instances running on `addr`.
+
+### (c *Client) Tickets() ([]Ticket, error)
+
+Returns all Tickets.
+
+### (c *Client) HostTickets(addr string) ([]Ticket, error)
+
+Returns all Tickets claimed by `addr`.
 
 ## Development
 
