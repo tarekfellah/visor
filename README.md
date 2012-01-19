@@ -137,6 +137,26 @@ Registers new `Instance` for `Revision`.
 
 Remvoes the `Instance` from the `Revision`.
 
+## Instance API
+
+``` go
+type Instance struct {
+  Rev: *visor.Instance
+  Host: string
+  Port: int
+  State: visor.State
+  ProcessType: string
+}
+```
+
+### (i *Instance) Register() (error)
+
+Registers the `Instance` for it's `Revision`.
+
+### (i *Instance) Register() (error)
+
+Removes the `Instance` from it's `Revision`.
+
 ## Development
 
 ### Setup
