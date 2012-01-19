@@ -15,7 +15,7 @@ func main() {
     panic(err)
   }
 
-  c := make(chan visor.Event)
+  c := make(chan *visor.Event)
 
   go client.WatchEvent(c)
 
@@ -30,6 +30,10 @@ func main() {
 ### Dial(addr string) (*Client, error)
 
 Establishes a connection to the registry state and returns a `Client`.
+
+## Event
+
+## Ticket
 
 ## Client API
 
@@ -64,6 +68,14 @@ Returns all Tickets.
 ### (c *Client) HostTickets(addr string) ([]Ticket, error)
 
 Returns all Tickets claimed by `addr`.
+
+### (c *Client) WatchEvent(ch chan *visor.Event) (error)
+
+Watches for new `Events` inside of the registry.
+
+### (c *Client) WatchTicket(ch chan *visor.Ticket) (error)
+
+Watch for new `Ticket` created.
 
 ## Development
 
