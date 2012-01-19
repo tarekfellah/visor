@@ -41,31 +41,31 @@ Establishes a connection to the registry state and returns a `Client`.
 
 Disconnects `Client` gracefully.
 
-### (c *Client) Apps() ([]App, error)
+### (c *Client) Apps() ([]visor.App, error)
 
 Returns all `Apps` registered in registry.
 
-### (c *Client) RegisterApp(**TODO**) (*App, error)
+### (c *Client) RegisterApp(**TODO**) (*visor.App, error)
 
 Registers a new application with the registry.
 
-### (c *Client) UnregisterApp(app *App) (error)
+### (c *Client) UnregisterApp(app *visor.App) (error)
 
 Removes application from the registry.
 
-### (c *Client) Instances() ([]Instance, error)
+### (c *Client) Instances() ([]visor.Instance, error)
 
 Returns all Instances registered.
 
-### (c *Client) HostInstances(addr string) ([]Instance, error)
+### (c *Client) HostInstances(addr string) ([]visor.Instance, error)
 
 Returns all Instances running on `addr`.
 
-### (c *Client) Tickets() ([]Ticket, error)
+### (c *Client) Tickets() ([]visor.Ticket, error)
 
 Returns all Tickets.
 
-### (c *Client) HostTickets(addr string) ([]Ticket, error)
+### (c *Client) HostTickets(addr string) ([]visor.Ticket, error)
 
 Returns all Tickets claimed by `addr`.
 
@@ -76,6 +76,40 @@ Watches for new `Events` inside of the registry.
 ### (c *Client) WatchTicket(ch chan *visor.Ticket) (error)
 
 Watch for new `Ticket` created.
+
+## App API
+
+### (a *App) Register() (error)
+
+Registers the `App` in the registry.
+
+### (a *App) Unregister() (error)
+
+Removes application from the registry.
+
+### (a *App) Revisions() ([]visor.Revision, error)
+
+Returns all `Revisions` for the `App`.
+
+### (a *App) RegisterRevision(rev string) (*visor.Revision, error)
+
+Registers a new `Revision` for the `App`.
+
+### (a *App) UnregisterRevision(r *visor.Revision) (error)
+
+Removes a `Revision` from the `App`.
+
+### (a *App) EnvironmentVariables() (*map[string]string, error)
+
+Returns the stored `Environment` ans a `Map`.
+
+### (a *App) GetEnvironmentVariable(k string) (string, error)
+
+Returns the value for the variable stored at `k`.
+
+### (a *App) SetEnvironmentVariable(k string, v string) (error)
+
+Stores the value `v` for the key `k`.
 
 ## Development
 
