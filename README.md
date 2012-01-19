@@ -4,6 +4,27 @@ Interaction layer for SoundClouds global process state.
 
 ## Usage
 
+``` go
+package main
+
+import "soundcloud/boober"
+
+func main() {
+  client, err := boober.Dial("coordinator:8046")
+  if (err != nil) {
+    panic(err)
+  }
+
+  c := make(chan boober.Event)
+
+  go client.WatchEvent(c)
+
+  // reading one event from the channel
+  e := <-c
+  fmt.Printf("%s", e.String())
+}
+```
+
 ## API
 
 ## Development
