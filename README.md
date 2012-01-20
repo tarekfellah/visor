@@ -90,6 +90,7 @@ type App struct {
   RepoUrl url.URL
   Stack string
 }
+```
 
 ### (a *App) Register() error
 
@@ -129,6 +130,7 @@ Stores the value `v` for the key `k`.
 type Revision struct {
   Rev string
 }
+```
 
 ### (r *Revision) Register() error
 
