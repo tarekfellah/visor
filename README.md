@@ -39,7 +39,7 @@ Abstaction of an activity in the registry.
 type Event struct {
   Type EventType
   Body string
-  Source doozer.Event
+  Source *doozer.Event
 }
 ```
 
@@ -65,7 +65,33 @@ const (
 
 ## Ticket
 
+``` go
+type Ticket struct {
+  Type visor.TicketType
+  App *visor.App
+  Rev *visor.Revison
+  ProcessType visor.ProcessType
+  Addr net.TCPAddr
+  Source *doozer.Event
+}
+```
+
+## TicketType
+
+``` go
+type TicketType int
+
+const (
+  T_START = iota
+  T_STOP
+)
+```
+
 ## ProcessType
+
+``` go
+type ProcessType string
+```
 
 ## Client API
 
