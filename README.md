@@ -237,11 +237,32 @@ Removes the `Instance` from it's `Revision`.
 
 #### Dependencies
 
+[Go](http://golang.org) (weekly)
+[go-gb](http://code.google.com/p/go-gb/) (weekly)
+[Doozer](https://github.com/ha/doozer) (implicit)
+[Doozerd](https://github.com/soundcloud/doozerd) (testing)
+
 #### Installation
 
-#### Run
+From the root of the project run `gb`:
+
+```
+gb -g
+```
+
+If you want to install WebReduce executables & packages into your `GOROOT` run:
+
+```
+gb -g -i
+```
 
 ### Testing
+
+First start `doozerd` with default configuration. If listening run:
+
+```
+gb -t
+```
 
 ### Branching
 
