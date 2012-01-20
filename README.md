@@ -33,6 +33,36 @@ Establishes a connection to the registry state and returns a `Client`.
 
 ## Event
 
+Abstaction of an activity in the registry.
+
+``` go
+type Event struct {
+  Type EventType
+  Body string
+  Source doozer.Event
+}
+```
+
+### (ev *Event) String() string
+
+Returns human readable representation of the `Event`.
+
+## EventTYpe
+
+``` go
+type EventType int
+
+const (
+  EV_APP_REG = iota
+  EV_APP_UNREG
+  EV_REV_REG
+  EV_REV_UNREG
+  EV_INS_REG
+  EV_INS_UNREG
+  EV_INS_STATE_CHANGE
+)
+```
+
 ## Ticket
 
 ## ProcessType
@@ -40,7 +70,7 @@ Establishes a connection to the registry state and returns a `Client`.
 ## Client API
 
 ``` go
-type Client struct {}
+type Client struct
 ```
 
 ### (c *Client) Close() error
