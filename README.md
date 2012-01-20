@@ -35,9 +35,15 @@ Establishes a connection to the registry state and returns a `Client`.
 
 ## Ticket
 
+## ProcessType
+
 ## Client API
 
-### (c *Client) Close() (error)
+``` go
+type Client struct {}
+```
+
+### (c *Client) Close() error
 
 Disconnects `Client` gracefully.
 
@@ -45,11 +51,11 @@ Disconnects `Client` gracefully.
 
 Returns all `Apps` registered in registry.
 
-### (c *Client) RegisterApp(**TODO**) (*visor.App, error)
+### (c *Client) RegisterApp(rUrl url.Url, stack string) (*visor.App, error)
 
 Registers a new application with the registry.
 
-### (c *Client) UnregisterApp(app *visor.App) (error)
+### (c *Client) UnregisterApp(app *visor.App) error
 
 Removes application from the registry.
 
@@ -69,21 +75,27 @@ Returns all Tickets.
 
 Returns all Tickets claimed by `addr`.
 
-### (c *Client) WatchEvent(ch chan *visor.Event) (error)
+### (c *Client) WatchEvent(ch chan *visor.Event) error
 
 Watches for new `Events` inside of the registry.
 
-### (c *Client) WatchTicket(ch chan *visor.Ticket) (error)
+### (c *Client) WatchTicket(ch chan *visor.Ticket) error
 
 Watch for new `Ticket` created.
 
 ## App API
 
-### (a *App) Register() (error)
+``` go
+type App struct {
+  RepoUrl url.URL
+  Stack string
+}
+
+### (a *App) Register() error
 
 Registers the `App` in the registry.
 
-### (a *App) Unregister() (error)
+### (a *App) Unregister() error
 
 Removes application from the registry.
 
@@ -95,7 +107,7 @@ Returns all `Revisions` for the `App`.
 
 Registers a new `Revision` for the `App`.
 
-### (a *App) UnregisterRevision(r *visor.Revision) (error)
+### (a *App) UnregisterRevision(r *visor.Revision) error
 
 Removes a `Revision` from the `App`.
 
@@ -107,21 +119,26 @@ Returns the stored `Environment` as a `Map`.
 
 Returns the value for the variable stored at `k`.
 
-### (a *App) SetEnvironmentVariable(k string, v string) (error)
+### (a *App) SetEnvironmentVariable(k string, v string) error
 
 Stores the value `v` for the key `k`.
 
 ## Revision API
 
-### (r *Revision) Register() (error)
+``` go
+type Revision struct {
+  Rev string
+}
+
+### (r *Revision) Register() error
 
 Registers the `Revision` for it's `App`.
 
-### (r *Revision) Unregister() (error)
+### (r *Revision) Unregister() error
 
 Removes the `Revision` from it's `App`.
 
-### (r *Revision) Scale(p string, s int) (error)
+### (r *Revision) Scale(p string, s int) error
 
 Sets the scaling factor of the process type `p` to the amount of `s`.
 
@@ -133,7 +150,7 @@ Returns all `Instances` for the `Revision`.
 
 Registers new `Instance` for `Revision`.
 
-### (r *Revision) UnregisterInstance(*visor.Instance) (error)
+### (r *Revision) UnregisterInstance(*visor.Instance) error
 
 Remvoes the `Instance` from the `Revision`.
 
@@ -141,19 +158,18 @@ Remvoes the `Instance` from the `Revision`.
 
 ``` go
 type Instance struct {
-  Rev: *visor.Instance
-  Host: string
-  Port: int
-  State: visor.State
-  ProcessType: string
+  Rev *visor.Instance
+  Addr net.TCPAddr
+  State visor.State
+  ProcessType visor.ProcessType
 }
 ```
 
-### (i *Instance) Register() (error)
+### (i *Instance) Register() error
 
 Registers the `Instance` for it's `Revision`.
 
-### (i *Instance) Register() (error)
+### (i *Instance) Register() error
 
 Removes the `Instance` from it's `Revision`.
 
