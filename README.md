@@ -216,7 +216,7 @@ Remvoes the `Instance` from the `Revision`.
 
 ``` go
 type Instance struct {
-  Rev *visor.Instance
+  Rev *visor.Revision
   Addr net.TCPAddr
   State visor.State
   ProcessType visor.ProcessType
