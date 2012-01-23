@@ -1,6 +1,9 @@
 package visor
 
 type App struct {
+	Name    string
+	RepoUrl string
+	Stack   Stack
 }
 
 func (a *App) Revisions() []Revision {
