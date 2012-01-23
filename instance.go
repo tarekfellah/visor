@@ -3,7 +3,7 @@ package visor
 import "net"
 
 type Instance struct {
-	Rev         *Instance
+	Rev         *Revision
 	Addr        net.TCPAddr
 	State       State
 	ProcessType ProcessType

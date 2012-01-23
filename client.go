@@ -52,7 +52,7 @@ func (c *Client) WatchEvent(listener chan *Event) error {
 
 	for {
 		ev, _ := c.Conn.Wait(c.Root+"*", rev)
-		event := &Event{EV_ALL, string(ev.Body), ev}
+		event := &Event{EV_APP_REG, string(ev.Body), &ev}
 		rev = ev.Rev + 1
 		listener <- event
 	}

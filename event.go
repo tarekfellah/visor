@@ -5,17 +5,19 @@ import "github.com/ha/doozer"
 type Event struct {
 	Type   EventType
 	Body   string
-	Source doozer.Event
+	Source *doozer.Event
 }
 type EventType int
 
 // Event types
 const (
-	EV_ALL      = iota // Catch-all
-	EV_APPREG   = iota // App register
-	EV_APPUNREG = iota // App unregister
-	EV_INSREG   = iota // Instance register
-	EV_INSUNREG = iota // Instance unregister
+	EV_APP_REG          EventType = iota // App register
+	EV_APP_UNREG                         // App unregister
+	EV_REV_REG                           // Revision register
+	EV_REV_UNREG                         // Revision unregister
+	EV_INS_REG                           // Instance register
+	EV_INS_UNREG                         // Instance unregister
+	EV_INS_STATE_CHANGE                  // Instance state change
 )
 
 func (ev *Event) String() string {
