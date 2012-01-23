@@ -1,15 +1,23 @@
 package visor
 
-import "github.com/ha/doozer"
+import (
+	"github.com/ha/doozer"
+	"net"
+)
 
 type Ticket struct {
-	Type   TicketType
-	Source doozer.Event
+	Type        TicketType
+	App         *App
+	Rev         *Revision
+	ProcessType ProcessType
+	Addr        net.TCPAddr
+	Source      *doozer.Event
 }
 type TicketType int
 
 const (
-	TICKET_ALL = iota
+	T_START TicketType = iota
+	T_STOP
 )
 
 func (t *Ticket) Claim() error {
