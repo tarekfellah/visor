@@ -4,16 +4,15 @@ import (
 	"testing"
 )
 
-func setup() {
-	c := createClient()
-	err := c.Deldir("/apps", c.Rev)
-	if err != nil {
-		panic(err)
-	}
+func clientSetup() (c *Client) {
+	c = createClient()
+	c.Deldir("/apps", c.Rev)
+
+	return
 }
 
 func TestAppRegistration(t *testing.T) {
-	setup()
+	clientSetup()
 
 	name := "mobile-prod"
 	repoUrl := "git://ashdkha"
@@ -48,7 +47,7 @@ func TestAppRegistration(t *testing.T) {
 }
 
 func TestAppUnregistration(t *testing.T) {
-	setup()
+	clientSetup()
 
 	name := "mobile-prod"
 	repoUrl := "git://ashdkha"
