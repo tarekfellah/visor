@@ -10,17 +10,8 @@ type App struct {
 	Stack   Stack
 }
 
-func (a *App) Revisions() []Revision {
-	return nil
-}
-func (a *App) RegisterRevision(rev string) (*Revision, error) {
-	return nil, nil
-}
-func (a *App) UnregisterRevision(r *Revision) error {
-	return nil
-}
 func (a *App) Register(c *Client) (err error) {
-	exists, err := c.Exists(a.Path())
+	exists, err := c.Exists(a.path())
 	if err != nil {
 		return
 	}
@@ -47,6 +38,15 @@ func (a *App) Unregister(c *Client) error {
 
 	return c.Deldir(path, c.Rev)
 }
+func (a *App) Revisions() []Revision {
+	return nil
+}
+func (a *App) RegisterRevision(rev string) (*Revision, error) {
+	return nil, nil
+}
+func (a *App) UnregisterRevision(r *Revision) error {
+	return nil
+}
 func (a *App) EnvironmentVariables() (*map[string]string, error) {
 	return nil, nil
 }
@@ -60,12 +60,11 @@ func (a *App) String() string {
 	return "App{\"" + a.Name + "\"}"
 }
 
-func (a *App) Path() (p string) {
+func (a *App) path() (p string) {
 	return "/apps/" + a.Name
 }
-
 func (a *App) setPath(c *Client, k string, v string) (int64, error) {
-	path := strings.Join([]string{a.Path(), k}, "/")
+	path := strings.Join([]string{a.path(), k}, "/")
 
 	return c.Conn.Set(path, c.Rev, []byte(v))
 }
