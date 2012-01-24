@@ -12,8 +12,8 @@ func TestDialWithDefaultAddr(t *testing.T) {
 }
 
 func TestDialWithInvalidAddr(t *testing.T) {
-  _, err := Dial("foo.bar:123:876")
-  if err == nil {
-    t.Error("Dialed with invalid addr")
-  }
+	_, err := Dial("foo.bar:123:876")
+	if err == nil {
+		t.Error("Dialed with invalid addr")
+	}
 }
