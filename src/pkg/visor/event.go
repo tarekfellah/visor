@@ -1,6 +1,6 @@
 package visor
 
-import "github.com/ha/doozer"
+import "github.com/soundcloud/doozer"
 
 type Event struct {
 	Type   EventType
