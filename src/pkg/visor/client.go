@@ -52,7 +52,12 @@ func (c *Client) HostTickets(addr string) ([]Ticket, error) {
 // APPS
 
 func (c *Client) Apps() ([]*App, error) {
-	appNames, err := c.Conn.Getdir("/apps", c.Rev, 0, -1)
+	rev, err := c.Conn.Rev()
+	if err != nil {
+		return nil, err
+	}
+
+	appNames, err := c.Conn.Getdir("/apps", rev, 0, -1)
 	// FIXME proper error handling
 	if err != nil {
 		return []*App{}, nil
@@ -72,7 +77,7 @@ func (c *Client) RegisterApp(name string, repoUrl string, stack Stack) (app *App
 	return
 }
 func (c *Client) UnregisterApp(app *App) error {
-	return nil
+	return app.Unregister(c)
 }
 
 // EVENTS
