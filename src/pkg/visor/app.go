@@ -34,9 +34,7 @@ func (a *App) Register(c *Client) (err error) {
 	return
 }
 func (a *App) Unregister(c *Client) error {
-	path := strings.Join([]string{"/apps", a.Name, "repo-url"}, "/")
-
-	return c.Deldir(path, c.Rev)
+	return c.Deldir(a.path(), c.Rev)
 }
 func (a *App) Revisions() []Revision {
 	return nil

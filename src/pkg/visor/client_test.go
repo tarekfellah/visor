@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func init() {
+func setup() {
 	c := createClient()
 	err := c.Deldir("/apps", c.Rev)
 	if err != nil {
@@ -13,6 +13,8 @@ func init() {
 }
 
 func TestAppRegistration(t *testing.T) {
+	setup()
+
 	name := "mobile-prod"
 	repoUrl := "git://ashdkha"
 	stack := Stack("blossom")
@@ -42,6 +44,33 @@ func TestAppRegistration(t *testing.T) {
 	_, err = c.RegisterApp(name, repoUrl, stack)
 	if err == nil {
 		t.Error("App allowed to be registered twice")
+	}
+}
+
+func TestAppUnregistration(t *testing.T) {
+	setup()
+
+	name := "mobile-prod"
+	repoUrl := "git://ashdkha"
+	stack := Stack("blossom")
+
+	c := createClient()
+	app, err := c.RegisterApp(name, repoUrl, stack)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = c.UnregisterApp(app)
+	if err != nil {
+		t.Error(err)
+	}
+
+	check, err := appIsRegistered(c, name)
+	if err != nil {
+		t.Error(err)
+	}
+	if check {
+		t.Error("App still registered")
 	}
 }
 
