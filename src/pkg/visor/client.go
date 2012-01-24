@@ -20,15 +20,22 @@ func (c *Client) Close() error {
 // TODO find the appropriate location for this helper
 //
 func (c *Client) Deldir(dirname string, rev int64) (err error) {
-	doozer.Walk(c.Conn, rev, dirname, func(path string, f *doozer.FileInfo, e error) error {
-		if e == nil {
-			err = c.Conn.Del(path, rev)
+	err = doozer.Walk(c.Conn, rev, dirname, func(path string, f *doozer.FileInfo, e error) error {
+		if e != nil {
+			return e
+		}
+
+		if !f.IsDir {
+			e = c.Conn.Del(path, rev)
+			if e != nil {
+				return e
+			}
 		}
 
 		return nil
 	})
 
-	return err
+	return
 }
 
 // INSTANCES
