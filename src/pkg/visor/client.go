@@ -58,10 +58,10 @@ func (c *Client) HostTickets(addr string) ([]Ticket, error) {
 
 // APPS
 
-func (c *Client) Apps() ([]*App, error) {
+func (c *Client) Apps() (apps []*App, err error) {
 	rev, err := c.Conn.Rev()
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	appNames, err := c.Conn.Getdir("/apps", rev, 0, -1)
@@ -69,13 +69,13 @@ func (c *Client) Apps() ([]*App, error) {
 	if err != nil {
 		return []*App{}, nil
 	}
-	apps := make([]*App, len(appNames))
+	apps = make([]*App, len(appNames))
 
 	for i := range appNames {
 		apps[i] = &App{Name: appNames[i]}
 	}
 
-	return apps, err
+	return
 }
 func (c *Client) RegisterApp(name string, repoUrl string, stack Stack) (app *App, err error) {
 	app = &App{Name: name, RepoUrl: repoUrl, Stack: stack}
