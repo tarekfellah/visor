@@ -74,12 +74,21 @@ func (c *Client) Get(path string) (value string, err error) {
 		return
 	}
 
+	c.rev = rev
+
 	value = string(body)
 
 	return
 }
 
 func (c *Client) Keys(path string) (keys []string, err error) {
+	rev, err := c.conn.Rev()
+	if err != nil {
+		return
+	}
+
+	c.rev = rev
+
 	keys, err = c.conn.Getdir(path, c.rev, 0, -1)
 	if err != nil {
 		return
