@@ -97,7 +97,7 @@ func TestInstances(t *testing.T) {
 		}
 	}
 
-	instances, err := Instances(c, instance.Rev)
+	instances, err := Instances(c)
 	if err != nil {
 		t.Error(err)
 	}

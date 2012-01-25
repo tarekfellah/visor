@@ -61,7 +61,25 @@ func (i *Instance) Path() (path string) {
 	return i.Rev.Path() + "/" + id
 }
 
-func Instances(c *Client, r *Revision) (instances []*Instance, err error) {
+func Instances(c *Client) (instances []*Instance, err error) {
+	revs, err := Revisions(c)
+	if err != nil {
+		return
+	}
+
+	instances = []*Instance{}
+
+	for i := range revs {
+		iss, e := RevisionInstances(c, revs[i])
+		if e != nil {
+			return nil, e
+		}
+		instances = append(instances, iss...)
+	}
+
+	return
+}
+func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error) {
 	names, err := c.Keys(r.Path())
 	if err != nil {
 		return
