@@ -95,11 +95,25 @@ func Apps(c *Client) (apps []*App, err error) {
 	if err != nil {
 		return
 	}
-
 	apps = make([]*App, len(names))
 
 	for i := range names {
-		apps[i] = &App{Name: names[i]}
+		a, e := NewApp(names[i], "", "")
+		if e != nil {
+			return nil, e
+		}
+
+		repourl, e := c.Get(a.Path() + "/repo-url")
+		if e != nil {
+			return nil, e
+		}
+		stack, e := c.Get(a.Path() + "/stack")
+		if e != nil {
+			return nil, e
+		}
+		a.RepoUrl = repourl
+		a.Stack = Stack(stack)
+		apps[i] = a
 	}
 
 	return
