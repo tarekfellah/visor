@@ -66,18 +66,10 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 	return
 }
 func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
-	body, rev, err := c.Conn.Get(a.Path()+"/env/"+k, &c.Rev)
+	value, err = c.Get(a.Path() + "/env/" + k)
 	if err != nil {
 		return
 	}
-
-	if rev == 0 {
-		return value, ErrKeyNotFound
-	}
-
-	c.Rev = rev
-
-	value = string(body)
 
 	return
 }
@@ -89,16 +81,10 @@ func (a *App) SetEnvironmentVar(c *Client, k string, v string) (err error) {
 	return
 }
 func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
-	err = c.Conn.Del(a.Path()+"/env/"+k, c.Rev)
+	err = c.Del(a.Path() + "/env/" + k)
 	if err != nil {
 		return
 	}
-
-	rev, err := c.Conn.Rev()
-	if err != nil {
-		return
-	}
-	c.Rev = rev
 
 	return
 }

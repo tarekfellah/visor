@@ -58,6 +58,27 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 	return exists, nil
 }
 
+func (c *Client) Get(path string) (value string, err error) {
+	rev, err := c.Conn.Rev()
+	if err != nil {
+		return
+	}
+
+	body, rev, err := c.Conn.Get(path, &rev)
+	if err != nil {
+		return
+	}
+	if rev == 0 {
+		err = ErrKeyNotFound
+
+		return
+	}
+
+	value = string(body)
+
+	return
+}
+
 // INSTANCES
 
 func (c *Client) Instances() ([]Instance, error) {
