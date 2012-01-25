@@ -42,4 +42,40 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 func (r *Revision) Path() string {
 	return r.App.Path() + "/revs/" + r.ref
 }
+
+func Revisions(c *Client) (revisions []*Revision, err error) {
+	apps, err := Apps(c)
+	if err != nil {
+		return
+	}
+
+	revisions = []*Revision{}
+
+	for i := range apps {
+		revs, e := AppRevisions(c, apps[i])
+		if e != nil {
+			return nil, e
+		}
+		revisions = append(revisions, revs...)
+	}
+
+	return
+}
+func AppRevisions(c *Client, app *App) (revisions []*Revision, err error) {
+	refs, err := c.Keys(app.Path() + "/revs")
+	if err != nil {
+		return
+	}
+	revisions = make([]*Revision, len(refs))
+
+	for i := range refs {
+		r, e := NewRevision(app, refs[i])
+		if e != nil {
+			return nil, e
+		}
+
+		revisions[i] = r
+	}
+
+	return
 }
