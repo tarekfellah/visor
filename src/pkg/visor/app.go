@@ -19,17 +19,15 @@ func (a *App) Register(c *Client) (err error) {
 		return ErrAppConflict
 	}
 
-	rev, err := a.setPath(c, "repo-url", a.RepoUrl)
+	err = a.setPath(c, "repo-url", a.RepoUrl)
 	if err != nil {
 		return
 	}
-	c.Rev = rev
 
-	rev, err = a.setPath(c, "stack", string(a.Stack))
+	err = a.setPath(c, "stack", string(a.Stack))
 	if err != nil {
 		return
 	}
-	c.Rev = rev
 
 	return
 }
@@ -74,11 +72,7 @@ func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
 	return
 }
 func (a *App) SetEnvironmentVar(c *Client, k string, v string) (err error) {
-	rev, err := a.setPath(c, "env/"+k, v)
-
-	c.Rev = rev
-
-	return
+	return a.setPath(c, "env/"+k, v)
 }
 func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
 	err = c.Del(a.Path() + "/env/" + k)
@@ -95,10 +89,10 @@ func (a *App) String() string {
 func (a *App) Path() (p string) {
 	return "/apps/" + a.Name
 }
-func (a *App) setPath(c *Client, k string, v string) (int64, error) {
+func (a *App) setPath(c *Client, k string, v string) error {
 	path := strings.Join([]string{a.Path(), k}, "/")
 
-	return c.Conn.Set(path, c.Rev, []byte(v))
+	return c.Set(path, v)
 }
 
 func Apps(c *Client) (apps []*App, err error) {
