@@ -133,3 +133,30 @@ func TestEnvironmentVars(t *testing.T) {
 		t.Error("Var not set")
 	}
 }
+
+func TestApps(t *testing.T) {
+	c, _ := appSetup("apps-test")
+	names := []string{"cat", "dog", "lol"}
+
+	for i := range names {
+		a := &App{Name: names[i]}
+		err := a.Register(c)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	apps, err := Apps(c)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(apps) != len(names) {
+		t.Error("expected length %d returned length %d", len(names), len(apps))
+	} else {
+		for i := range apps {
+			if apps[i].Name != names[i] {
+				t.Error("expected %s got %s", names[i], apps[i].Name)
+			}
+		}
+	}
+}
