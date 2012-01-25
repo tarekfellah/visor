@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func setup(path string) (c *Client, conn *doozer.Conn, rev int64) {
+func setup(path string) (c *Client, conn *doozer.Conn) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", DEFAULT_ADDR)
 	if err != nil {
 		panic(err)
@@ -16,24 +16,39 @@ func setup(path string) (c *Client, conn *doozer.Conn, rev int64) {
 		panic(err)
 	}
 
-	rev, err = conn.Rev()
-	if err != nil {
-		panic(err)
-	}
-
-	err = conn.Del(path, rev)
-	if err != nil {
-		panic(err)
-	}
-
-	c = &Client{tcpaddr, conn, "/", rev}
+	c = &Client{tcpaddr, conn, "/", 0}
+	c.Del(path)
 
 	return
 }
 
+func TestDel(t *testing.T) {
+	path := "/del-test"
+	c, conn := setup(path)
+
+	_, err := conn.Set(path+"/deep/blue", 0, []byte{})
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = c.Del(path)
+	if err != nil {
+		t.Error(err)
+	}
+
+	_, rev, err := conn.Stat(path, nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if rev != 0 {
+		t.Error("path isn't deleted")
+	}
+}
+
 func TestExists(t *testing.T) {
-	path := "/client-test"
-	c, conn, _ := setup(path)
+	path := "/exists-test"
+	c, conn := setup(path)
 
 	exists, err := c.Exists(path)
 	if err != nil {

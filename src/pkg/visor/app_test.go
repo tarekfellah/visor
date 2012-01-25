@@ -11,7 +11,7 @@ func appSetup(name string) (c *Client, app *App) {
 		panic(err)
 	}
 
-	c.Deldir("/apps", c.Rev)
+	c.Del("/apps")
 
 	return
 }
