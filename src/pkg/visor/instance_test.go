@@ -1,18 +1,17 @@
 package visor
 
 import (
-	"net"
+	"strconv"
 	"testing"
 )
 
 func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	app := &App{Name: "ins-test", RepoUrl: "git://ins.git", Stack: "insane"}
+	rev := &Revision{App: app, ref: "7abcde6"}
+	ins, err := NewInstance(rev, addr, pType, 0)
 	if err != nil {
 		panic(err)
 	}
-	app := &App{Name: "ins-test", RepoUrl: "git://ins.git", Stack: "insane"}
-	rev := &Revision{App: app, ref: "7abcde6"}
-	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType}
 
 	c, err = Dial(DEFAULT_ADDR)
 	if err != nil {
@@ -73,5 +72,37 @@ func TestInstanceUnregister(t *testing.T) {
 	}
 	if check {
 		t.Error("Instance still registered")
+	}
+}
+
+func TestInstances(t *testing.T) {
+	c, instance := instanceSetup("127.0.0.1:1337", "clock")
+	host := "127.0.0.1:"
+	port := 1000
+
+	for i := 0; i < 3; i++ {
+		ins, err := NewInstance(instance.Rev, host+strconv.Itoa(port+i), "clock", 0)
+		if err != nil {
+			t.Error(err)
+		}
+		err = ins.Register(c)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	instances, err := Instances(c, instance.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(instances) != 3 {
+		t.Errorf("expected length %d returned length %d", 3, len(instances))
+	} else {
+		for i := range instances {
+			compAddr := host + strconv.Itoa(port+i)
+			if instances[i].Addr.String() != compAddr {
+				t.Errorf("expected %s got %s", compAddr, instances[i].Addr.String())
+			}
+		}
 	}
 }

@@ -101,13 +101,6 @@ func (c *Client) Set(path string, body string) (err error) {
 
 // INSTANCES
 
-func (c *Client) Instances() ([]Instance, error) {
-	return nil, nil
-}
-func (c *Client) HostInstances(addr string) ([]Instance, error) {
-	return nil, nil
-}
-
 // TICKETS
 
 func (c *Client) Tickets() ([]Ticket, error) {

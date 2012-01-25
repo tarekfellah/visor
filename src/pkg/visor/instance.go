@@ -2,6 +2,7 @@ package visor
 
 import (
 	"net"
+	"strconv"
 	"strings"
 )
 
@@ -12,6 +13,17 @@ type Instance struct {
 	ProcessType ProcessType
 }
 
+func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (ins *Instance, err error) {
+
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		return
+	}
+
+	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state}
+
+	return
+}
 func (i *Instance) String() string {
 	return "<instance>"
 }
@@ -24,11 +36,11 @@ func (i *Instance) Register(c *Client) (err error) {
 		return ErrKeyConflict
 	}
 
-	err = c.Set(i.Path()+"/host", string(i.Addr.IP))
+	err = c.Set(i.Path()+"/host", i.Addr.IP.String())
 	if err != nil {
 		return
 	}
-	err = c.Set(i.Path()+"/port", string(i.Addr.Port))
+	err = c.Set(i.Path()+"/port", strconv.Itoa(i.Addr.Port))
 	if err != nil {
 		return
 	}
@@ -36,7 +48,7 @@ func (i *Instance) Register(c *Client) (err error) {
 	if err != nil {
 		return
 	}
-	err = c.Set(i.Path()+"/state", string(i.State))
+	err = c.Set(i.Path()+"/state", strconv.Itoa(int(i.State)))
 
 	return
 }
@@ -47,4 +59,55 @@ func (i *Instance) Path() (path string) {
 	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 
 	return i.Rev.Path() + "/" + id
+}
+
+func Instances(c *Client, r *Revision) (instances []*Instance, err error) {
+	names, err := c.Keys(r.Path())
+	if err != nil {
+		return
+	}
+
+	instances = make([]*Instance, len(names))
+
+	for i := range names {
+		iPath := r.Path() + "/" + names[i]
+		var (
+			host  string
+			port  string
+			pType string
+			state string
+			s     int
+		)
+		host, err = c.Get(iPath + "/host")
+		if err != nil {
+			return
+		}
+		port, err = c.Get(iPath + "/port")
+		if err != nil {
+			return
+		}
+		pType, err = c.Get(iPath + "/process-type")
+		if err != nil {
+			return
+		}
+		state, err = c.Get(iPath + "/state")
+		if err != nil {
+			return
+		}
+
+		s, err = strconv.Atoi(state)
+		if err != nil {
+			return
+		}
+
+		instances[i], err = NewInstance(r, host+":"+port, ProcessType(pType), State(s))
+		if err != nil {
+			return
+		}
+	}
+
+	return
+}
+func (c *Client) HostInstances(addr string) ([]Instance, error) {
+	return nil, nil
 }
