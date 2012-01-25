@@ -25,6 +25,10 @@ func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
 	}
 
 	c.Del("/apps")
+	err = app.Register(c)
+	if err != nil {
+		panic(err)
+	}
 
 	return
 }
