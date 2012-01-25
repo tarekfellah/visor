@@ -5,10 +5,13 @@ import (
 )
 
 func appSetup(name string) (c *Client, app *App) {
-	c = clientSetup()
-	_ = c.Deldir("/apps", c.Rev)
-
 	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers"}
+	c, err := Dial(DEFAULT_ADDR)
+	if err != nil {
+		panic(err)
+	}
+
+	c.Deldir("/apps", c.Rev)
 
 	return
 }
