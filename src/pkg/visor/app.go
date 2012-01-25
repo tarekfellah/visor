@@ -96,20 +96,15 @@ func (a *App) setPath(c *Client, k string, v string) error {
 }
 
 func Apps(c *Client) (apps []*App, err error) {
-	rev, err := c.Conn.Rev()
+	names, err := c.Keys("/apps")
 	if err != nil {
 		return
 	}
 
-	appNames, err := c.Conn.Getdir("/apps", rev, 0, -1)
-	// FIXME proper error handling
-	if err != nil {
-		return []*App{}, nil
-	}
-	apps = make([]*App, len(appNames))
+	apps = make([]*App, len(names))
 
-	for i := range appNames {
-		apps[i] = &App{Name: appNames[i]}
+	for i := range names {
+		apps[i] = &App{Name: names[i]}
 	}
 
 	return
