@@ -17,7 +17,7 @@ func TestAppRegistration(t *testing.T) {
 	name := "lolcatapp"
 	c, app := appSetup(name)
 
-	check, err := appIsRegistered(c, name)
+	check, err := c.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +30,7 @@ func TestAppRegistration(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, err = appIsRegistered(c, name)
+	check, err = c.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +58,7 @@ func TestAppUnregistration(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, err := appIsRegistered(c, name)
+	check, err := c.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -85,7 +85,7 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 	}
 }
 
-func TestSetAndDetEnvironmentVar(t *testing.T) {
+func TestSetAndDelEnvironmentVar(t *testing.T) {
 	c, app := appSetup("catalolna")
 
 	err := app.SetEnvironmentVar(c, "wuff", "lulz")
@@ -130,21 +130,4 @@ func TestEnvironmentVars(t *testing.T) {
 	if vars["lasers"] != "pew pew" {
 		t.Error("Var not set")
 	}
-}
-
-func appIsRegistered(c *Client, name string) (isRegistered bool, err error) {
-	apps, err := Apps(c)
-	if err != nil {
-		return
-	}
-
-	isRegistered = false
-
-	for i := range apps {
-		if apps[i].Name == name {
-			isRegistered = true
-		}
-	}
-
-	return
 }
