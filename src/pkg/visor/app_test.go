@@ -6,14 +6,65 @@ import (
 
 func appSetup(name string) (c *Client, app *App) {
 	c = clientSetup()
-	err := c.Deldir("/apps", c.Rev)
+	_ = c.Deldir("/apps", c.Rev)
 
-	app, err = c.RegisterApp(name, "git://lolcathub", Stack("lol"))
-	if err != nil {
-		panic(err)
-	}
+	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers"}
 
 	return
+}
+
+func TestAppRegistration(t *testing.T) {
+	name := "lolcatapp"
+	c, app := appSetup(name)
+
+	check, err := appIsRegistered(c, name)
+	if err != nil {
+		t.Error(err)
+	}
+	if check {
+		t.Error("App already registered")
+	}
+
+	err = app.Register(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	check, err = appIsRegistered(c, name)
+	if err != nil {
+		t.Error(err)
+	}
+	if !check {
+		t.Error("App registration failed")
+	}
+
+	err = app.Register(c)
+	if err == nil {
+		t.Error("App allowed to be registered twice")
+	}
+}
+
+func TestAppUnregistration(t *testing.T) {
+	name := "dog"
+	c, app := appSetup(name)
+
+	err := app.Register(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = app.Unregister(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	check, err := appIsRegistered(c, name)
+	if err != nil {
+		t.Error(err)
+	}
+	if check {
+		t.Error("App still registered")
+	}
 }
 
 func TestSetAndGetEnvironmentVar(t *testing.T) {
@@ -79,4 +130,21 @@ func TestEnvironmentVars(t *testing.T) {
 	if vars["lasers"] != "pew pew" {
 		t.Error("Var not set")
 	}
+}
+
+func appIsRegistered(c *Client, name string) (isRegistered bool, err error) {
+	apps, err := c.Apps()
+	if err != nil {
+		return
+	}
+
+	isRegistered = false
+
+	for i := range apps {
+		if apps[i].Name == name {
+			isRegistered = true
+		}
+	}
+
+	return
 }
