@@ -133,7 +133,7 @@ func TestEnvironmentVars(t *testing.T) {
 }
 
 func appIsRegistered(c *Client, name string) (isRegistered bool, err error) {
-	apps, err := c.Apps()
+	apps, err := Apps(c)
 	if err != nil {
 		return
 	}

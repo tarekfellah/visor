@@ -56,37 +56,6 @@ func (c *Client) HostTickets(addr string) ([]Ticket, error) {
 	return nil, nil
 }
 
-// APPS
-
-func (c *Client) Apps() (apps []*App, err error) {
-	rev, err := c.Conn.Rev()
-	if err != nil {
-		return
-	}
-
-	appNames, err := c.Conn.Getdir("/apps", rev, 0, -1)
-	// FIXME proper error handling
-	if err != nil {
-		return []*App{}, nil
-	}
-	apps = make([]*App, len(appNames))
-
-	for i := range appNames {
-		apps[i] = &App{Name: appNames[i]}
-	}
-
-	return
-}
-func (c *Client) RegisterApp(name string, repoUrl string, stack Stack) (app *App, err error) {
-	app = &App{Name: name, RepoUrl: repoUrl, Stack: stack}
-	err = app.Register(c)
-
-	return
-}
-func (c *Client) UnregisterApp(app *App) error {
-	return app.Unregister(c)
-}
-
 // EVENTS
 
 func (c *Client) WatchEvent(listener chan *Event) error {
