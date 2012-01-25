@@ -87,15 +87,16 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 
 	instances = make([]*Instance, len(names))
 
+	var (
+		host  string
+		port  string
+		pType string
+		state string
+		s     int
+	)
+
 	for i := range names {
 		iPath := r.Path() + "/" + names[i]
-		var (
-			host  string
-			port  string
-			pType string
-			state string
-			s     int
-		)
 		host, err = c.Get(iPath + "/host")
 		if err != nil {
 			return
