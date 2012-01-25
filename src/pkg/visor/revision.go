@@ -5,6 +5,11 @@ type Revision struct {
 	ref string
 }
 
+func NewRevision(app *App, ref string) (rev *Revision, err error) {
+	rev = &Revision{App: app, ref: ref}
+	return
+}
+
 func (r *Revision) Register(c *Client) (err error) {
 	exists, err := c.Exists(r.Path())
 	if err != nil {

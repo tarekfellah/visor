@@ -10,6 +10,10 @@ type App struct {
 	Stack   Stack
 }
 
+func NewApp(name string, repourl string, stack Stack) (app *App, err error) {
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack}
+	return
+}
 func (a *App) Register(c *Client) (err error) {
 	exists, err := c.Exists(a.Path())
 	if err != nil {
