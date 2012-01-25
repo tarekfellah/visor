@@ -71,3 +71,22 @@ func TestExists(t *testing.T) {
 		t.Error("path doesn't exist")
 	}
 }
+
+func TestSet(t *testing.T) {
+	path := "/set-test"
+	body := "hola"
+	c, conn := setup(path)
+
+	err := c.Set(path, body)
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, _, err := conn.Get(path, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(b) != body {
+		t.Errorf("Expected %s got %s", body, string(b))
+	}
+}

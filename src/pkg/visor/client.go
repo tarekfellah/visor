@@ -79,6 +79,17 @@ func (c *Client) Get(path string) (value string, err error) {
 	return
 }
 
+func (c *Client) Set(path string, body string) (err error) {
+	rev, err := c.Conn.Set(path, c.Rev, []byte(body))
+	if err != nil {
+		return
+	}
+
+	c.Rev = rev
+
+	return
+}
+
 // INSTANCES
 
 func (c *Client) Instances() ([]Instance, error) {
