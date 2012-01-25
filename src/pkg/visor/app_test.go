@@ -101,6 +101,7 @@ func TestSetAndDelEnvironmentVar(t *testing.T) {
 
 	_, err = app.GetEnvironmentVar(c, "wuff")
 	if err == nil {
+		t.Error(err)
 		t.Error("EnvironmentVar wasn't deleted")
 	}
 
