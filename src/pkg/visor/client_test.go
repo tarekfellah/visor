@@ -91,6 +91,33 @@ func TestGet(t *testing.T) {
 	}
 }
 
+func TestKeys(t *testing.T) {
+	path := "/keys-test"
+	keys := []string{"bar", "baz", "foo"}
+	c, conn := setup(path)
+
+	for i := range keys {
+		_, err := conn.Set(path+"/"+keys[i], 0, []byte{})
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	k, err := c.Keys(path)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(k) != len(keys) {
+		t.Errorf("expected length %d returned lenght %d", len(keys), len(k))
+	} else {
+		for i := range keys {
+			if keys[i] != k[i] {
+				t.Errorf("expected %s got %s", keys[i], k[i])
+			}
+		}
+	}
+}
+
 func TestSet(t *testing.T) {
 	path := "/set-test"
 	body := "hola"
