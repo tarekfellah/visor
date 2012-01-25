@@ -34,7 +34,7 @@ func (a *App) Register(c *Client) (err error) {
 	return
 }
 func (a *App) Unregister(c *Client) error {
-	return c.Deldir(a.Path(), c.Rev)
+	return c.Del(a.Path())
 }
 func (a *App) Revisions() []Revision {
 	return nil

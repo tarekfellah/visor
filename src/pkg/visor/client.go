@@ -16,27 +16,15 @@ func (c *Client) Close() error {
 	return nil
 }
 
-func (c *Client) Exists(path string) (exists bool, err error) {
-	_, rev, err := c.Conn.Stat(path, nil)
+func (c *Client) Del(path string) (err error) {
+	rev, err := c.Conn.Rev()
 	if err != nil {
 		return
 	}
 
-	switch rev {
-	case 0:
-		exists = false
-	default:
-		exists = true
-	}
+	c.Rev = rev
 
-	return exists, nil
-}
-
-//
-// TODO find the appropriate location for this helper
-//
-func (c *Client) Deldir(dirname string, rev int64) (err error) {
-	err = doozer.Walk(c.Conn, rev, dirname, func(path string, f *doozer.FileInfo, e error) error {
+	err = doozer.Walk(c.Conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
 		if e != nil {
 			return e
 		}
@@ -52,6 +40,22 @@ func (c *Client) Deldir(dirname string, rev int64) (err error) {
 	})
 
 	return
+}
+
+func (c *Client) Exists(path string) (exists bool, err error) {
+	_, rev, err := c.Conn.Stat(path, nil)
+	if err != nil {
+		return
+	}
+
+	switch rev {
+	case 0:
+		exists = false
+	default:
+		exists = true
+	}
+
+	return exists, nil
 }
 
 // INSTANCES
