@@ -32,7 +32,8 @@ func setup(path string) (c *Client, conn *doozer.Conn, rev int64) {
 }
 
 func TestExists(t *testing.T) {
-	c, conn, _ := setup("/client-test")
+	path := "/client-test"
+	c, conn, _ := setup(path)
 
 	exists, err := c.Exists(path)
 	if err != nil {
