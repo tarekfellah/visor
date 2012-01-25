@@ -5,8 +5,11 @@ import (
 )
 
 func appSetup(name string) (c *Client, app *App) {
-	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers"}
-	c, err := Dial(DEFAULT_ADDR)
+	app, err := NewApp(name, "git://cat.git", "whiskers")
+	if err != nil {
+		panic(err)
+	}
+	c, err = Dial(DEFAULT_ADDR)
 	if err != nil {
 		panic(err)
 	}
@@ -139,8 +142,11 @@ func TestApps(t *testing.T) {
 	names := []string{"cat", "dog", "lol"}
 
 	for i := range names {
-		a := &App{Name: names[i]}
-		err := a.Register(c)
+		a, err := NewApp(names[i], "zebra", "joke")
+		if err != nil {
+			t.Error(err)
+		}
+		err = a.Register(c)
 		if err != nil {
 			t.Error(err)
 		}

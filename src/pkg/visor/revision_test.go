@@ -4,10 +4,12 @@ import (
 	"testing"
 )
 
-func revSetup(ref string) (c *Client, rev *Revision) {
-	app := &App{Name: "rev-test", RepoUrl: "git://rev.git", Stack: "references"}
-	rev = &Revision{App: app, ref: ref}
-	c, err := Dial(DEFAULT_ADDR)
+func revSetup() (c *Client, app *App) {
+	app, err := NewApp("rev-test", "git://rev.git", "references")
+	if err != nil {
+		panic(err)
+	}
+	c, err = Dial(DEFAULT_ADDR)
 	if err != nil {
 		panic(err)
 	}
@@ -18,7 +20,11 @@ func revSetup(ref string) (c *Client, rev *Revision) {
 }
 
 func TestRevisionRegister(t *testing.T) {
-	c, rev := revSetup("master")
+	c, app := revSetup()
+	rev, err := NewRevision(app, "stable")
+	if err != nil {
+		t.Error(err)
+	}
 
 	check, err := c.Exists(rev.Path())
 	if err != nil {
@@ -48,9 +54,13 @@ func TestRevisionRegister(t *testing.T) {
 }
 
 func TestRevisionUnregister(t *testing.T) {
-	c, rev := revSetup("stable")
+	c, app := revSetup()
+	rev, err := NewRevision(app, "master")
+	if err != nil {
+		t.Error(err)
+	}
 
-	err := rev.Register(c)
+	err = rev.Register(c)
 	if err != nil {
 		t.Error(err)
 	}

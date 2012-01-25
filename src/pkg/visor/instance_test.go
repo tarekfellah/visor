@@ -6,9 +6,15 @@ import (
 )
 
 func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
-	app := &App{Name: "ins-test", RepoUrl: "git://ins.git", Stack: "insane"}
-	rev := &Revision{App: app, ref: "7abcde6"}
-	ins, err := NewInstance(rev, addr, pType, 0)
+	app, err := NewApp("ins-test", "git://ins.git", "insane")
+	if err != nil {
+		panic(err)
+	}
+	rev, err := NewRevision(app, "7abcde6")
+	if err != nil {
+		panic(err)
+	}
+	ins, err = NewInstance(rev, addr, pType, 0)
 	if err != nil {
 		panic(err)
 	}

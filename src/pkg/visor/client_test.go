@@ -2,24 +2,18 @@ package visor
 
 import (
 	"github.com/soundcloud/doozer"
-	"net"
 	"testing"
 )
 
 func setup(path string) (c *Client, conn *doozer.Conn) {
-	tcpaddr, err := net.ResolveTCPAddr("tcp", DEFAULT_ADDR)
-	if err != nil {
-		panic(err)
-	}
-	conn, err = doozer.Dial(DEFAULT_ADDR)
+	c, err := Dial(DEFAULT_ADDR)
 	if err != nil {
 		panic(err)
 	}
 
-	c = &Client{tcpaddr, conn, "/", 0}
 	c.Del(path)
 
-	return
+	return c, c.conn
 }
 
 func TestDel(t *testing.T) {
