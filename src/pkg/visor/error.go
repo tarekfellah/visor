@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	ErrAppConflict = errors.New("app is registered")
+	ErrKeyConflict = errors.New("key is already set")
 	ErrKeyNotFound = errors.New("environment key not found")
 )
 

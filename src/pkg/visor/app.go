@@ -16,7 +16,7 @@ func (a *App) Register(c *Client) (err error) {
 		return
 	}
 	if exists {
-		return ErrAppConflict
+		return ErrKeyConflict
 	}
 
 	err = a.setPath(c, "repo-url", a.RepoUrl)
