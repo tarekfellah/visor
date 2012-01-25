@@ -17,8 +17,7 @@ func appSetup(name string) (c *Client, app *App) {
 }
 
 func TestAppRegistration(t *testing.T) {
-	name := "lolcatapp"
-	c, app := appSetup(name)
+	c, app := appSetup("lolcatapp")
 
 	check, err := c.Exists(app.Path())
 	if err != nil {
@@ -48,8 +47,7 @@ func TestAppRegistration(t *testing.T) {
 }
 
 func TestAppUnregistration(t *testing.T) {
-	name := "dog"
-	c, app := appSetup(name)
+	c, app := appSetup("dog")
 
 	err := app.Register(c)
 	if err != nil {
