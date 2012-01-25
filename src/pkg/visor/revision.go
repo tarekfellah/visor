@@ -40,5 +40,6 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 }
 
 func (r *Revision) Path() string {
-	return r.App.Path() + "/" + r.ref
+	return r.App.Path() + "/revs/" + r.ref
+}
 }
