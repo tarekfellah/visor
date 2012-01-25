@@ -9,7 +9,7 @@ const DEFAULT_ADDR string = "localhost:8046"
 
 type ProcessType string
 type Stack string
-type State string
+type State int
 
 func Dial(addr string) (c *Client, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
