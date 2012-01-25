@@ -16,6 +16,22 @@ func (c *Client) Close() error {
 	return nil
 }
 
+func (c *Client) Exists(path string) (exists bool, err error) {
+	_, rev, err := c.Conn.Stat(path, nil)
+	if err != nil {
+		return
+	}
+
+	switch rev {
+	case 0:
+		exists = false
+	default:
+		exists = true
+	}
+
+	return exists, nil
+}
+
 //
 // TODO find the appropriate location for this helper
 //
@@ -71,20 +87,4 @@ func (c *Client) WatchEvent(listener chan *Event) error {
 }
 func (c *Client) WatchTicket(listener chan *Ticket) error {
 	return nil
-}
-
-func (c *Client) Exists(path string) (exists bool, err error) {
-	_, rev, err := c.Conn.Stat(path, nil)
-	if err != nil {
-		return
-	}
-
-	switch rev {
-	case 0:
-		exists = false
-	default:
-		exists = true
-	}
-
-	return exists, nil
 }
