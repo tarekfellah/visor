@@ -12,8 +12,8 @@ type Client struct {
 	rev  int64
 }
 
-func (c *Client) Close() error {
-	return nil
+func (c *Client) Close() {
+	c.conn.Close()
 }
 
 func (c *Client) Del(path string) (err error) {
