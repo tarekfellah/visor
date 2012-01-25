@@ -6,7 +6,7 @@ import (
 
 var (
 	ErrKeyConflict = errors.New("key is already set")
-	ErrKeyNotFound = errors.New("environment key not found")
+	ErrKeyNotFound = errors.New("key not found")
 )
 
 type Error struct{}
