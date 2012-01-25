@@ -44,7 +44,7 @@ func (a *App) UnregisterRevision(r *Revision) error {
 	return nil
 }
 func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
-	varNames, err := c.Conn.Getdir(a.Path()+"/env", c.Rev, 0, -1)
+	varNames, err := c.Keys(a.Path() + "/env")
 	if err != nil {
 		return
 	}
