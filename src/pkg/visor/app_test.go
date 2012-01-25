@@ -5,15 +5,67 @@ import (
 )
 
 func appSetup(name string) (c *Client, app *App) {
-	c = clientSetup()
-	err := c.Deldir("/apps", c.Rev)
-
-	app, err = c.RegisterApp(name, "git://lolcathub", Stack("lol"))
+	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers"}
+	c, err := Dial(DEFAULT_ADDR)
 	if err != nil {
 		panic(err)
 	}
 
+	c.Del("/apps")
+
 	return
+}
+
+func TestAppRegistration(t *testing.T) {
+	c, app := appSetup("lolcatapp")
+
+	check, err := c.Exists(app.Path())
+	if err != nil {
+		t.Error(err)
+	}
+	if check {
+		t.Error("App already registered")
+	}
+
+	err = app.Register(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	check, err = c.Exists(app.Path())
+	if err != nil {
+		t.Error(err)
+	}
+	if !check {
+		t.Error("App registration failed")
+	}
+
+	err = app.Register(c)
+	if err == nil {
+		t.Error("App allowed to be registered twice")
+	}
+}
+
+func TestAppUnregistration(t *testing.T) {
+	c, app := appSetup("dog")
+
+	err := app.Register(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = app.Unregister(c)
+	if err != nil {
+		t.Error(err)
+	}
+
+	check, err := c.Exists(app.Path())
+	if err != nil {
+		t.Error(err)
+	}
+	if check {
+		t.Error("App still registered")
+	}
 }
 
 func TestSetAndGetEnvironmentVar(t *testing.T) {
@@ -34,7 +86,7 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 	}
 }
 
-func TestSetAndDetEnvironmentVar(t *testing.T) {
+func TestSetAndDelEnvironmentVar(t *testing.T) {
 	c, app := appSetup("catalolna")
 
 	err := app.SetEnvironmentVar(c, "wuff", "lulz")
@@ -49,6 +101,7 @@ func TestSetAndDetEnvironmentVar(t *testing.T) {
 
 	_, err = app.GetEnvironmentVar(c, "wuff")
 	if err == nil {
+		t.Error(err)
 		t.Error("EnvironmentVar wasn't deleted")
 	}
 
@@ -78,5 +131,32 @@ func TestEnvironmentVars(t *testing.T) {
 	}
 	if vars["lasers"] != "pew pew" {
 		t.Error("Var not set")
+	}
+}
+
+func TestApps(t *testing.T) {
+	c, _ := appSetup("apps-test")
+	names := []string{"cat", "dog", "lol"}
+
+	for i := range names {
+		a := &App{Name: names[i]}
+		err := a.Register(c)
+		if err != nil {
+			t.Error(err)
+		}
+	}
+
+	apps, err := Apps(c)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(apps) != len(names) {
+		t.Error("expected length %d returned length %d", len(names), len(apps))
+	} else {
+		for i := range apps {
+			if apps[i].Name != names[i] {
+				t.Error("expected %s got %s", names[i], apps[i].Name)
+			}
+		}
 	}
 }
