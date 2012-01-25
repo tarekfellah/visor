@@ -34,15 +34,6 @@ func (a *App) Register(c *Client) (err error) {
 func (a *App) Unregister(c *Client) error {
 	return c.Del(a.Path())
 }
-func (a *App) Revisions() []Revision {
-	return nil
-}
-func (a *App) RegisterRevision(rev string) (*Revision, error) {
-	return nil, nil
-}
-func (a *App) UnregisterRevision(r *Revision) error {
-	return nil
-}
 func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 	varNames, err := c.Keys(a.Path() + "/env")
 	if err != nil {
