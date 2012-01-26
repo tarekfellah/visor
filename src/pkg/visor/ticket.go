@@ -3,10 +3,12 @@ package visor
 import (
 	"fmt"
 	"net"
+	"strconv"
 )
 
 // Ticket carries instructions to start and stop Instances.
 type Ticket struct {
+	Id           int64
 	AppName      string
 	RevisionName string
 	ProcessType  ProcessType
@@ -31,8 +33,21 @@ func NewTicket(appName string, revName string, pType ProcessType, op OperationTy
 }
 
 // Claim locks the Ticket to the passed host
-func (t *Ticket) Claim() error {
-	return nil
+func (t *Ticket) Claim(c *Client, host string) (err error) {
+	exists, err := c.Exists(t.path() + "/claimed")
+	if err != nil {
+		return
+	}
+	if exists {
+		return ErrTicketClaimed
+	}
+
+	err = c.Set(t.path()+"/claimed", host)
+	if err != nil {
+		return
+	}
+
+	return
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
@@ -48,4 +63,8 @@ func (t *Ticket) Done() error {
 // String returns the Go-syntax representation of Ticket
 func (t *Ticket) String() string {
 	return fmt.Sprintf("%#v", t)
+}
+
+func (t *Ticket) path() (path string) {
+	return "tickets/" + strconv.FormatInt(t.Id, 10)
 }
