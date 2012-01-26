@@ -131,7 +131,7 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func TestDifferentRoo(t *testing.T) {
+func TestDifferentRoot(t *testing.T) {
 	path := "visor"
 	body := "test"
 	c, conn := setup(path)
