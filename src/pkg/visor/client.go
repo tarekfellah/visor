@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
 )
@@ -106,6 +107,10 @@ func (c *Client) Set(path string, body string) (err error) {
 	c.rev = rev
 
 	return
+}
+
+func (c *Client) String() string {
+	return fmt.Sprintf("%#v", c)
 }
 
 // INSTANCES

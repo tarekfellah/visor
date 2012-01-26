@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -23,9 +24,6 @@ func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (in
 	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state}
 
 	return
-}
-func (i *Instance) String() string {
-	return "<instance>"
 }
 func (i *Instance) Register(c *Client) (err error) {
 	exists, err := c.Exists(i.Path())
@@ -59,6 +57,10 @@ func (i *Instance) Path() (path string) {
 	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 
 	return i.Rev.Path() + "/" + id
+}
+
+func (i *Instance) String() string {
+	return fmt.Sprintf("%#v", i)
 }
 
 func Instances(c *Client) (instances []*Instance, err error) {
