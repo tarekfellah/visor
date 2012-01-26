@@ -34,19 +34,11 @@ func (i *Instance) Register(c *Client) (err error) {
 		return ErrKeyConflict
 	}
 
-	err = c.Set(i.Path()+"/host", i.Addr.IP.String())
-	if err != nil {
-		return
-	}
-	err = c.Set(i.Path()+"/port", strconv.Itoa(i.Addr.Port))
-	if err != nil {
-		return
-	}
-	err = c.Set(i.Path()+"/process-type", string(i.ProcessType))
-	if err != nil {
-		return
-	}
-	err = c.Set(i.Path()+"/state", strconv.Itoa(int(i.State)))
+	err = c.SetMulti(i.Path(),
+		"host", i.Addr.IP.String(),
+		"port", strconv.Itoa(i.Addr.Port),
+		"process-type", string(i.ProcessType),
+		"state", strconv.Itoa(int(i.State)))
 
 	return
 }
@@ -89,39 +81,21 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 
 	instances = make([]*Instance, len(names))
 
-	var (
-		host  string
-		port  string
-		pType string
-		state string
-		s     int
-	)
-
 	for i := range names {
-		iPath := r.Path() + "/" + names[i]
-		host, err = c.Get(iPath + "/host")
-		if err != nil {
-			return
-		}
-		port, err = c.Get(iPath + "/port")
-		if err != nil {
-			return
-		}
-		pType, err = c.Get(iPath + "/process-type")
-		if err != nil {
-			return
-		}
-		state, err = c.Get(iPath + "/state")
-		if err != nil {
-			return
+		vals, e := c.GetMulti(r.Path()+"/"+names[i], nil)
+
+		if e != nil {
+			return nil, e
 		}
 
-		s, err = strconv.Atoi(state)
-		if err != nil {
-			return
+		s, e := strconv.Atoi(vals["state"])
+		if e != nil {
+			return nil, e
 		}
 
-		instances[i], err = NewInstance(r, host+":"+port, ProcessType(pType), State(s))
+		addr := vals["host"] + ":" + vals["port"]
+
+		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"]), State(s))
 		if err != nil {
 			return
 		}
