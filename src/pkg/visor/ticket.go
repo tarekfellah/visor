@@ -2,27 +2,33 @@ package visor
 
 import (
 	"fmt"
-	"github.com/soundcloud/doozer"
 	"net"
 )
 
 // Ticket carries instructions to start and stop Instances.
 type Ticket struct {
-	Type        TicketType
-	App         *App
-	Rev         *Revision
-	ProcessType ProcessType
-	Addr        net.TCPAddr
-	Source      *doozer.Event
+	AppName      string
+	RevisionName string
+	ProcessType  ProcessType
+	Op           OperationType
+	Addr         net.TCPAddr
+	source       *Event
 }
 
-// TicketType identifies different operations.
-type TicketType int
+// OperationType identifies different operations.
+type OperationType int
 
 const (
-	T_START TicketType = iota
-	T_STOP
+	OpStart OperationType = iota
+	OpStop
 )
+
+// NewTicket returns a new Ticket given an application name, revision name, process type and operation
+func NewTicket(appName string, revName string, pType ProcessType, op OperationType) (t *Ticket) {
+	t = &Ticket{AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+
+	return
+}
 
 // Claim locks the Ticket to the passed host
 func (t *Ticket) Claim() error {
