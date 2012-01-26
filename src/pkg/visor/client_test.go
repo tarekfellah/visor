@@ -17,10 +17,10 @@ func setup(path string) (c *Client, conn *doozer.Conn) {
 }
 
 func TestDel(t *testing.T) {
-	path := "/del-test"
+	path := "del-test"
 	c, conn := setup(path)
 
-	_, err := conn.Set(path+"/deep/blue", 0, []byte{})
+	_, err := conn.Set("/del-test/deep/blue", c.rev, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +30,7 @@ func TestDel(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, rev, err := conn.Stat(path, nil)
+	_, rev, err := conn.Stat("/"+path, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -41,7 +41,7 @@ func TestDel(t *testing.T) {
 }
 
 func TestExists(t *testing.T) {
-	path := "/exists-test"
+	path := "exists-test"
 	c, conn := setup(path)
 
 	exists, err := c.Exists(path)
@@ -52,7 +52,7 @@ func TestExists(t *testing.T) {
 		t.Error("path shouldn't exist")
 	}
 
-	_, err = conn.Set(path, 0, []byte{})
+	_, err = conn.Set("/"+path, 0, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,11 +67,11 @@ func TestExists(t *testing.T) {
 }
 
 func TestGet(t *testing.T) {
-	path := "/get-test"
+	path := "get-test"
 	body := "aloha"
 	c, conn := setup(path)
 
-	_, err := conn.Set(path, 0, []byte(body))
+	_, err := conn.Set("/"+path, 0, []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
@@ -86,12 +86,12 @@ func TestGet(t *testing.T) {
 }
 
 func TestKeys(t *testing.T) {
-	path := "/keys-test"
+	path := "keys-test"
 	keys := []string{"bar", "baz", "foo"}
 	c, conn := setup(path)
 
 	for i := range keys {
-		_, err := conn.Set(path+"/"+keys[i], 0, []byte{})
+		_, err := conn.Set("/"+path+"/"+keys[i], 0, []byte{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -113,7 +113,7 @@ func TestKeys(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	path := "/set-test"
+	path := "set-test"
 	body := "hola"
 	c, conn := setup(path)
 
@@ -122,7 +122,27 @@ func TestSet(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, _, err := conn.Get(path, nil)
+	b, _, err := conn.Get("/"+path, nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(b) != body {
+		t.Errorf("Expected %s got %s", body, string(b))
+	}
+}
+
+func TestDifferentRoo(t *testing.T) {
+	path := "visor"
+	body := "test"
+	c, conn := setup(path)
+
+	client := &Client{Addr: c.Addr, conn: conn, Root: "/visor", rev: c.rev}
+	err := client.Set("root", body)
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, _, err := conn.Get("/visor/root", nil)
 	if err != nil {
 		t.Error(err)
 	}

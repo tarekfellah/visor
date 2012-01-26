@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
+	"strings"
 )
 
 type Client struct {
@@ -24,6 +25,7 @@ func (c *Client) Del(path string) (err error) {
 	}
 
 	c.rev = rev
+	path = c.prefixPath(path)
 
 	err = doozer.Walk(c.conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
 		if e != nil {
@@ -44,7 +46,7 @@ func (c *Client) Del(path string) (err error) {
 }
 
 func (c *Client) Exists(path string) (exists bool, err error) {
-	_, rev, err := c.conn.Stat(path, nil)
+	_, rev, err := c.conn.Stat(c.prefixPath(path), nil)
 	if err != nil {
 		return
 	}
@@ -62,7 +64,7 @@ func (c *Client) Get(path string) (value string, err error) {
 		return
 	}
 
-	body, rev, err := c.conn.Get(path, &rev)
+	body, rev, err := c.conn.Get(c.prefixPath(path), &rev)
 	if err != nil {
 		return
 	}
@@ -87,7 +89,7 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 
 	c.rev = rev
 
-	keys, err = c.conn.Getdir(path, c.rev, 0, -1)
+	keys, err = c.conn.Getdir(c.prefixPath(path), c.rev, 0, -1)
 	if err != nil {
 		return
 	}
@@ -96,7 +98,7 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 }
 
 func (c *Client) Set(path string, body string) (err error) {
-	rev, err := c.conn.Set(path, c.rev, []byte(body))
+	rev, err := c.conn.Set(c.prefixPath(path), c.rev, []byte(body))
 	if err != nil {
 		return
 	}
@@ -108,6 +110,21 @@ func (c *Client) Set(path string, body string) (err error) {
 
 func (c *Client) String() string {
 	return fmt.Sprintf("%#v", c)
+}
+
+func (c *Client) prefixPath(p string) (path string) {
+	prefix := c.Root
+	path = p
+
+	if !strings.HasSuffix(prefix, "/") {
+		prefix = prefix + "/"
+	}
+
+	if !strings.HasPrefix(p, c.Root) {
+		path = prefix + p
+	}
+
+	return path
 }
 
 // INSTANCES
