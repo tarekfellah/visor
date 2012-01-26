@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
 )
@@ -30,5 +31,5 @@ func (t *Ticket) Done() error {
 	return nil
 }
 func (t *Ticket) String() string {
-	return "<ticket>"
+	return fmt.Sprintf("%#v", t)
 }
