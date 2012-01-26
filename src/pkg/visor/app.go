@@ -11,7 +11,7 @@ type App struct {
 	Stack   Stack
 }
 
-var appFiles = []string{"repo-url", "stack"}
+var appMetaKeys = []string{"repo-url", "stack"}
 
 func NewApp(name string, repourl string, stack Stack) (app *App, err error) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack}
@@ -106,7 +106,7 @@ func Apps(c *Client) (apps []*App, err error) {
 			return nil, e
 		}
 
-		vals, e := c.GetMulti(a.Path(), appFiles)
+		vals, e := c.GetMulti(a.Path(), appMetaKeys)
 		if e != nil {
 			return nil, e
 		}
