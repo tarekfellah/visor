@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
 )
@@ -142,6 +143,9 @@ func (c *Client) SetMulti(path string, kvs ...string) (err error) {
 		}
 	}
 	return
+}
+func (c *Client) String() string {
+	return fmt.Sprintf("%#v", c)
 }
 
 // TICKETS

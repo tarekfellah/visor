@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"strings"
 )
 
@@ -80,7 +81,7 @@ func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
 	return
 }
 func (a *App) String() string {
-	return "App{\"" + a.Name + "\"}"
+	return fmt.Sprintf("%#v", a)
 }
 
 func (a *App) Path() (p string) {

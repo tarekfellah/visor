@@ -1,5 +1,9 @@
 package visor
 
+import (
+	"fmt"
+)
+
 type Revision struct {
 	App *App
 	ref string
@@ -41,6 +45,10 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 
 func (r *Revision) Path() string {
 	return r.App.Path() + "/revs/" + r.ref
+}
+
+func (r *Revision) String() string {
+	return fmt.Sprintf("%#v", r)
 }
 
 func Revisions(c *Client) (revisions []*Revision, err error) {
