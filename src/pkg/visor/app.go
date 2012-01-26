@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+const APPS_PATH = "apps"
+
 type App struct {
 	Name    string
 	RepoUrl string
@@ -83,7 +85,7 @@ func (a *App) String() string {
 }
 
 func (a *App) Path() (p string) {
-	return "/apps/" + a.Name
+	return APPS_PATH + a.Name
 }
 func (a *App) setPath(c *Client, k string, v string) error {
 	path := strings.Join([]string{a.Path(), k}, "/")
@@ -92,7 +94,7 @@ func (a *App) setPath(c *Client, k string, v string) error {
 }
 
 func Apps(c *Client) (apps []*App, err error) {
-	names, err := c.Keys("/apps")
+	names, err := c.Keys(APPS_PATH)
 	if err != nil {
 		return
 	}
