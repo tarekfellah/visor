@@ -9,12 +9,12 @@ func appSetup(name string) (c *Client, app *App) {
 	if err != nil {
 		panic(err)
 	}
-	c, err = Dial(DEFAULT_ADDR)
+	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
 
-	c.Del("/apps")
+	c.Del("apps")
 
 	return
 }
@@ -157,7 +157,7 @@ func TestApps(t *testing.T) {
 		t.Error(err)
 	}
 	if len(apps) != len(names) {
-		t.Error("expected length %d returned length %d", len(names), len(apps))
+		t.Errorf("expected length %d returned length %d", len(names), len(apps))
 	} else {
 		for i := range apps {
 			if apps[i].Name != names[i] {
