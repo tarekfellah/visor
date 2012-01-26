@@ -6,12 +6,13 @@ import (
 )
 
 const DEFAULT_ADDR string = "localhost:8046"
+const DEFAULT_ROOT string = "/visor"
 
 type ProcessType string
 type Stack string
 type State int
 
-func Dial(addr string) (c *Client, err error) {
+func Dial(addr string, root string) (c *Client, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -27,5 +28,5 @@ func Dial(addr string) (c *Client, err error) {
 		return
 	}
 
-	return &Client{tcpaddr, conn, "/", rev}, nil
+	return &Client{tcpaddr, conn, DEFAULT_ROOT, rev}, nil
 }

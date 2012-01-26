@@ -6,7 +6,9 @@ import (
 )
 
 func main() {
-	client, err := visor.Dial("localhost:8046")
+	addr := visor.DEFAULT_ADDR
+	root := visor.DEFAULT_ROOT
+	client, err := visor.Dial(addr, root)
 
 	if err != nil {
 		panic(err)

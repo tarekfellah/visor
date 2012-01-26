@@ -6,7 +6,7 @@ import (
 )
 
 func setup(path string) (c *Client, conn *doozer.Conn) {
-	c, err := Dial(DEFAULT_ADDR)
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
@@ -20,7 +20,7 @@ func TestDel(t *testing.T) {
 	path := "del-test"
 	c, conn := setup(path)
 
-	_, err := conn.Set("/del-test/deep/blue", c.rev, []byte{})
+	_, err := conn.Set(DEFAULT_ROOT+"/del-test/deep/blue", c.rev, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -30,7 +30,7 @@ func TestDel(t *testing.T) {
 		t.Error(err)
 	}
 
-	_, rev, err := conn.Stat("/"+path, nil)
+	_, rev, err := conn.Stat(DEFAULT_ROOT+"/"+path, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,7 +52,7 @@ func TestExists(t *testing.T) {
 		t.Error("path shouldn't exist")
 	}
 
-	_, err = conn.Set("/"+path, 0, []byte{})
+	_, err = conn.Set(DEFAULT_ROOT+"/"+path, 0, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -71,7 +71,7 @@ func TestGet(t *testing.T) {
 	body := "aloha"
 	c, conn := setup(path)
 
-	_, err := conn.Set("/"+path, 0, []byte(body))
+	_, err := conn.Set(DEFAULT_ROOT+"/"+path, 0, []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
@@ -91,7 +91,7 @@ func TestKeys(t *testing.T) {
 	c, conn := setup(path)
 
 	for i := range keys {
-		_, err := conn.Set("/"+path+"/"+keys[i], 0, []byte{})
+		_, err := conn.Set(DEFAULT_ROOT+"/"+path+"/"+keys[i], 0, []byte{})
 		if err != nil {
 			t.Error(err)
 		}
@@ -122,7 +122,7 @@ func TestSet(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, _, err := conn.Get("/"+path, nil)
+	b, _, err := conn.Get(DEFAULT_ROOT+"/"+path, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -131,18 +131,18 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func TestDifferentRoo(t *testing.T) {
+func TestDifferentRoot(t *testing.T) {
 	path := "visor"
 	body := "test"
 	c, conn := setup(path)
 
-	client := &Client{Addr: c.Addr, conn: conn, Root: "/visor", rev: c.rev}
+	client := &Client{Addr: c.Addr, conn: conn, Root: "/notvisor", rev: c.rev}
 	err := client.Set("root", body)
 	if err != nil {
 		t.Error(err)
 	}
 
-	b, _, err := conn.Get("/visor/root", nil)
+	b, _, err := conn.Get("/notvisor/root", nil)
 	if err != nil {
 		t.Error(err)
 	}
