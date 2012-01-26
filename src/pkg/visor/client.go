@@ -118,12 +118,10 @@ func (c *Client) GetMulti(path string, keys []string) (values map[string]string,
 	}
 	values = map[string]string{}
 
-	var val string
-
 	for i := range keys {
-		val, err = c.Get(path + "/" + keys[i])
-		if err != nil {
-			return
+		val, e := c.Get(path + "/" + keys[i])
+		if e != nil {
+			return nil, e
 		}
 		values[keys[i]] = val
 	}
