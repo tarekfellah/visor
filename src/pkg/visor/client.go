@@ -106,11 +106,42 @@ func (c *Client) Set(path string, body string) (err error) {
 	return
 }
 
+func (c *Client) GetMulti(path string, keys []string) (values map[string]string, err error) {
+	if keys == nil {
+		keys, err = c.Keys(path)
+	}
+	if err != nil {
+		return
+	}
+	values = map[string]string{}
+
+	for i := range keys {
+		val, e := c.Get(path + "/" + keys[i])
+		if e != nil {
+			return nil, e
+		}
+		values[keys[i]] = val
+	}
+	return
+}
+func (c *Client) SetMulti(path string, kvs ...string) (err error) {
+	var key string
+
+	for i := range kvs {
+		if i%2 == 0 {
+			key = kvs[i]
+		} else {
+			err = c.Set(path+"/"+key, kvs[i])
+			if err != nil {
+				break
+			}
+		}
+	}
+	return
+}
 func (c *Client) String() string {
 	return fmt.Sprintf("%#v", c)
 }
-
-// INSTANCES
 
 // TICKETS
 
