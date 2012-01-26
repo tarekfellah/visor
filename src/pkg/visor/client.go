@@ -49,14 +49,11 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 		return
 	}
 
-	switch rev {
-	case 0:
-		exists = false
-	default:
+	if rev != 0 {
 		exists = true
 	}
 
-	return exists, nil
+	return
 }
 
 func (c *Client) Get(path string) (value string, err error) {
