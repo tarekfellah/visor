@@ -87,7 +87,7 @@ func (a *App) String() string {
 }
 
 func (a *App) Path() (p string) {
-	return APPS_PATH + a.Name
+	return strings.Join([]string{APPS_PATH, a.Name}, "/")
 }
 func (a *App) setPath(c *Client, k string, v string) error {
 	path := strings.Join([]string{a.Path(), k}, "/")
