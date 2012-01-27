@@ -25,14 +25,27 @@ const (
 	OpStop
 )
 
-// NewTicket returns a new Ticket given an application name, revision name, process type and operation
-func NewTicket(appName string, revName string, pType ProcessType, op OperationType) (t *Ticket) {
-	t = &Ticket{AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+// NewTicket returns a new Ticket as it is represented on the coordinator, given an application name, revision name, process type and operation.
+func NewTicket(c *Client, appName string, revName string, pType ProcessType, op OperationType) (t *Ticket, err error) {
+	var o string
+
+	switch op {
+	case OpStart:
+		o = "start"
+	case OpStop:
+		o = "stop"
+	}
+
+	t = &Ticket{Id: c.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+	err = c.Set(t.path()+"/op", fmt.Sprintf("%s %s %s %s", appName, revName, pType, o))
+	if err != nil {
+		return
+	}
 
 	return
 }
 
-// Claim locks the Ticket to the passed host
+// Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(c *Client, host string) (err error) {
 	exists, err := c.Exists(t.path() + "/claimed")
 	if err != nil {
@@ -74,7 +87,7 @@ func (t *Ticket) Done(c *Client, host string) (err error) {
 	return
 }
 
-// String returns the Go-syntax representation of Ticket
+// String returns the Go-syntax representation of Ticket.
 func (t *Ticket) String() string {
 	return fmt.Sprintf("%#v", t)
 }

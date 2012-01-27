@@ -22,22 +22,20 @@ func ticketSetup() (c *Client, hostname string) {
 }
 
 func TestNewTicket(t *testing.T) {
-	ticket := NewTicket("lol", "cat", "app", 0)
+	c, _ := ticketSetup()
+	body := "lol cat app start"
 
-	if ticket.AppName != "lol" {
-		t.Errorf("expected %s got %s", "lol", ticket.AppName)
+	ticket, err := NewTicket(c, "lol", "cat", "app", 0)
+	if err != nil {
+		t.Error(err)
 	}
 
-	if ticket.RevisionName != "cat" {
-		t.Errorf("expected %s got %s", "cat", ticket.RevisionName)
+	b, err := c.Get(ticket.path() + "/op")
+	if err != nil {
+		t.Error(err)
 	}
-
-	if ticket.ProcessType != "app" {
-		t.Errorf("expected %s got %s", "app", ticket.ProcessType)
-	}
-
-	if ticket.Op != OpStart {
-		t.Errorf("expected %d got %d", OpStart, ticket.Op)
+	if b != body {
+		t.Errorf("expected %s got %s", body, b)
 	}
 }
 
