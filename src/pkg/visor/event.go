@@ -28,10 +28,10 @@ const (
 )
 
 var eventPaths = map[string]EventType{
-	"/apps/(.+)/registered":                          EvAppReg,
-	"/apps/(.+)/revs/(.+)/registered":                EvRevReg,
-	"/apps/(.+)/revs/(.+)/instances/(.+)/registered": EvInsReg,
-	"/apps/(.+)/revs/(.+)/instances/(.+)/state":      EvInsStateChange,
+	"^/apps/([^/]+)/registered$":                      EvAppReg,
+	"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
+	"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/registered$": EvInsReg,
+	"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/state$":      EvInsStateChange,
 }
 
 func NewEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
