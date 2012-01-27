@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	client, err := visor.Dial("localhost:8046")
+	client, err := visor.Dial("localhost:8046/bazooka")
 
 	if err != nil {
 		panic(err)
