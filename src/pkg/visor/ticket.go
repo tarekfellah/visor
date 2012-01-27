@@ -51,8 +51,19 @@ func (t *Ticket) Claim(c *Client, host string) (err error) {
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
-func (t *Ticket) Unclaim() error {
-	return nil
+func (t *Ticket) Unclaim(c *Client, host string) (err error) {
+	p := t.path() + "/claimed"
+	lock, err := c.Get(p)
+	if err != nil {
+		return
+	}
+	if lock != host {
+		return ErrUnauthorized
+	}
+
+	err = c.Del(p)
+
+	return
 }
 
 // Done marks the Ticket as done/solved in the registry.

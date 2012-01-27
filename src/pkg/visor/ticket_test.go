@@ -1,7 +1,7 @@
 package visor
 
 import (
-  "os"
+	"os"
 	"strconv"
 	"testing"
 )
@@ -11,10 +11,10 @@ func ticketSetup() (c *Client, hostname string) {
 	if err != nil {
 		panic(err)
 	}
-  hostname, err = os.Hostname()
-  if err != nil {
-    panic(err)
-  }
+	hostname, err = os.Hostname()
+	if err != nil {
+		panic(err)
+	}
 
 	c.Del("tickets")
 
@@ -57,7 +57,6 @@ func TestClaim(t *testing.T) {
 		t.Error(err)
 	}
 
-
 	body, err := c.Get("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
 	if err != nil {
 		t.Error(err)
@@ -69,5 +68,45 @@ func TestClaim(t *testing.T) {
 	err = ticket.Claim(c, host)
 	if err != ErrTicketClaimed {
 		t.Error("Ticket claimed twice")
+	}
+}
+
+func TestUnclaim(t *testing.T) {
+	c, host := ticketSetup()
+	id := c.rev
+	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+
+	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ticket.Unclaim(c, host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	exists, err := c.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
+	if err != nil {
+		t.Error(err)
+	}
+	if exists {
+		t.Error("ticket still claimed")
+	}
+}
+
+func TestUnclaimWithWrongLock(t *testing.T) {
+	c, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(c.rev, 10) + "/claimed"
+	ticket := &Ticket{Id: c.rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+
+	err := c.Set(p, host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ticket.Unclaim(c, "foo.bar.local")
+	if err != ErrUnauthorized {
+		t.Error("ticket unclaimed with wrong lock")
 	}
 }
