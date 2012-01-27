@@ -27,5 +27,5 @@ func Dial(addr string, root string) (c *Client, err error) {
 	if err != nil {
 		return
 	}
-	return &Client{tcpaddr, conn, DEFAULT_ROOT, rev}, nil
+	return &Client{tcpaddr, conn, root, rev}, nil
 }
