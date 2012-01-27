@@ -46,8 +46,6 @@ func (c *Client) WatchEvent(listener chan *Event) error {
 	rev, _ := c.conn.Rev()
 	path := c.prefixPath("**")
 
-	fmt.Printf("watching %s\n", path)
-
 	for {
 		ev, _ := c.conn.Wait(path, rev)
 		event := c.parseEvent(&ev)
