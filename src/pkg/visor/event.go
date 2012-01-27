@@ -100,7 +100,11 @@ func (c *Client) parseEvent(src *doozer.Event) *Event {
 					etype = EvInsUnreg
 				}
 			case EvInsStateChange:
-				etype = ev
+				if src.IsSet() {
+					etype = ev
+				} else {
+					etype = -1
+				}
 			}
 			break
 		}
