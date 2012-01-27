@@ -56,9 +56,6 @@ func (t *Ticket) Claim(c *Client, host string) (err error) {
 	}
 
 	err = c.Set(t.path()+"/claimed", host)
-	if err != nil {
-		return
-	}
 
 	return
 }
