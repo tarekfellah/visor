@@ -110,3 +110,43 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 		t.Error("ticket unclaimed with wrong lock")
 	}
 }
+
+func TestDone(t *testing.T) {
+	c, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(c.rev, 10)
+	ticket := &Ticket{Id: c.rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+
+	err := c.Set(p+"/claimed", host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ticket.Done(c, host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	exists, err := c.Exists(p)
+	if err != nil {
+		t.Error(err)
+	}
+	if exists {
+		t.Error("ticket not resolved")
+	}
+}
+
+func TestDoneWithWrongLock(t *testing.T) {
+	c, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(c.rev, 10)
+	ticket := &Ticket{Id: c.rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+
+	err := c.Set(p+"/claimed", host)
+	if err != nil {
+		t.Error(err)
+	}
+
+	err = ticket.Done(c, "foo.bar.local")
+	if err != ErrUnauthorized {
+		t.Error("ticket resolved with wrong lock")
+	}
+}
