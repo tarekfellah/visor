@@ -1,7 +1,6 @@
 package visor
 
 import (
-	"fmt"
 	"github.com/soundcloud/doozer"
 	"regexp"
 	"strings"
