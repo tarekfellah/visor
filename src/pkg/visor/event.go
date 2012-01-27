@@ -47,10 +47,10 @@ func (c *Client) WatchEvent(listener chan *Event) error {
 	path := c.prefixPath("**")
 
 	for {
-		ev, _ := c.conn.Wait(path, rev)
+		ev, _ := c.conn.Wait(path, rev+1)
 		event := c.parseEvent(&ev)
 		listener <- event
-		rev = ev.Rev + 1
+		rev = ev.Rev
 	}
 	return nil
 }
