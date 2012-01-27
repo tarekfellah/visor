@@ -168,20 +168,6 @@ func (c *Client) Tickets() ([]Ticket, error) {
 func (c *Client) HostTickets(addr string) ([]Ticket, error) {
 	return nil, nil
 }
-
-// EVENTS
-
-func (c *Client) WatchEvent(listener chan *Event) error {
-	rev, _ := c.conn.Rev()
-
-	for {
-		ev, _ := c.conn.Wait(c.Root+"*", rev)
-		event := &Event{EV_APP_REG, string(ev.Body), &ev}
-		rev = ev.Rev + 1
-		listener <- event
-	}
-	return nil
-}
 func (c *Client) WatchTicket(listener chan *Ticket) error {
 	return nil
 }
