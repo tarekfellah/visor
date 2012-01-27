@@ -2,6 +2,7 @@ package visor
 
 import (
 	"fmt"
+	"time"
 )
 
 type Revision struct {
@@ -23,6 +24,10 @@ func (r *Revision) Register(c *Client) (err error) {
 		return ErrKeyConflict
 	}
 
+	err = c.Set(r.Path()+"/registered", time.Now().UTC().String())
+	if err != nil {
+		return
+	}
 	err = c.Set(r.Path()+"/scale", "0")
 
 	return
