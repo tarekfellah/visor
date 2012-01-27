@@ -1,15 +1,20 @@
 package visor
 
 import (
+  "os"
 	"strconv"
 	"testing"
 )
 
-func ticketSetup() (c *Client) {
+func ticketSetup() (c *Client, hostname string) {
 	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
+  hostname, err = os.Hostname()
+  if err != nil {
+    panic(err)
+  }
 
 	c.Del("tickets")
 
@@ -37,7 +42,7 @@ func TestNewTicket(t *testing.T) {
 }
 
 func TestClaim(t *testing.T) {
-	c := ticketSetup()
+	c, host := ticketSetup()
 	id := c.rev
 	op := "claim abcd123 test start"
 	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
@@ -47,20 +52,21 @@ func TestClaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = ticket.Claim(c, "localhost")
+	err = ticket.Claim(c, host)
 	if err != nil {
 		t.Error(err)
 	}
+
 
 	body, err := c.Get("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
 	if err != nil {
 		t.Error(err)
 	}
-	if body != "localhost" {
+	if body != host {
 		t.Error("Ticket not claimed")
 	}
 
-	err = ticket.Claim(c, "localhost")
+	err = ticket.Claim(c, host)
 	if err != ErrTicketClaimed {
 		t.Error("Ticket claimed twice")
 	}
