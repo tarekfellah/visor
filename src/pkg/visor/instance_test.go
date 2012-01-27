@@ -19,12 +19,12 @@ func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
 		panic(err)
 	}
 
-	c, err = Dial(DEFAULT_ADDR)
+	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
 
-	c.Del("/apps")
+	c.Del("apps")
 	err = app.Register(c)
 	if err != nil {
 		panic(err)

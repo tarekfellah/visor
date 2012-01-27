@@ -3,23 +3,16 @@ package visor
 import (
 	"github.com/soundcloud/doozer"
 	"net"
-	"strings"
 )
 
 const DEFAULT_ADDR string = "localhost:8046"
+const DEFAULT_ROOT string = "/visor"
 
 type ProcessType string
 type Stack string
 type State int
 
-func Dial(path string) (c *Client, err error) {
-	parts := strings.SplitN(path, "/", 2)
-	addr, root := parts[0], "/"
-
-	if len(parts) == 2 {
-		root += parts[1]
-	}
-
+func Dial(addr string, root string) (c *Client, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -34,6 +27,5 @@ func Dial(path string) (c *Client, err error) {
 	if err != nil {
 		return
 	}
-
-	return &Client{tcpaddr, conn, root, rev}, nil
+	return &Client{tcpaddr, conn, DEFAULT_ROOT, rev}, nil
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func eventSetup(name string) (c *Client, app *App, l chan *Event) {
-	c, err := Dial(DEFAULT_ADDR + "/event-test")
+	c, err := Dial(DEFAULT_ADDR, "/event-test")
 	if err != nil {
 		panic(err)
 	}

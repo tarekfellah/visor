@@ -9,7 +9,7 @@ func revSetup() (c *Client, app *App) {
 	if err != nil {
 		panic(err)
 	}
-	c, err = Dial(DEFAULT_ADDR)
+	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
