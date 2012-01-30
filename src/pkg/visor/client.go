@@ -141,6 +141,9 @@ func (c *Client) SetMulti(path string, kvs ...string) (err error) {
 	}
 	return
 }
+func (c *Client) Wait(path string, rev int64) (doozer.Event, error) {
+	return c.conn.Wait(path, rev)
+}
 func (c *Client) String() string {
 	return fmt.Sprintf("%#v", c)
 }

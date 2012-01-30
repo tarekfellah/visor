@@ -41,12 +41,12 @@ func (ev *Event) String() string {
 	return "<event>"
 }
 
-func  WatchEvent(c *Client, listener chan *Event) error {
+func WatchEvent(c *Client, listener chan *Event) error {
 	rev, _ := c.conn.Rev()
 	path := c.prefixPath("**")
 
 	for {
-		ev, _ := c.conn.Wait(path, rev+1)
+		ev, _ := c.Wait(path, rev+1)
 		event := c.parseEvent(&ev)
 		listener <- event
 		rev = ev.Rev
