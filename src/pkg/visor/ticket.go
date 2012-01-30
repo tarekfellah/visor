@@ -1,34 +1,100 @@
 package visor
 
 import (
-	"github.com/soundcloud/doozer"
+	"fmt"
 	"net"
+	"strconv"
 )
 
+// Ticket carries instructions to start and stop Instances.
 type Ticket struct {
-	Type        TicketType
-	App         *App
-	Rev         *Revision
-	ProcessType ProcessType
-	Addr        net.TCPAddr
-	Source      *doozer.Event
+	Id           int64
+	AppName      string
+	RevisionName string
+	ProcessType  ProcessType
+	Op           OperationType
+	Addr         net.TCPAddr
+	source       *Event
 }
-type TicketType int
+
+// OperationType identifies different operations.
+type OperationType int
 
 const (
-	T_START TicketType = iota
-	T_STOP
+	OpStart OperationType = iota
+	OpStop
 )
 
-func (t *Ticket) Claim() error {
-	return nil
+// NewTicket returns a new Ticket as it is represented on the coordinator, given an application name, revision name, process type and operation.
+func NewTicket(c *Client, appName string, revName string, pType ProcessType, op OperationType) (t *Ticket, err error) {
+	var o string
+
+	switch op {
+	case OpStart:
+		o = "start"
+	case OpStop:
+		o = "stop"
+	}
+
+	t = &Ticket{Id: c.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+	err = c.Set(t.path()+"/op", fmt.Sprintf("%s %s %s %s", appName, revName, pType, o))
+	if err != nil {
+		return
+	}
+
+	return
 }
-func (t *Ticket) Unclaim() error {
-	return nil
+
+// Claim locks the Ticket to the passed host.
+func (t *Ticket) Claim(c *Client, host string) (err error) {
+	exists, err := c.Exists(t.path() + "/claimed")
+	if err != nil {
+		return
+	}
+	if exists {
+		return ErrTicketClaimed
+	}
+
+	err = c.Set(t.path()+"/claimed", host)
+
+	return
 }
-func (t *Ticket) Done() error {
-	return nil
+
+// Unclaim removes the lock applied by Claim of the Ticket.
+func (t *Ticket) Unclaim(c *Client, host string) (err error) {
+	claimer, err := c.Get(t.path() + "/claimed")
+	if err != nil {
+		return
+	}
+	if claimer != host {
+		return ErrUnauthorized
+	}
+
+	err = c.Del(t.path() + "/claimed")
+
+	return
 }
+
+// Done marks the Ticket as done/solved in the registry.
+func (t *Ticket) Done(c *Client, host string) (err error) {
+	claimer, err := c.Get(t.path() + "/claimed")
+	if err != nil {
+		return
+	}
+	if claimer != host {
+		return ErrUnauthorized
+	}
+
+	err = c.Del(t.path())
+
+	return
+}
+
+// String returns the Go-syntax representation of Ticket.
 func (t *Ticket) String() string {
-	return "<ticket>"
+	return fmt.Sprintf("%#v", t)
+}
+
+func (t *Ticket) path() (path string) {
+	return "tickets/" + strconv.FormatInt(t.Id, 10)
 }
