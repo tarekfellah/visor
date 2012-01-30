@@ -46,7 +46,7 @@ func init() {
 	}
 }
 
-func NewEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
+func newEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
 	return &Event{etype, emitter, body, src}
 }
 
@@ -122,5 +122,5 @@ func (c *Client) parseEvent(src *doozer.Event) *Event {
 			break
 		}
 	}
-	return NewEvent(etype, emitter, string(src.Body), src)
+	return newEvent(etype, emitter, string(src.Body), src)
 }
