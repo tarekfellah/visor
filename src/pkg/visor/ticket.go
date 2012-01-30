@@ -36,7 +36,7 @@ func NewTicket(c *Client, appName string, revName string, pType ProcessType, op 
 		o = "stop"
 	}
 
-	t = &Ticket{Id: c.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+	t = &Ticket{Id: c.Rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
 	err = c.Set(t.path()+"/op", fmt.Sprintf("%s %s %s %s", appName, revName, pType, o))
 	if err != nil {
 		return

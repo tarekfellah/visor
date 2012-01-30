@@ -41,7 +41,7 @@ func TestNewTicket(t *testing.T) {
 
 func TestClaim(t *testing.T) {
 	c, host := ticketSetup()
-	id := c.rev
+	id := c.Rev
 	op := "claim abcd123 test start"
 	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
@@ -71,7 +71,7 @@ func TestClaim(t *testing.T) {
 
 func TestUnclaim(t *testing.T) {
 	c, host := ticketSetup()
-	id := c.rev
+	id := c.Rev
 	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
 	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", host)
@@ -95,8 +95,8 @@ func TestUnclaim(t *testing.T) {
 
 func TestUnclaimWithWrongLock(t *testing.T) {
 	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.rev, 10) + "/claimed"
-	ticket := &Ticket{Id: c.rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	p := "tickets/" + strconv.FormatInt(c.Rev, 10) + "/claimed"
+	ticket := &Ticket{Id: c.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
 	err := c.Set(p, host)
 	if err != nil {
@@ -111,8 +111,8 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 
 func TestDone(t *testing.T) {
 	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.rev, 10)
-	ticket := &Ticket{Id: c.rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
+	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
 	err := c.Set(p+"/claimed", host)
 	if err != nil {
@@ -135,8 +135,8 @@ func TestDone(t *testing.T) {
 
 func TestDoneWithWrongLock(t *testing.T) {
 	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.rev, 10)
-	ticket := &Ticket{Id: c.rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
+	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
 	err := c.Set(p+"/claimed", host)
 	if err != nil {
