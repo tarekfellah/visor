@@ -6,11 +6,12 @@ import (
 	"strings"
 )
 
+// An Event represents a change to a file in the registry.
 type Event struct {
-	Type    EventType
-	Path    map[string]string
-	Body    string
-	source  *doozer.Event
+	Type    EventType         // Type of event
+	Path    map[string]string // The parsed file path
+	Body    string            // Body of the changed file
+	source  *doozer.Event     // Original event returned by doozer
 }
 type EventType int
 
@@ -53,6 +54,8 @@ func (ev *Event) String() string {
 	return "<event>"
 }
 
+// WatchEvent watches for changes to the registry and sends
+// them as *Event objects to the provided channel.
 func WatchEvent(c *Client, listener chan *Event) error {
 	rev, _ := c.conn.Rev()
 	path := c.prefixPath("**")
