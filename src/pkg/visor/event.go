@@ -26,11 +26,24 @@ const (
 	EvInsStateChange                  // Instance state change
 )
 
-var eventPaths = map[string]EventType{
-	"^/apps/([^/]+)/registered$":                      EvAppReg,
-	"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
-	"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/registered$": EvInsReg,
-	"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/state$":      EvInsStateChange,
+var (
+	eventRegexps = map[string]*regexp.Regexp{}
+	eventPaths   = map[string]EventType{
+		"^/apps/([^/]+)/registered$":                      EvAppReg,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
+		"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/registered$": EvInsReg,
+		"^/apps/([^/]+)/revs/([^/]+)/([^/]+)/state$":      EvInsStateChange,
+	}
+)
+
+func init() {
+	for str, _ := range eventPaths {
+		re, err := regexp.Compile(str)
+		if err != nil {
+			panic(err)
+		}
+		eventRegexps[str] = re
+	}
 }
 
 func NewEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
@@ -63,12 +76,8 @@ func (c *Client) parseEvent(src *doozer.Event) *Event {
 	etype := EventType(-1)
 	emitter := map[string]string{}
 
-	for re, ev := range eventPaths {
-		// TODO: Compile all Regexps beforehand
-		re, err := regexp.Compile(re)
-		if err != nil {
-			panic(err)
-		}
+	for str, ev := range eventPaths {
+		re := eventRegexps[str]
 
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch {
