@@ -41,7 +41,7 @@ func (ev *Event) String() string {
 	return "<event>"
 }
 
-func (c *Client) WatchEvent(listener chan *Event) error {
+func  WatchEvent(c *Client, listener chan *Event) error {
 	rev, _ := c.conn.Rev()
 	path := c.prefixPath("**")
 
