@@ -46,7 +46,10 @@ func WatchEvent(c *Client, listener chan *Event) error {
 	path := c.prefixPath("**")
 
 	for {
-		ev, _ := c.Wait(path, rev+1)
+		ev, err := c.Wait(path, rev+1)
+		if err != nil {
+			return err
+		}
 		event := c.parseEvent(&ev)
 		listener <- event
 		rev = ev.Rev
