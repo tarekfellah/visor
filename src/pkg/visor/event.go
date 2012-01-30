@@ -8,10 +8,10 @@ import (
 
 // An Event represents a change to a file in the registry.
 type Event struct {
-	Type    EventType         // Type of event
-	Path    map[string]string // The parsed file path
-	Body    string            // Body of the changed file
-	source  *doozer.Event     // Original event returned by doozer
+	Type   EventType         // Type of event
+	Path   map[string]string // The parsed file path
+	Body   string            // Body of the changed file
+	source *doozer.Event     // Original event returned by doozer
 }
 type EventType int
 
