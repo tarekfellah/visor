@@ -1,3 +1,31 @@
+// Visor is a doozer client which provides an abstract interface
+// to a doozer cluster containing global process state information.
+//
+// This process state is referred to as the registry.
+//
+// Example usage:
+//
+//     package main
+//
+//     import "soundcloud/visor"
+//
+//     func main() {
+//         client, err := visor.Dial("coordinator:8046", "/")
+//         if err != nil {
+//           panic(err)
+//         }
+//
+//         l := make(chan *visor.Event)
+//
+//         // Watch for changes in the global process state
+//         go visor.WatchEvent(client, l, 0)
+//
+//         for {
+//             e := <-l
+//             fmt.Println(e)
+//         }
+//     }
+//
 package visor
 
 import (
