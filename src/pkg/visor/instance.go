@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Instance struct {
@@ -15,7 +16,6 @@ type Instance struct {
 }
 
 func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (ins *Instance, err error) {
-
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -35,6 +35,7 @@ func (i *Instance) Register(c *Client) (err error) {
 	}
 
 	err = c.SetMulti(i.Path(),
+		"registered", time.Now().UTC().String(),
 		"host", i.Addr.IP.String(),
 		"port", strconv.Itoa(i.Addr.Port),
 		"process-type", string(i.ProcessType),

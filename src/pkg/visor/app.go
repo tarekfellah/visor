@@ -3,6 +3,7 @@ package visor
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 const APPS_PATH = "apps"
@@ -26,6 +27,11 @@ func (a *App) Register(c *Client) (err error) {
 	}
 	if exists {
 		return ErrKeyConflict
+	}
+
+	err = a.setPath(c, "registered", time.Now().UTC().String())
+	if err != nil {
+		return
 	}
 
 	err = a.setPath(c, "repo-url", a.RepoUrl)

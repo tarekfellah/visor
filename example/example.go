@@ -16,7 +16,7 @@ func main() {
 
 	channel := make(chan *visor.Event)
 
-	go client.WatchEvent(channel)
+	go visor.WatchEvent(client, channel, client.Rev)
 
 	for {
 		select {
