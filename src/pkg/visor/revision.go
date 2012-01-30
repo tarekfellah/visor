@@ -5,16 +5,20 @@ import (
 	"time"
 )
 
+// A Revision represents an application revision,
+// identifiable by its `ref`.
 type Revision struct {
 	App *App
 	ref string
 }
 
+// NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string) (rev *Revision, err error) {
 	rev = &Revision{App: app, ref: ref}
 	return
 }
 
+// Register registers a new Revision with the registry.
 func (r *Revision) Register(c *Client) (err error) {
 	exists, err := c.Exists(r.Path())
 	if err != nil {
@@ -32,6 +36,8 @@ func (r *Revision) Register(c *Client) (err error) {
 
 	return
 }
+
+// Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister(c *Client) (err error) {
 	return c.Del(r.Path())
 }
@@ -48,6 +54,7 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 	return nil
 }
 
+// Path returns this revision's directory path in the registry.
 func (r *Revision) Path() string {
 	return r.App.Path() + "/revs/" + r.ref
 }
@@ -56,6 +63,7 @@ func (r *Revision) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+// Revisions returns an array of all registered revisions.
 func Revisions(c *Client) (revisions []*Revision, err error) {
 	apps, err := Apps(c)
 	if err != nil {
@@ -74,6 +82,9 @@ func Revisions(c *Client) (revisions []*Revision, err error) {
 
 	return
 }
+
+// AppRevisions returns an array of all registered revisions belonging
+// to the given application.
 func AppRevisions(c *Client, app *App) (revisions []*Revision, err error) {
 	refs, err := c.Keys(app.Path() + "/revs")
 	if err != nil {
