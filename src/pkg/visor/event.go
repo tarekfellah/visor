@@ -66,15 +66,15 @@ func WatchEvent(c *Client, listener chan *Event) error {
 		if err != nil {
 			return err
 		}
-		event := c.parseEvent(&ev)
+		event := parseEvent(c.Root, &ev)
 		listener <- event
 		rev = ev.Rev
 	}
 	return nil
 }
 
-func (c *Client) parseEvent(src *doozer.Event) *Event {
-	path := strings.Replace(src.Path, c.Root, "", 1)
+func parseEvent(prefix string, src *doozer.Event) *Event {
+	path := strings.Replace(src.Path, prefix, "", 1)
 
 	etype := EventType(-1)
 	emitter := map[string]string{}
