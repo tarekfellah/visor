@@ -117,7 +117,7 @@ func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
 	for {
 		select {
 		case event := <-l:
-			if event.Emitter["app"] == appname {
+			if event.Path["app"] == appname {
 				if event.Type == etype {
 					return
 				} else if event.Type >= 0 {

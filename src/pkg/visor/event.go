@@ -8,9 +8,8 @@ import (
 
 type Event struct {
 	Type    EventType
-	Emitter map[string]string
+	Path    map[string]string
 	Body    string
-	Path    string
 	source  *doozer.Event
 }
 type EventType int
@@ -47,7 +46,7 @@ func init() {
 }
 
 func NewEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
-	return &Event{etype, emitter, body, src.Path, src}
+	return &Event{etype, emitter, body, src}
 }
 
 func (ev *Event) String() string {
