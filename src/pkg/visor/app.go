@@ -16,10 +16,13 @@ type App struct {
 
 var appMetaKeys = []string{"repo-url", "stack"}
 
+// NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack) (app *App, err error) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack}
 	return
 }
+
+// Register adds the App to the global process state.
 func (a *App) Register(c *Client) (err error) {
 	exists, err := c.Exists(a.Path())
 	if err != nil {
@@ -46,9 +49,13 @@ func (a *App) Register(c *Client) (err error) {
 
 	return
 }
+
+// Unregister removes the App form the global process state.
 func (a *App) Unregister(c *Client) error {
 	return c.Del(a.Path())
 }
+
+// EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 	varNames, err := c.Keys(a.Path() + "/env")
 	if err != nil {
@@ -69,6 +76,8 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 
 	return
 }
+
+// GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
 	value, err = c.Get(a.Path() + "/env/" + k)
 	if err != nil {
@@ -77,9 +86,13 @@ func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
 
 	return
 }
+
+// SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(c *Client, k string, v string) (err error) {
 	return a.setPath(c, "env/"+k, v)
 }
+
+// DelEnvironmentVar removes the env variable for the given key.
 func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
 	err = c.Del(a.Path() + "/env/" + k)
 	if err != nil {
@@ -88,19 +101,23 @@ func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
 
 	return
 }
+
 func (a *App) String() string {
 	return fmt.Sprintf("%#v", a)
 }
 
+// Path returns the path for the App in the global process state.
 func (a *App) Path() (p string) {
 	return strings.Join([]string{APPS_PATH, a.Name}, "/")
 }
+
 func (a *App) setPath(c *Client, k string, v string) error {
 	path := strings.Join([]string{a.Path(), k}, "/")
 
 	return c.Set(path, v)
 }
 
+// Apps returns the list of all registered Apps.
 func Apps(c *Client) (apps []*App, err error) {
 	names, err := c.Keys(APPS_PATH)
 	if err != nil {
