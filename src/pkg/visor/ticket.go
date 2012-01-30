@@ -62,9 +62,12 @@ func (t *Ticket) Claim(c *Client, host string) (err error) {
 
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (t *Ticket) Unclaim(c *Client, host string) (err error) {
-	err = t.locked(c, host)
+	claimer, err := c.Get(t.path() + "/claimed")
 	if err != nil {
 		return
+	}
+	if claimer != host {
+		return ErrUnauthorized
 	}
 
 	err = c.Del(t.path() + "/claimed")
@@ -74,9 +77,12 @@ func (t *Ticket) Unclaim(c *Client, host string) (err error) {
 
 // Done marks the Ticket as done/solved in the registry.
 func (t *Ticket) Done(c *Client, host string) (err error) {
-	err = t.locked(c, host)
+	claimer, err := c.Get(t.path() + "/claimed")
 	if err != nil {
 		return
+	}
+	if claimer != host {
+		return ErrUnauthorized
 	}
 
 	err = c.Del(t.path())
@@ -91,16 +97,4 @@ func (t *Ticket) String() string {
 
 func (t *Ticket) path() (path string) {
 	return "tickets/" + strconv.FormatInt(t.Id, 10)
-}
-
-func (t *Ticket) locked(c *Client, host string) (err error) {
-	lock, err := c.Get(t.path() + "/claimed")
-	if err != nil {
-		return
-	}
-	if lock != host {
-		return ErrUnauthorized
-	}
-
-	return
 }
