@@ -12,6 +12,7 @@ type ProcessType string
 type Stack string
 type State int
 
+// Dial connects to the coordinator over 'tcp'
 func Dial(addr string, root string) (c *Client, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
