@@ -10,7 +10,7 @@ func eventSetup(name string) (c *Client, app *App, l chan *Event) {
 	if err != nil {
 		panic(err)
 	}
-	c.Del("/event-test")
+	c.Del("event-test")
 
 	app, _ = NewApp(name, "git://"+name, Stack(name+"stack"))
 	l = make(chan *Event)
