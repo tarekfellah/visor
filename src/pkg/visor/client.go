@@ -152,6 +152,10 @@ func (c *Client) prefixPath(p string) (path string) {
 	prefix := c.Root
 	path = p
 
+	if p == "/" {
+		return prefix
+	}
+
 	if !strings.HasSuffix(prefix, "/") {
 		prefix = prefix + "/"
 	}
