@@ -11,7 +11,7 @@ type Client struct {
 	Addr *net.TCPAddr
 	conn *doozer.Conn
 	Root string
-	rev  int64
+	Rev  int64
 }
 
 func (c *Client) Close() {
@@ -24,7 +24,7 @@ func (c *Client) Del(path string) (err error) {
 		return
 	}
 
-	c.rev = rev
+	c.Rev = rev
 	path = c.prefixPath(path)
 
 	err = doozer.Walk(c.conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
@@ -74,7 +74,7 @@ func (c *Client) Get(path string) (value string, err error) {
 		return
 	}
 
-	c.rev = rev
+	c.Rev = rev
 
 	value = string(body)
 
@@ -87,9 +87,9 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 		return
 	}
 
-	c.rev = rev
+	c.Rev = rev
 
-	keys, err = c.conn.Getdir(c.prefixPath(path), c.rev, 0, -1)
+	keys, err = c.conn.Getdir(c.prefixPath(path), c.Rev, 0, -1)
 	if err != nil {
 		return
 	}
@@ -98,12 +98,12 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 }
 
 func (c *Client) Set(path string, body string) (err error) {
-	rev, err := c.conn.Set(c.prefixPath(path), c.rev, []byte(body))
+	rev, err := c.conn.Set(c.prefixPath(path), c.Rev, []byte(body))
 	if err != nil {
 		return
 	}
 
-	c.rev = rev
+	c.Rev = rev
 
 	return
 }

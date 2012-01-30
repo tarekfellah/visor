@@ -57,8 +57,7 @@ func (ev *Event) String() string {
 
 // WatchEvent watches for changes to the registry and sends
 // them as *Event objects to the provided channel.
-func WatchEvent(c *Client, listener chan *Event) error {
-	rev, _ := c.conn.Rev()
+func WatchEvent(c *Client, listener chan *Event, rev int64) error {
 	path := c.prefixPath("**")
 
 	for {
