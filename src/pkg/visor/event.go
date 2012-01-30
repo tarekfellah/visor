@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"fmt"
 	"github.com/soundcloud/doozer"
 	"regexp"
 	"strings"
@@ -51,7 +52,7 @@ func newEvent(etype EventType, emitter map[string]string, body string, src *dooz
 }
 
 func (ev *Event) String() string {
-	return "<event>"
+	return fmt.Sprintf("%#v", ev)
 }
 
 // WatchEvent watches for changes to the registry and sends
