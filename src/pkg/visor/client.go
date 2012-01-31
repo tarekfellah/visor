@@ -14,10 +14,12 @@ type Client struct {
 	Rev  int64
 }
 
+// Close tears down the internal coordinator connection
 func (c *Client) Close() {
 	c.conn.Close()
 }
 
+// Del deletes a given path in the coordinator
 func (c *Client) Del(path string) (err error) {
 	rev, err := c.conn.Rev()
 	if err != nil {
@@ -45,6 +47,7 @@ func (c *Client) Del(path string) (err error) {
 	return
 }
 
+// Exists checks if the given path is present in the coordinator
 func (c *Client) Exists(path string) (exists bool, err error) {
 	_, rev, err := c.conn.Stat(c.prefixPath(path), nil)
 	if err != nil {
@@ -58,6 +61,7 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 	return
 }
 
+// Get returns the value for the given path
 func (c *Client) Get(path string) (value string, err error) {
 	rev, err := c.conn.Rev()
 	if err != nil {
@@ -81,6 +85,7 @@ func (c *Client) Get(path string) (value string, err error) {
 	return
 }
 
+// Keys returns all keys for the given path
 func (c *Client) Keys(path string) (keys []string, err error) {
 	rev, err := c.conn.Rev()
 	if err != nil {
@@ -97,6 +102,7 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 	return
 }
 
+// Set stores the given body for the given path
 func (c *Client) Set(path string, body string) (err error) {
 	rev, err := c.conn.Set(c.prefixPath(path), c.Rev, []byte(body))
 	if err != nil {
@@ -108,6 +114,7 @@ func (c *Client) Set(path string, body string) (err error) {
 	return
 }
 
+// GetMulti returns multiple key/value pairs organized in map
 func (c *Client) GetMulti(path string, keys []string) (values map[string]string, err error) {
 	if keys == nil {
 		keys, err = c.Keys(path)
@@ -126,6 +133,8 @@ func (c *Client) GetMulti(path string, keys []string) (values map[string]string,
 	}
 	return
 }
+
+// SetMulti stores mutliple key/value pairs under the given path
 func (c *Client) SetMulti(path string, kvs ...string) (err error) {
 	var key string
 
@@ -141,9 +150,12 @@ func (c *Client) SetMulti(path string, kvs ...string) (err error) {
 	}
 	return
 }
+
+// Waits for the first change, on or after rev, to any file matching path
 func (c *Client) Wait(path string, rev int64) (doozer.Event, error) {
 	return c.conn.Wait(path, rev)
 }
+
 func (c *Client) String() string {
 	return fmt.Sprintf("%#v", c)
 }
