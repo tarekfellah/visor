@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -113,10 +114,16 @@ func parseEvent(prefix string, src *doozer.Event) *Event {
 					etype = EvInsUnreg
 				}
 			case EvInsStateChange:
-				if src.IsSet() {
+				if src.IsDel() {
+					break
+				}
+
+				i, err := strconv.Atoi(string(src.Body))
+				if err != nil {
+					panic(err)
+				}
+				if State(i) != InsStateInitial {
 					etype = ev
-				} else {
-					etype = -1
 				}
 			}
 			break

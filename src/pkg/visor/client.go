@@ -62,7 +62,7 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 }
 
 // Get returns the value for the given path
-func (c *Client) Get(path string) (value string, err error) {
+func (c *Client) Get(path string) (value []byte, err error) {
 	rev, err := c.conn.Rev()
 	if err != nil {
 		return
@@ -80,7 +80,7 @@ func (c *Client) Get(path string) (value string, err error) {
 
 	c.Rev = rev
 
-	value = string(body)
+	value = body
 
 	return
 }
@@ -103,8 +103,8 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 }
 
 // Set stores the given body for the given path
-func (c *Client) Set(path string, body string) (err error) {
-	rev, err := c.conn.Set(c.prefixPath(path), c.Rev, []byte(body))
+func (c *Client) Set(path string, body []byte) (err error) {
+	rev, err := c.conn.Set(c.prefixPath(path), c.Rev, body)
 	if err != nil {
 		return
 	}
@@ -115,14 +115,14 @@ func (c *Client) Set(path string, body string) (err error) {
 }
 
 // GetMulti returns multiple key/value pairs organized in map
-func (c *Client) GetMulti(path string, keys []string) (values map[string]string, err error) {
+func (c *Client) GetMulti(path string, keys []string) (values map[string][]byte, err error) {
 	if keys == nil {
 		keys, err = c.Keys(path)
 	}
 	if err != nil {
 		return
 	}
-	values = map[string]string{}
+	values = map[string][]byte{}
 
 	for i := range keys {
 		val, e := c.Get(path + "/" + keys[i])
@@ -135,17 +135,11 @@ func (c *Client) GetMulti(path string, keys []string) (values map[string]string,
 }
 
 // SetMulti stores mutliple key/value pairs under the given path
-func (c *Client) SetMulti(path string, kvs ...string) (err error) {
-	var key string
-
-	for i := range kvs {
-		if i%2 == 0 {
-			key = kvs[i]
-		} else {
-			err = c.Set(path+"/"+key, kvs[i])
-			if err != nil {
-				break
-			}
+func (c *Client) SetMulti(path string, kvs map[string][]byte) (err error) {
+	for k, v := range kvs {
+		err = c.Set(path+"/"+k, v)
+		if err != nil {
+			break
 		}
 	}
 	return

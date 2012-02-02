@@ -17,6 +17,10 @@ type Instance struct {
 	ProcessType ProcessType  // Type of process the instance represents
 }
 
+const (
+	InsStateInitial State = 0
+)
+
 // NewInstance creates and returns a new Instance object.
 func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
@@ -38,13 +42,16 @@ func (i *Instance) Register(c *Client) (err error) {
 	if exists {
 		return ErrKeyConflict
 	}
+	if i.State != InsStateInitial {
+		return ErrInvalidState
+	}
 
-	err = c.SetMulti(i.Path(),
-		"registered", time.Now().UTC().String(),
-		"host", i.Addr.IP.String(),
-		"port", strconv.Itoa(i.Addr.Port),
-		"process-type", string(i.ProcessType),
-		"state", strconv.Itoa(int(i.State)))
+	err = c.SetMulti(i.Path(), map[string][]byte{
+		"registered":   []byte(time.Now().UTC().String()),
+		"host":         []byte(i.Addr.IP.String()),
+		"port":         []byte(strconv.Itoa(i.Addr.Port)),
+		"process-type": []byte(string(i.ProcessType)),
+		"state":        []byte(strconv.Itoa(int(i.State)))})
 
 	return
 }
@@ -102,14 +109,14 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 			return nil, e
 		}
 
-		s, e := strconv.Atoi(vals["state"])
+		s, e := strconv.Atoi(string(vals["state"]))
 		if e != nil {
 			return nil, e
 		}
 
-		addr := vals["host"] + ":" + vals["port"]
+		addr := string(vals["host"]) + ":" + string(vals["port"])
 
-		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"]), State(s))
+		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(s))
 		if err != nil {
 			return
 		}

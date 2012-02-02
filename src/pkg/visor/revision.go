@@ -28,11 +28,11 @@ func (r *Revision) Register(c *Client) (err error) {
 		return ErrKeyConflict
 	}
 
-	err = c.Set(r.Path()+"/registered", time.Now().UTC().String())
+	err = c.Set(r.Path()+"/registered", []byte(time.Now().UTC().String()))
 	if err != nil {
 		return
 	}
-	err = c.Set(r.Path()+"/scale", "0")
+	err = c.Set(r.Path()+"/scale", []byte("0"))
 
 	return
 }

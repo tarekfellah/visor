@@ -79,10 +79,11 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
-	value, err = c.Get(a.Path() + "/env/" + k)
+	bytes, err := c.Get(a.Path() + "/env/" + k)
 	if err != nil {
 		return
 	}
+	value = string(bytes)
 
 	return
 }
@@ -114,7 +115,7 @@ func (a *App) Path() (p string) {
 func (a *App) setPath(c *Client, k string, v string) error {
 	path := strings.Join([]string{a.Path(), k}, "/")
 
-	return c.Set(path, v)
+	return c.Set(path, []byte(v))
 }
 
 // Apps returns the list of all registered Apps.
@@ -136,7 +137,7 @@ func Apps(c *Client) (apps []*App, err error) {
 			return nil, e
 		}
 
-		a.RepoUrl = vals["repo-url"]
+		a.RepoUrl = string(vals["repo-url"])
 		a.Stack = Stack(vals["stack"])
 		apps[i] = a
 	}

@@ -118,7 +118,7 @@ func TestSet(t *testing.T) {
 	body := "hola"
 	c, conn := setup(path)
 
-	err := c.Set(path, body)
+	err := c.Set(path, []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
@@ -138,7 +138,7 @@ func TestDifferentRoot(t *testing.T) {
 	c, conn := setup(path)
 
 	client := &Client{Addr: c.Addr, conn: conn, Root: "/notvisor", Rev: c.Rev}
-	err := client.Set("root", body)
+	err := client.Set("root", []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
@@ -171,12 +171,12 @@ func BenchmarkSetGet(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		s := strconv.Itoa(i)
-		err := c.Set("path-"+s, s)
+		err := c.Set("path-"+s, []byte(s))
 		if err != nil {
 			b.Error(err)
 		}
 		v, err := c.Get("path-" + s)
-		if err != nil || v != s {
+		if err != nil || string(v) != s {
 			b.Error("client Get failed")
 		}
 	}
@@ -186,17 +186,16 @@ func BenchmarkGetSetMulti(b *testing.B) {
 	c := setupBench(b)
 
 	b.StopTimer()
-	files := make([]string, 200)
-	for i := 0; i < len(files); i += 2 {
+	files := map[string][]byte{}
+	for i := 0; i < 100; i++ {
 		s := strconv.Itoa(i)
-		files[i] = "key" + s
-		files[i+1] = "value" + s
+		files["key-"+s] = []byte("value-" + s)
 	}
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
 		s := strconv.Itoa(i)
-		err := c.SetMulti("path-"+s, files...)
+		err := c.SetMulti("path-"+s, files)
 		if err != nil {
 			b.Error(err)
 		}

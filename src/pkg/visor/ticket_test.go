@@ -34,7 +34,7 @@ func TestNewTicket(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if b != body {
+	if string(b) != body {
 		t.Errorf("expected %s got %s", body, b)
 	}
 }
@@ -45,7 +45,7 @@ func TestClaim(t *testing.T) {
 	op := "claim abcd123 test start"
 	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
-	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", op)
+	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", []byte(op))
 	if err != nil {
 		t.Error(err)
 	}
@@ -59,7 +59,7 @@ func TestClaim(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if body != host {
+	if string(body) != host {
 		t.Error("Ticket not claimed")
 	}
 
@@ -74,7 +74,7 @@ func TestUnclaim(t *testing.T) {
 	id := c.Rev
 	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
-	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", host)
+	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
@@ -98,7 +98,7 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 	p := "tickets/" + strconv.FormatInt(c.Rev, 10) + "/claimed"
 	ticket := &Ticket{Id: c.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
-	err := c.Set(p, host)
+	err := c.Set(p, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
@@ -114,7 +114,7 @@ func TestDone(t *testing.T) {
 	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
 	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
-	err := c.Set(p+"/claimed", host)
+	err := c.Set(p+"/claimed", []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
@@ -138,7 +138,7 @@ func TestDoneWithWrongLock(t *testing.T) {
 	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
 	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
 
-	err := c.Set(p+"/claimed", host)
+	err := c.Set(p+"/claimed", []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
