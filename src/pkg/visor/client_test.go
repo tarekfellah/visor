@@ -2,6 +2,7 @@ package visor
 
 import (
 	"github.com/soundcloud/doozer"
+	"strconv"
 	"testing"
 )
 
@@ -148,5 +149,60 @@ func TestDifferentRoot(t *testing.T) {
 	}
 	if string(b) != body {
 		t.Errorf("Expected %s got %s", body, string(b))
+	}
+}
+
+// BENCHMARKS
+
+func setupBench(b *testing.B) *Client {
+	b.StopTimer()
+	c, err := Dial(DEFAULT_ADDR, "/client-benchmark")
+	if err != nil {
+		panic(err)
+	}
+	c.Del("/")
+	b.StartTimer()
+
+	return c
+}
+
+func BenchmarkSetGet(b *testing.B) {
+	c := setupBench(b)
+
+	for i := 0; i < b.N; i++ {
+		s := strconv.Itoa(i)
+		err := c.Set("path-"+s, s)
+		if err != nil {
+			b.Error(err)
+		}
+		v, err := c.Get("path-" + s)
+		if err != nil || v != s {
+			b.Error("client Get failed")
+		}
+	}
+}
+
+func BenchmarkGetSetMulti(b *testing.B) {
+	c := setupBench(b)
+
+	b.StopTimer()
+	files := make([]string, 200)
+	for i := 0; i < len(files); i += 2 {
+		s := strconv.Itoa(i)
+		files[i] = "key" + s
+		files[i+1] = "value" + s
+	}
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		s := strconv.Itoa(i)
+		err := c.SetMulti("path-"+s, files...)
+		if err != nil {
+			b.Error(err)
+		}
+		_, err = c.GetMulti("path-"+s, nil)
+		if err != nil {
+			b.Error(err)
+		}
 	}
 }
