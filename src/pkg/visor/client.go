@@ -158,8 +158,6 @@ func (c *Client) Set(path string, body interface{}) (err error) {
 // order, until it finds a matching path, which it returns
 // the Codec for.
 func (c *Client) codecForPath(path string) Codec {
-	//fmt.Println("looking for " + path)
-	//fmt.Printf("%#v\n", c.pathCodecs)
 	for i := len(c.pathCodecs) - 1; i >= 0; i-- {
 		pc := c.pathCodecs[i]
 		if strings.HasPrefix(path, pc.path) {
