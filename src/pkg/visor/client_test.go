@@ -81,8 +81,8 @@ func TestGet(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(b) != body {
-		t.Errorf("expected %s got %s", body, string(b))
+	if string(b.Bytes()) != body {
+		t.Errorf("expected %s got %s", body, string(b.Bytes()))
 	}
 }
 
@@ -137,7 +137,7 @@ func TestDifferentRoot(t *testing.T) {
 	body := "test"
 	c, conn := setup(path)
 
-	client := &Client{Addr: c.Addr, conn: conn, Root: "/notvisor", Rev: c.Rev}
+	client := NewClient(c.Addr, conn, "/notvisor", c.Rev)
 	err := client.Set("root", []byte(body))
 	if err != nil {
 		t.Error(err)
@@ -176,7 +176,7 @@ func BenchmarkSetGet(b *testing.B) {
 			b.Error(err)
 		}
 		v, err := c.Get("path-" + s)
-		if err != nil || string(v) != s {
+		if err != nil || v.String() != s {
 			b.Error("client Get failed")
 		}
 	}

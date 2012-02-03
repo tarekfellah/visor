@@ -34,7 +34,7 @@ func TestNewTicket(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(b) != body {
+	if b.String() != body {
 		t.Errorf("expected %s got %s", body, b)
 	}
 }
@@ -59,7 +59,7 @@ func TestClaim(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if string(body) != host {
+	if body.String() != host {
 		t.Error("Ticket not claimed")
 	}
 
