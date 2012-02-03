@@ -162,7 +162,7 @@ func (c *Client) prefixPath(p string) (path string) {
 		return prefix
 	}
 
-	if !strings.HasSuffix(prefix, "/") {
+	if !strings.HasSuffix(prefix, "/") && !strings.HasPrefix(p, "/") {
 		prefix = prefix + "/"
 	}
 
