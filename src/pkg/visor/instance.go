@@ -109,14 +109,14 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 			return nil, e
 		}
 
-		s, e := strconv.Atoi(string(vals["state"]))
+		s, e := strconv.Atoi(vals["state"].String())
 		if e != nil {
 			return nil, e
 		}
 
-		addr := string(vals["host"]) + ":" + string(vals["port"])
+		addr := vals["host"].String() + ":" + vals["port"].String()
 
-		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(s))
+		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].String()), State(s))
 		if err != nil {
 			return
 		}

@@ -1,17 +1,30 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
+	"reflect"
 	"strings"
 )
 
 type Client struct {
-	Addr *net.TCPAddr
-	conn *doozer.Conn
-	Root string
-	Rev  int64
+	Addr       *net.TCPAddr
+	conn       *doozer.Conn
+	Root       string
+	Rev        int64
+	pathCodecs []struct {
+		path  string
+		codec Codec
+	}
+}
+
+// NewClient creates and returns a new Client object with a ByteCodec registered on /
+func NewClient(addr *net.TCPAddr, conn *doozer.Conn, root string, rev int64) *Client {
+	c := &Client{addr, conn, root, rev, nil}
+	c.RegisterCodec("/", new(ByteCodec))
+	return c
 }
 
 // Close tears down the internal coordinator connection
@@ -62,13 +75,14 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 }
 
 // Get returns the value for the given path
-func (c *Client) Get(path string) (value []byte, err error) {
+func (c *Client) Get(path string) (value reflect.Value, err error) {
 	rev, err := c.conn.Rev()
 	if err != nil {
 		return
 	}
+	path = c.prefixPath(path)
 
-	body, rev, err := c.conn.Get(c.prefixPath(path), &rev)
+	ebody, rev, err := c.conn.Get(path, &rev)
 	if err != nil {
 		return
 	}
@@ -78,9 +92,20 @@ func (c *Client) Get(path string) (value []byte, err error) {
 		return
 	}
 
+	codec := c.codecForPath(path)
+	if codec == nil {
+		err = errors.New("couldn't find codec to decode path " + path)
+		return
+	}
+
+	body, err := codec.Decode(ebody)
+	if err != nil {
+		return
+	}
+
 	c.Rev = rev
 
-	value = body
+	value = reflect.ValueOf(body)
 
 	return
 }
@@ -102,9 +127,24 @@ func (c *Client) Keys(path string) (keys []string, err error) {
 	return
 }
 
-// Set stores the given body for the given path
-func (c *Client) Set(path string, body []byte) (err error) {
-	rev, err := c.conn.Set(c.prefixPath(path), c.Rev, body)
+// Set stores the given body for the given path after encoding
+// it with a matching encoder.
+func (c *Client) Set(path string, body interface{}) (err error) {
+	var ebody []byte
+
+	path = c.prefixPath(path)
+	codec := c.codecForPath(path)
+
+	if codec == nil {
+		return errors.New("couldn't find codec for path " + path)
+	}
+
+	ebody, err = codec.Encode(body)
+	if err != nil {
+		return
+	}
+
+	rev, err := c.conn.Set(path, c.Rev, ebody)
 	if err != nil {
 		return
 	}
@@ -114,15 +154,30 @@ func (c *Client) Set(path string, body []byte) (err error) {
 	return
 }
 
+// codecForPath iterates over c.pathCodecs in reverse
+// order, until it finds a matching path, which it returns
+// the Codec for.
+func (c *Client) codecForPath(path string) Codec {
+	//fmt.Println("looking for " + path)
+	//fmt.Printf("%#v\n", c.pathCodecs)
+	for i := len(c.pathCodecs) - 1; i >= 0; i-- {
+		pc := c.pathCodecs[i]
+		if strings.HasPrefix(path, pc.path) {
+			return pc.codec
+		}
+	}
+	return nil
+}
+
 // GetMulti returns multiple key/value pairs organized in map
-func (c *Client) GetMulti(path string, keys []string) (values map[string][]byte, err error) {
+func (c *Client) GetMulti(path string, keys []string) (values map[string]reflect.Value, err error) {
 	if keys == nil {
 		keys, err = c.Keys(path)
 	}
 	if err != nil {
 		return
 	}
-	values = map[string][]byte{}
+	values = make(map[string]reflect.Value)
 
 	for i := range keys {
 		val, e := c.Get(path + "/" + keys[i])
@@ -142,6 +197,15 @@ func (c *Client) SetMulti(path string, kvs map[string][]byte) (err error) {
 			break
 		}
 	}
+	return
+}
+
+// RegisterCodec registers codec at the given path
+func (c *Client) RegisterCodec(path string, codec Codec) (err error) {
+	c.pathCodecs = append(c.pathCodecs, struct {
+		path  string
+		codec Codec
+	}{c.prefixPath(path), codec})
 	return
 }
 

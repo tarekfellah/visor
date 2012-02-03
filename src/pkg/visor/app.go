@@ -79,11 +79,11 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
-	bytes, err := c.Get(a.Path() + "/env/" + k)
+	val, err := c.Get(a.Path() + "/env/" + k)
 	if err != nil {
 		return
 	}
-	value = string(bytes)
+	value = val.String()
 
 	return
 }
@@ -137,8 +137,8 @@ func Apps(c *Client) (apps []*App, err error) {
 			return nil, e
 		}
 
-		a.RepoUrl = string(vals["repo-url"])
-		a.Stack = Stack(vals["stack"])
+		a.RepoUrl = vals["repo-url"].String()
+		a.Stack = Stack(vals["stack"].String())
 		apps[i] = a
 	}
 

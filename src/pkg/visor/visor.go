@@ -56,5 +56,9 @@ func Dial(addr string, root string) (c *Client, err error) {
 	if err != nil {
 		return
 	}
-	return &Client{tcpaddr, conn, root, rev}, nil
+	c = NewClient(tcpaddr, conn, root, rev)
+	c.RegisterCodec(APPS_PATH, new(StringCodec))
+	c.RegisterCodec("/tickets", new(StringCodec))
+
+	return
 }

@@ -66,7 +66,7 @@ func (t *Ticket) Unclaim(c *Client, host string) (err error) {
 	if err != nil {
 		return
 	}
-	if string(claimer) != host {
+	if claimer.String() != host {
 		return ErrUnauthorized
 	}
 
@@ -81,7 +81,7 @@ func (t *Ticket) Done(c *Client, host string) (err error) {
 	if err != nil {
 		return
 	}
-	if string(claimer) != host {
+	if claimer.String() != host {
 		return ErrUnauthorized
 	}
 
