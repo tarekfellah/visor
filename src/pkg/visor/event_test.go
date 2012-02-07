@@ -21,9 +21,9 @@ func eventSetup(name string) (c *Client, app *App, l chan *Event) {
 func TestEventAppRegistered(t *testing.T) {
 	c, app, l := eventSetup("regcat")
 
-	go WatchEvent(c, l, c.Rev)
+	go WatchEvent(c, l)
 
-	err := app.Register(c)
+	_, err := app.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
@@ -33,14 +33,16 @@ func TestEventAppRegistered(t *testing.T) {
 }
 func TestEventAppUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregcat")
-	err := app.Register(c)
+	app, err := app.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
 
-	go WatchEvent(c, l, c.Rev)
+	c, _ = c.FastForward(app.rev)
 
-	err = app.Unregister(c)
+	go WatchEvent(c, l)
+
+	_, err = app.Unregister(c)
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,9 +53,9 @@ func TestEventRevRegistered(t *testing.T) {
 	c, app, l := eventSetup("regdog")
 	rev, _ := NewRevision(app, "stable")
 
-	go WatchEvent(c, l, c.Rev)
+	go WatchEvent(c, l)
 
-	err := rev.Register(c)
+	_, err := rev.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,12 +65,13 @@ func TestEventRevRegistered(t *testing.T) {
 func TestEventRevUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregdog")
 	rev, _ := NewRevision(app, "stable")
-	err := rev.Register(c)
+	rev, err := rev.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
+	c, _ = c.FastForward(rev.rev)
 
-	go WatchEvent(c, l, c.Rev)
+	go WatchEvent(c, l)
 
 	err = rev.Unregister(c)
 	if err != nil {
@@ -82,9 +85,9 @@ func TestEventInstanceRegistered(t *testing.T) {
 	rev, _ := NewRevision(app, "stable")
 	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0)
 
-	go WatchEvent(c, l, c.Rev)
+	go WatchEvent(c, l)
 
-	err := ins.Register(c)
+	_, err := ins.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
@@ -95,12 +98,13 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregmouse")
 	rev, _ := NewRevision(app, "stable")
 	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0)
-	err := ins.Register(c)
+	ins, err := ins.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
+	c, _ = c.FastForward(ins.rev)
 
-	go WatchEvent(c, l, c.Rev)
+	go WatchEvent(c, l)
 
 	err = ins.Unregister(c)
 	if err != nil {

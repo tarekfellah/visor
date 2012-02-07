@@ -15,6 +15,7 @@ func revSetup() (c *Client, app *App) {
 	}
 
 	c.Del("/apps")
+	c, _ = c.FastForward(-1)
 
 	return
 }
@@ -26,20 +27,23 @@ func TestRevisionRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, err := c.Exists(rev.Path())
+	check, _, err := c.conn.Exists(c.prefixPath(rev.Path()), nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if check {
 		t.Error("Revision already registered")
+		return
 	}
 
-	err = rev.Register(c)
+	rev, err = rev.Register(c)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	check, err = c.Exists(rev.Path())
+	check, _, err = c.conn.Exists(c.prefixPath(rev.Path()), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -47,7 +51,7 @@ func TestRevisionRegister(t *testing.T) {
 		t.Error("Revision registration failed")
 	}
 
-	err = rev.Register(c)
+	_, err = rev.Register(c)
 	if err == nil {
 		t.Error("Revision allowed to be registered twice")
 	}
@@ -60,7 +64,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	err = rev.Register(c)
+	rev, err = rev.Register(c)
 	if err != nil {
 		t.Error(err)
 	}

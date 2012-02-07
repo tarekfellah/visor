@@ -14,7 +14,9 @@ func appSetup(name string) (c *Client, app *App) {
 		panic(err)
 	}
 
-	c.Del("apps")
+	r, _ := c.conn.Rev()
+	err = c.conn.Del(c.prefixPath("apps"), r)
+	c, _ = c.FastForward(-1)
 
 	return
 }
@@ -22,28 +24,32 @@ func appSetup(name string) (c *Client, app *App) {
 func TestAppRegistration(t *testing.T) {
 	c, app := appSetup("lolcatapp")
 
-	check, err := c.Exists(app.Path())
+	check, _, err := c.conn.Exists(c.prefixPath(app.Path()), nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if check {
 		t.Error("App already registered")
+		return
 	}
 
-	err = app.Register(c)
+	app, err = app.Register(c)
 	if err != nil {
 		t.Error(err)
+		return
 	}
-
-	check, err = c.Exists(app.Path())
+	check, _, err = c.conn.Exists(c.prefixPath(app.Path()), &app.rev)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if !check {
 		t.Error("App registration failed")
+		return
 	}
 
-	err = app.Register(c)
+	_, err = app.Register(c)
 	if err == nil {
 		t.Error("App allowed to be registered twice")
 	}
@@ -52,17 +58,19 @@ func TestAppRegistration(t *testing.T) {
 func TestAppUnregistration(t *testing.T) {
 	c, app := appSetup("dog")
 
-	err := app.Register(c)
+	app, err := app.Register(c)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	err = app.Unregister(c)
+	app, err = app.Unregister(c)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	check, err := c.Exists(app.Path())
+	check, _, err := c.conn.Exists(c.prefixPath(app.Path()), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -74,14 +82,16 @@ func TestAppUnregistration(t *testing.T) {
 func TestSetAndGetEnvironmentVar(t *testing.T) {
 	c, app := appSetup("lolcatapp")
 
-	err := app.SetEnvironmentVar(c, "meow", "w00t")
+	app, err := app.SetEnvironmentVar(c, "meow", "w00t")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	value, err := app.GetEnvironmentVar(c, "meow")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	if value != "w00t" {
@@ -92,20 +102,22 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 func TestSetAndDelEnvironmentVar(t *testing.T) {
 	c, app := appSetup("catalolna")
 
-	err := app.SetEnvironmentVar(c, "wuff", "lulz")
+	app, err := app.SetEnvironmentVar(c, "wuff", "lulz")
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = app.DelEnvironmentVar(c, "wuff")
+	app, err = app.DelEnvironmentVar(c, "wuff")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	_, err = app.GetEnvironmentVar(c, "wuff")
 	if err == nil {
 		t.Error(err)
 		t.Error("EnvironmentVar wasn't deleted")
+		return
 	}
 
 	if err != ErrKeyNotFound {
@@ -116,11 +128,11 @@ func TestSetAndDelEnvironmentVar(t *testing.T) {
 func TestEnvironmentVars(t *testing.T) {
 	c, app := appSetup("cat-A-log")
 
-	err := app.SetEnvironmentVar(c, "whiskers", "purr")
+	_, err := app.SetEnvironmentVar(c, "whiskers", "purr")
 	if err != nil {
 		t.Error(err)
 	}
-	err = app.SetEnvironmentVar(c, "lasers", "pew pew")
+	app, err = app.SetEnvironmentVar(c, "lasers", "pew pew")
 	if err != nil {
 		t.Error(err)
 	}
@@ -146,11 +158,12 @@ func TestApps(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = a.Register(c)
+		_, err = a.Register(c)
 		if err != nil {
 			t.Error(err)
 		}
 	}
+	c, _ = c.FastForward(-1)
 
 	apps, err := Apps(c)
 	if err != nil {

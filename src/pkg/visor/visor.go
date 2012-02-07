@@ -28,11 +28,6 @@
 //
 package visor
 
-import (
-	"github.com/soundcloud/doozer"
-	"net"
-)
-
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
 
@@ -42,21 +37,12 @@ type State int
 
 // Dial connects to the coordinator over 'tcp'
 func Dial(addr string, root string) (c *Client, err error) {
-	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
+	conn, rev, err := DialConn(addr)
 	if err != nil {
 		return
 	}
 
-	conn, err := doozer.Dial(addr)
-	if err != nil {
-		return
-	}
-
-	rev, err := conn.Rev()
-	if err != nil {
-		return
-	}
-	c = NewClient(tcpaddr, conn, root, rev)
+	c = NewClient(conn, root, rev)
 	c.RegisterCodec(APPS_PATH, new(StringCodec))
 	c.RegisterCodec("/tickets", new(StringCodec))
 

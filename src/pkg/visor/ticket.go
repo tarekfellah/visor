@@ -36,8 +36,8 @@ func NewTicket(c *Client, appName string, revName string, pType ProcessType, op 
 		o = "stop"
 	}
 
-	t = &Ticket{Id: c.Rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
-	err = c.Set(t.path()+"/op", []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
+	t = &Ticket{Id: c.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
+	_, err = c.Set(t.path()+"/op", []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
 	if err != nil {
 		return
 	}
@@ -55,7 +55,7 @@ func (t *Ticket) Claim(c *Client, host string) (err error) {
 		return ErrTicketClaimed
 	}
 
-	err = c.Set(t.path()+"/claimed", []byte(host))
+	_, err = c.Set(t.path()+"/claimed", []byte(host))
 
 	return
 }
@@ -66,7 +66,7 @@ func (t *Ticket) Unclaim(c *Client, host string) (err error) {
 	if err != nil {
 		return
 	}
-	if claimer.String() != host {
+	if claimer.Value.String() != host {
 		return ErrUnauthorized
 	}
 
@@ -81,7 +81,7 @@ func (t *Ticket) Done(c *Client, host string) (err error) {
 	if err != nil {
 		return
 	}
-	if claimer.String() != host {
+	if claimer.Value.String() != host {
 		return ErrUnauthorized
 	}
 

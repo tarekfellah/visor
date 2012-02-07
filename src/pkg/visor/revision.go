@@ -10,6 +10,7 @@ import (
 type Revision struct {
 	App *App
 	ref string
+	rev int64
 }
 
 // NewRevision returns a new instance of Revision.
@@ -18,27 +19,36 @@ func NewRevision(app *App, ref string) (rev *Revision, err error) {
 	return
 }
 
+func (r *Revision) FastForward(rev int64) *Revision {
+	return &Revision{App: r.App, ref: r.ref, rev: rev}
+}
+
 // Register registers a new Revision with the registry.
-func (r *Revision) Register(c *Client) (err error) {
+func (r *Revision) Register(c *Client) (revision *Revision, err error) {
+	c, _ = c.FastForward(r.rev)
+
 	exists, err := c.Exists(r.Path())
 	if err != nil {
 		return
 	}
 	if exists {
-		return ErrKeyConflict
+		return nil, ErrKeyConflict
 	}
 
-	err = c.Set(r.Path()+"/registered", []byte(time.Now().UTC().String()))
+	_, err = c.Set(r.Path()+"/registered", []byte(time.Now().UTC().String()))
 	if err != nil {
 		return
 	}
-	err = c.Set(r.Path()+"/scale", []byte("0"))
+	file, err := c.Set(r.Path()+"/scale", []byte("0"))
+
+	revision = r.FastForward(file.Rev)
 
 	return
 }
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister(c *Client) (err error) {
+	c, _ = c.FastForward(r.rev)
 	return c.Del(r.Path())
 }
 func (r *Revision) Scale(proctype string, factor int) error {

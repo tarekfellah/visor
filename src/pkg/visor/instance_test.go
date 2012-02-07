@@ -25,7 +25,8 @@ func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
 	}
 
 	c.Del("apps")
-	err = app.Register(c)
+	c, _ = c.FastForward(-1)
+	_, err = app.Register(c)
 	if err != nil {
 		panic(err)
 	}
@@ -44,12 +45,12 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance already registered")
 	}
 
-	err = ins.Register(c)
+	_, err = ins.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, err = c.Exists(ins.Path())
+	check, _, err = c.conn.Exists(c.prefixPath(ins.Path()), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,7 +58,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	err = ins.Register(c)
+	_, err = ins.Register(c)
 	if err == nil {
 		t.Error("Instance allowed to be registered twice")
 	}
@@ -66,7 +67,7 @@ func TestInstanceRegister(t *testing.T) {
 func TestInstanceUnregister(t *testing.T) {
 	c, ins := instanceSetup("localhost:54321", "worker")
 
-	err := ins.Register(c)
+	ins, err := ins.Register(c)
 	if err != nil {
 		t.Error(err)
 	}
@@ -95,12 +96,13 @@ func TestInstances(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
-		err = ins.Register(c)
+		_, err = ins.Register(c)
 		if err != nil {
 			t.Error(err)
 		}
 	}
 
+	c, _ = c.FastForward(-1)
 	instances, err := Instances(c)
 	if err != nil {
 		t.Error(err)

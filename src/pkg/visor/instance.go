@@ -15,6 +15,7 @@ type Instance struct {
 	Addr        *net.TCPAddr // TCP address of the running instance
 	State       State        // Current state of the instance
 	ProcessType ProcessType  // Type of process the instance represents
+	rev         int64
 }
 
 const (
@@ -33,31 +34,43 @@ func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (in
 	return
 }
 
+// FastForward returns a copy of the current instance, with its
+// revision set to the supplied one.
+func (i *Instance) FastForward(rev int64) *Instance {
+	return &Instance{Rev: i.Rev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, rev: rev}
+}
+
 // Register registers an instance with the registry.
-func (i *Instance) Register(c *Client) (err error) {
+func (i *Instance) Register(c *Client) (instance *Instance, err error) {
 	exists, err := c.Exists(i.Path())
 	if err != nil {
 		return
 	}
 	if exists {
-		return ErrKeyConflict
+		return nil, ErrKeyConflict
 	}
 	if i.State != InsStateInitial {
-		return ErrInvalidState
+		return nil, ErrInvalidState
 	}
 
-	err = c.SetMulti(i.Path(), map[string][]byte{
+	file, err := c.SetMulti(i.Path(), map[string][]byte{
 		"registered":   []byte(time.Now().UTC().String()),
 		"host":         []byte(i.Addr.IP.String()),
 		"port":         []byte(strconv.Itoa(i.Addr.Port)),
 		"process-type": []byte(string(i.ProcessType)),
 		"state":        []byte(strconv.Itoa(int(i.State)))})
 
+	if err != nil {
+		return i, err
+	}
+	instance = i.FastForward(file.Rev)
+
 	return
 }
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister(c *Client) (err error) {
+	c, _ = c.FastForward(i.rev)
 	return c.Del(i.Path())
 }
 
@@ -109,14 +122,14 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 			return nil, e
 		}
 
-		s, e := strconv.Atoi(vals["state"].String())
+		s, e := strconv.Atoi(vals["state"].Value.String())
 		if e != nil {
 			return nil, e
 		}
 
-		addr := vals["host"].String() + ":" + vals["port"].String()
+		addr := vals["host"].Value.String() + ":" + vals["port"].Value.String()
 
-		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].String()), State(s))
+		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].Value.String()), State(s))
 		if err != nil {
 			return
 		}
