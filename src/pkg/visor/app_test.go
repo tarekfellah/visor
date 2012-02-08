@@ -79,6 +79,41 @@ func TestAppUnregistration(t *testing.T) {
 	}
 }
 
+func TestAppUnregistrationFailure(t *testing.T) {
+	c, app := appSetup("dog-fail")
+
+	app2, err := app.Register(c)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = app.Unregister(c)
+	if err == nil {
+		t.Error("App allowed to be unregistered with old revision")
+		return
+	}
+
+	_, err = app2.Unregister(c)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = app2.Register(c)
+	if err == nil {
+		t.Error("App should already be registered at current rev")
+		return
+	}
+
+	app3 := app2.FastForward(-1)
+	_, err = app3.Register(c)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
 func TestSetAndGetEnvironmentVar(t *testing.T) {
 	c, app := appSetup("lolcatapp")
 
