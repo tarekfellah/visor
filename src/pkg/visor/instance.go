@@ -11,11 +11,11 @@ import (
 // An Instance represents a running process of a specific type.
 // Instances belong to Revisions.
 type Instance struct {
+	Snapshot
 	Rev         *Revision    // Revision the instance belongs to
 	Addr        *net.TCPAddr // TCP address of the running instance
 	State       State        // Current state of the instance
 	ProcessType ProcessType  // Type of process the instance represents
-	rev         int64
 }
 
 const (
@@ -23,13 +23,13 @@ const (
 )
 
 // NewInstance creates and returns a new Instance object.
-func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (ins *Instance, err error) {
+func NewInstance(rev *Revision, addr string, pType ProcessType, state State, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
 
-	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state}
+	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state, Snapshot: snapshot}
 
 	return
 }
@@ -37,12 +37,16 @@ func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (in
 // FastForward returns a copy of the current instance, with its
 // revision set to the supplied one.
 func (i *Instance) FastForward(rev int64) *Instance {
-	return &Instance{Rev: i.Rev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, rev: rev}
+	return i.Snapshot.FastForward(i, rev).(*Instance)
+}
+
+func (i *Instance) CreateSnapshot(rev int64) Snapshotable {
+	return &Instance{Rev: i.Rev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev: rev, conn: i.conn}}
 }
 
 // Register registers an instance with the registry.
-func (i *Instance) Register(c *Client) (instance *Instance, err error) {
-	exists, err := c.Exists(i.Path())
+func (i *Instance) Register() (instance *Instance, err error) {
+	exists, _, err := i.conn.Exists(i.Path(), &i.rev)
 	if err != nil {
 		return
 	}
@@ -53,25 +57,24 @@ func (i *Instance) Register(c *Client) (instance *Instance, err error) {
 		return nil, ErrInvalidState
 	}
 
-	file, err := c.SetMulti(i.Path(), map[string][]byte{
+	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
 		"registered":   []byte(time.Now().UTC().String()),
 		"host":         []byte(i.Addr.IP.String()),
 		"port":         []byte(strconv.Itoa(i.Addr.Port)),
 		"process-type": []byte(string(i.ProcessType)),
-		"state":        []byte(strconv.Itoa(int(i.State)))})
+		"state":        []byte(strconv.Itoa(int(i.State)))}, i.rev)
 
 	if err != nil {
 		return i, err
 	}
-	instance = i.FastForward(file.Rev)
+	instance = i.FastForward(rev)
 
 	return
 }
 
 // Unregister unregisters an instance with the registry.
-func (i *Instance) Unregister(c *Client) (err error) {
-	c, _ = c.FastForward(i.rev)
-	return c.Del(i.Path())
+func (i *Instance) Unregister() (err error) {
+	return i.conn.Del(i.Path(), i.rev)
 }
 
 // Path returns the instance's directory path in the registry.
@@ -129,7 +132,7 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 
 		addr := vals["host"].Value.String() + ":" + vals["port"].Value.String()
 
-		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].Value.String()), State(s))
+		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].Value.String()), State(s), c.Snapshot)
 		if err != nil {
 			return
 		}

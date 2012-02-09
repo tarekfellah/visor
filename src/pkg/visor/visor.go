@@ -36,15 +36,13 @@ type Stack string
 type State int
 
 // Dial connects to the coordinator over 'tcp'
-func Dial(addr string, root string) (c *Client, err error) {
-	conn, rev, err := DialConn(addr)
+func Dial(addr string, root string, codec Codec) (c *Client, err error) {
+	conn, rev, err := DialConn(addr, root)
 	if err != nil {
 		return
 	}
 
-	c = NewClient(conn, root, rev)
-	c.RegisterCodec(APPS_PATH, new(StringCodec))
-	c.RegisterCodec("/tickets", new(StringCodec))
+	c = NewClient(conn, "/", rev, codec)
 
 	return
 }

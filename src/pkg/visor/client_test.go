@@ -7,7 +7,7 @@ import (
 )
 
 func setup(path string) (c *Client, conn *Conn) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}
@@ -149,7 +149,7 @@ func TestDifferentRoot(t *testing.T) {
 	body := "test"
 	c, conn := setup(path)
 
-	client := NewClient(conn, "/notvisor", c.rev)
+	client := NewClient(conn, "/notvisor", c.rev, c.codec)
 	_, err := client.Set("root", []byte(body))
 	if err != nil {
 		t.Error(err)
@@ -168,7 +168,7 @@ func TestDifferentRoot(t *testing.T) {
 
 func setupBench(b *testing.B) *Client {
 	b.StopTimer()
-	c, err := Dial(DEFAULT_ADDR, "/client-benchmark")
+	c, err := Dial(DEFAULT_ADDR, "/client-benchmark", new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}

@@ -8,7 +8,7 @@ import (
 func main() {
 	addr := visor.DEFAULT_ADDR
 	root := visor.DEFAULT_ROOT
-	client, err := visor.Dial(addr, root)
+	client, err := visor.Dial(addr, root, new(visor.ByteCodec))
 
 	if err != nil {
 		panic(err)

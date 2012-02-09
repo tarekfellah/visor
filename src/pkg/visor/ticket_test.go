@@ -7,7 +7,7 @@ import (
 )
 
 func ticketSetup() (c *Client, hostname string) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(StringCodec))
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +37,7 @@ func TestNewTicket(t *testing.T) {
 		t.Error(err)
 	}
 	if b.Value.String() != body {
-		t.Errorf("expected %s got %s", body, b)
+		t.Errorf("expected %s got %s", body, b.Value.String())
 	}
 }
 

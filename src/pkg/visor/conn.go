@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
+	"strings"
 )
 
 type Conn struct {
 	Addr *net.TCPAddr
+	Root string
 	conn *doozer.Conn
 }
 
-func DialConn(addr string) (conn *Conn, rev int64, err error) {
+func DialConn(addr string, root string) (conn *Conn, rev int64, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -28,15 +30,15 @@ func DialConn(addr string) (conn *Conn, rev int64, err error) {
 		return
 	}
 
-	return &Conn{tcpaddr, dconn}, rev, nil
+	return &Conn{tcpaddr, root, dconn}, rev, nil
 }
 
 func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
-	return c.conn.Set(path, rev, value)
+	return c.conn.Set(c.prefixPath(path), rev, value)
 }
 
 func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err error) {
-	_, pathrev, err = c.conn.Stat(path, rev)
+	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
 	if err != nil {
 		return
 	}
@@ -50,6 +52,7 @@ func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err 
 }
 
 func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
+	path = c.prefixPath(path)
 	exists, newrev, err := c.Exists(path, nil)
 	if err != nil {
 		return
@@ -64,16 +67,23 @@ func (c *Conn) Rev() (int64, error) {
 	return c.conn.Rev()
 }
 
-func (c *Conn) Get(path string, rev *int64) (value []byte, pathrev int64, err error) {
-	return c.conn.Get(path, rev)
+func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
+	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
+	if filerev == 0 {
+		err = ErrKeyNotFound
+	}
+	return
 }
 
 func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
-	return c.conn.Getdir(path, rev, 0, -1)
+	return c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
 }
 
 func (c *Conn) Wait(path string, rev int64) (event doozer.Event, err error) {
-	return c.conn.Wait(path, rev)
+	path = c.prefixPath(path)
+	event, err = c.conn.Wait(path, rev)
+	event.Path = strings.Replace(event.Path, c.Root, "", 1)
+	return
 }
 
 func (c *Conn) Close() {
@@ -81,6 +91,8 @@ func (c *Conn) Close() {
 }
 
 func (c *Conn) Del(path string, rev int64) (err error) {
+	path = c.prefixPath(path)
+
 	err = doozer.Walk(c.conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
 		if e != nil {
 			return e
@@ -97,4 +109,34 @@ func (c *Conn) Del(path string, rev int64) (err error) {
 	})
 
 	return
+}
+
+// SetMulti stores mutliple key/value pairs under the given path
+func (c *Conn) SetMulti(path string, kvs map[string][]byte, rev int64) (newrev int64, err error) {
+	for k, v := range kvs {
+		newrev, err = c.Set(path+"/"+k, rev, v)
+		if err != nil {
+			break
+		}
+	}
+	return
+}
+
+func (c *Conn) prefixPath(p string) (path string) {
+	prefix := c.Root
+	path = p
+
+	if p == "/" {
+		return prefix
+	}
+
+	if !strings.HasSuffix(prefix, "/") && !strings.HasPrefix(p, "/") {
+		prefix = prefix + "/"
+	}
+
+	if !strings.HasPrefix(p, c.Root) {
+		path = prefix + p
+	}
+
+	return path
 }

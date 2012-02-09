@@ -9,25 +9,32 @@ import (
 const APPS_PATH = "apps"
 
 type App struct {
+	Snapshot
 	Name    string
 	RepoUrl string
 	Stack   Stack
-	rev     int64
 }
 
 var appMetaKeys = []string{"repo-url", "stack"}
 
 // NewApp returns a new App given a name, repository url and stack.
-func NewApp(name string, repourl string, stack Stack) (app *App, err error) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack}
+func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot}
 	return
 }
 
-// Register adds the App to the global process state.
-func (a *App) Register(c *Client) (app *App, err error) {
-	c, _ = c.FastForward(a.rev)
+func (a *App) CreateSnapshot(rev int64) (app Snapshotable) {
+	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}}
+	return
+}
 
-	exists, err := c.Exists(a.Path())
+func (a *App) FastForward(rev int64) (app *App) {
+	return a.Snapshot.FastForward(a, rev).(*App)
+}
+
+// Register adds the App to the global process state.
+func (a *App) Register() (app *App, err error) {
+	exists, _, err := a.conn.Exists(a.Path(), &a.rev)
 	if err != nil {
 		return
 	}
@@ -35,17 +42,17 @@ func (a *App) Register(c *Client) (app *App, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = a.setPath(c, "registered", time.Now().UTC().String())
+	_, err = a.setPath("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
 
-	_, err = a.setPath(c, "repo-url", a.RepoUrl)
+	_, err = a.setPath("repo-url", a.RepoUrl)
 	if err != nil {
 		return
 	}
 
-	rev, err := a.setPath(c, "stack", string(a.Stack))
+	rev, err := a.setPath("stack", string(a.Stack))
 	if err != nil {
 		return a, err
 	}
@@ -55,10 +62,8 @@ func (a *App) Register(c *Client) (app *App, err error) {
 }
 
 // Unregister removes the App form the global process state.
-func (a *App) Unregister(c *Client) (app *App, err error) {
-	c, _ = c.FastForward(a.rev)
-
-	err = c.Del(a.Path())
+func (a *App) Unregister() (app *App, err error) {
+	err = a.conn.Del(a.Path(), a.rev)
 	if err != nil {
 		return
 	}
@@ -69,10 +74,8 @@ func (a *App) Unregister(c *Client) (app *App, err error) {
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
-func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
-	c, _ = c.FastForward(a.rev)
-
-	varNames, err := c.Keys(a.Path() + "/env")
+func (a *App) EnvironmentVars() (vars map[string]string, err error) {
+	varNames, err := a.conn.Getdir(a.Path()+"/env", a.rev)
 	if err != nil {
 		return
 	}
@@ -81,7 +84,7 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 	var v string
 
 	for i := range varNames {
-		v, err = a.GetEnvironmentVar(c, varNames[i])
+		v, err = a.GetEnvironmentVar(varNames[i])
 		if err != nil {
 			return
 		}
@@ -93,30 +96,19 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 }
 
 // GetEnvironmentVar returns the value stored for the given key.
-func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
-	c, _ = c.FastForward(a.rev)
-
-	val, err := c.Get(a.Path() + "/env/" + k)
+func (a *App) GetEnvironmentVar(k string) (value string, err error) {
+	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.rev)
 	if err != nil {
 		return
 	}
-	// TODO: verify we are getting a string value
-	// before calling String()
-	value = string(val.Value.String())
+	value = string(val)
 
-	return
-}
-
-func (a *App) FastForward(rev int64) (app *App) {
-	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, rev: rev, Stack: a.Stack}
 	return
 }
 
 // SetEnvironmentVar stores the value for the given key.
-func (a *App) SetEnvironmentVar(c *Client, k string, v string) (app *App, err error) {
-	c, _ = c.FastForward(a.rev)
-
-	rev, err := a.setPath(c, "env/"+k, v)
+func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
+	rev, err := a.setPath("env/"+k, v)
 	if err != nil {
 		return
 	}
@@ -125,10 +117,8 @@ func (a *App) SetEnvironmentVar(c *Client, k string, v string) (app *App, err er
 }
 
 // DelEnvironmentVar removes the env variable for the given key.
-func (a *App) DelEnvironmentVar(c *Client, k string) (app *App, err error) {
-	c, _ = c.FastForward(a.rev)
-
-	err = a.delPath(c, "env/"+k)
+func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
+	err = a.delPath("env/" + k)
 	if err != nil {
 		return
 	}
@@ -149,27 +139,23 @@ func (a *App) Path() (p string) {
 	return strings.Join([]string{APPS_PATH, a.Name}, "/")
 }
 
-func (a *App) setPath(c *Client, k string, v string) (rev int64, err error) {
-	file, err := c.Set(a.prefixPath(k), []byte(v))
-	if err != nil {
-		return
-	}
-	return file.Rev, err
+func (a *App) setPath(k string, v string) (rev int64, err error) {
+	return a.conn.Set(a.prefixPath(k), a.rev, []byte(v))
 }
-func (a *App) delPath(c *Client, k string) error {
-	return c.Del(a.prefixPath(k))
+func (a *App) delPath(k string) error {
+	return a.conn.Del(a.prefixPath(k), a.rev)
 }
 
 // Apps returns the list of all registered Apps.
 func Apps(c *Client) (apps []*App, err error) {
-	names, err := c.Keys(APPS_PATH)
+	names, err := c.conn.Getdir(APPS_PATH, c.rev)
 	if err != nil {
 		return
 	}
 	apps = make([]*App, len(names))
 
 	for i := range names {
-		a, e := NewApp(names[i], "", "")
+		a, e := NewApp(names[i], "", "", c.Snapshot)
 		if e != nil {
 			return nil, e
 		}

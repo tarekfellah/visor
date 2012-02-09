@@ -5,11 +5,11 @@ import (
 )
 
 func revSetup() (c *Client, app *App) {
-	app, err := NewApp("rev-test", "git://rev.git", "references")
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}
-	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	app, err = NewApp("rev-test", "git://rev.git", "references", c.Snapshot)
 	if err != nil {
 		panic(err)
 	}
@@ -22,7 +22,7 @@ func revSetup() (c *Client, app *App) {
 
 func TestRevisionRegister(t *testing.T) {
 	c, app := revSetup()
-	rev, err := NewRevision(app, "stable")
+	rev, err := NewRevision(app, "stable", app.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}
@@ -37,7 +37,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	rev, err = rev.Register(c)
+	rev, err = rev.Register()
 	if err != nil {
 		t.Error(err)
 		return
@@ -51,7 +51,7 @@ func TestRevisionRegister(t *testing.T) {
 		t.Error("Revision registration failed")
 	}
 
-	_, err = rev.Register(c)
+	_, err = rev.Register()
 	if err == nil {
 		t.Error("Revision allowed to be registered twice")
 	}
@@ -59,17 +59,17 @@ func TestRevisionRegister(t *testing.T) {
 
 func TestRevisionUnregister(t *testing.T) {
 	c, app := revSetup()
-	rev, err := NewRevision(app, "master")
+	rev, err := NewRevision(app, "master", app.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}
 
-	rev, err = rev.Register(c)
+	rev, err = rev.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = rev.Unregister(c)
+	err = rev.Unregister()
 	if err != nil {
 		t.Error(err)
 	}

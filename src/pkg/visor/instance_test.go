@@ -6,27 +6,27 @@ import (
 )
 
 func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
-	app, err := NewApp("ins-test", "git://ins.git", "insane")
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(StringCodec))
 	if err != nil {
 		panic(err)
 	}
-	rev, err := NewRevision(app, "7abcde6")
-	if err != nil {
-		panic(err)
-	}
-	ins, err = NewInstance(rev, addr, pType, 0)
-	if err != nil {
-		panic(err)
-	}
-
-	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
-	if err != nil {
-		panic(err)
-	}
-
 	c.Del("apps")
 	c, _ = c.FastForward(-1)
-	_, err = app.Register(c)
+
+	app, err := NewApp("ins-test", "git://ins.git", "insane", c.Snapshot)
+	if err != nil {
+		panic(err)
+	}
+	rev, err := NewRevision(app, "7abcde6", c.Snapshot)
+	if err != nil {
+		panic(err)
+	}
+	ins, err = NewInstance(rev, addr, pType, 0, c.Snapshot)
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = app.Register()
 	if err != nil {
 		panic(err)
 	}
@@ -45,7 +45,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance already registered")
 	}
 
-	_, err = ins.Register(c)
+	_, err = ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +58,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	_, err = ins.Register(c)
+	_, err = ins.Register()
 	if err == nil {
 		t.Error("Instance allowed to be registered twice")
 	}
@@ -67,12 +67,12 @@ func TestInstanceRegister(t *testing.T) {
 func TestInstanceUnregister(t *testing.T) {
 	c, ins := instanceSetup("localhost:54321", "worker")
 
-	ins, err := ins.Register(c)
+	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ins.Unregister(c)
+	err = ins.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,11 +92,11 @@ func TestInstances(t *testing.T) {
 	port := 1000
 
 	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(instance.Rev, host+strconv.Itoa(port+i), "clock", 0)
+		ins, err := NewInstance(instance.Rev, host+strconv.Itoa(port+i), "clock", 0, c.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}
-		_, err = ins.Register(c)
+		_, err = ins.Register()
 		if err != nil {
 			t.Error(err)
 		}

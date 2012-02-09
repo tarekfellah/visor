@@ -6,13 +6,15 @@ import (
 )
 
 func eventSetup(name string) (c *Client, app *App, l chan *Event) {
-	c, err := Dial(DEFAULT_ADDR, "/event-test")
+	c, err := Dial(DEFAULT_ADDR, "/event-test", new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}
-	c.Del("/")
+	r, _ := c.conn.Rev()
+	err = c.conn.Del("/", r)
+	c, _ = c.FastForward(-1)
 
-	app, _ = NewApp(name, "git://"+name, Stack(name+"stack"))
+	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: c.Snapshot}
 	l = make(chan *Event)
 
 	return
@@ -23,7 +25,7 @@ func TestEventAppRegistered(t *testing.T) {
 
 	go WatchEvent(c, l)
 
-	_, err := app.Register(c)
+	_, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -33,7 +35,7 @@ func TestEventAppRegistered(t *testing.T) {
 }
 func TestEventAppUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregcat")
-	app, err := app.Register(c)
+	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -42,7 +44,7 @@ func TestEventAppUnregistered(t *testing.T) {
 
 	go WatchEvent(c, l)
 
-	_, err = app.Unregister(c)
+	_, err = app.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,11 +53,12 @@ func TestEventAppUnregistered(t *testing.T) {
 }
 func TestEventRevRegistered(t *testing.T) {
 	c, app, l := eventSetup("regdog")
-	rev, _ := NewRevision(app, "stable")
+	rev, _ := NewRevision(app, "stable", c.Snapshot)
+	rev = rev.FastForward(c.rev)
 
 	go WatchEvent(c, l)
 
-	_, err := rev.Register(c)
+	_, err := rev.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,16 +67,17 @@ func TestEventRevRegistered(t *testing.T) {
 }
 func TestEventRevUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregdog")
-	rev, _ := NewRevision(app, "stable")
-	rev, err := rev.Register(c)
+	rev, _ := NewRevision(app, "stable", c.Snapshot)
+	rev, err := rev.FastForward(c.rev).Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	c, _ = c.FastForward(rev.rev)
 
 	go WatchEvent(c, l)
 
-	err = rev.Unregister(c)
+	err = rev.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
@@ -82,12 +86,12 @@ func TestEventRevUnregistered(t *testing.T) {
 }
 func TestEventInstanceRegistered(t *testing.T) {
 	c, app, l := eventSetup("regmouse")
-	rev, _ := NewRevision(app, "stable")
-	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0)
+	rev, _ := NewRevision(app, "stable", c.Snapshot)
+	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, c.Snapshot)
 
 	go WatchEvent(c, l)
 
-	_, err := ins.Register(c)
+	_, err := ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -96,9 +100,9 @@ func TestEventInstanceRegistered(t *testing.T) {
 }
 func TestEventInstanceUnregistered(t *testing.T) {
 	c, app, l := eventSetup("unregmouse")
-	rev, _ := NewRevision(app, "stable")
-	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0)
-	ins, err := ins.Register(c)
+	rev, _ := NewRevision(app, "stable", c.Snapshot)
+	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, c.Snapshot)
+	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -106,7 +110,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 
 	go WatchEvent(c, l)
 
-	err = ins.Unregister(c)
+	err = ins.Unregister()
 	if err != nil {
 		t.Error(err)
 	}

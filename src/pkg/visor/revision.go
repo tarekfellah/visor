@@ -8,26 +8,28 @@ import (
 // A Revision represents an application revision,
 // identifiable by its `ref`.
 type Revision struct {
+	Snapshot
 	App *App
 	ref string
-	rev int64
 }
 
 // NewRevision returns a new instance of Revision.
-func NewRevision(app *App, ref string) (rev *Revision, err error) {
-	rev = &Revision{App: app, ref: ref}
+func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
+	rev = &Revision{App: app, ref: ref, Snapshot: snapshot}
 	return
 }
 
+func (r *Revision) CreateSnapshot(rev int64) Snapshotable {
+	return &Revision{App: r.App, ref: r.ref, Snapshot: Snapshot{rev: rev, conn: r.conn}}
+}
+
 func (r *Revision) FastForward(rev int64) *Revision {
-	return &Revision{App: r.App, ref: r.ref, rev: rev}
+	return r.Snapshot.FastForward(r, rev).(*Revision)
 }
 
 // Register registers a new Revision with the registry.
-func (r *Revision) Register(c *Client) (revision *Revision, err error) {
-	c, _ = c.FastForward(r.rev)
-
-	exists, err := c.Exists(r.Path())
+func (r *Revision) Register() (revision *Revision, err error) {
+	exists, _, err := r.conn.Exists(r.Path(), &r.rev)
 	if err != nil {
 		return
 	}
@@ -35,21 +37,20 @@ func (r *Revision) Register(c *Client) (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = c.Set(r.Path()+"/registered", []byte(time.Now().UTC().String()))
+	_, err = r.conn.Set(r.Path()+"/registered", r.rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return
 	}
-	file, err := c.Set(r.Path()+"/scale", []byte("0"))
+	rev, err := r.conn.Set(r.Path()+"/scale", r.rev, []byte("0"))
 
-	revision = r.FastForward(file.Rev)
+	revision = r.FastForward(rev)
 
 	return
 }
 
 // Unregister unregisters a revision from the registry.
-func (r *Revision) Unregister(c *Client) (err error) {
-	c, _ = c.FastForward(r.rev)
-	return c.Del(r.Path())
+func (r *Revision) Unregister() (err error) {
+	return r.conn.Del(r.Path(), r.rev)
 }
 func (r *Revision) Scale(proctype string, factor int) error {
 	return nil
@@ -103,7 +104,7 @@ func AppRevisions(c *Client, app *App) (revisions []*Revision, err error) {
 	revisions = make([]*Revision, len(refs))
 
 	for i := range refs {
-		r, e := NewRevision(app, refs[i])
+		r, e := NewRevision(app, refs[i], c.Snapshot)
 		if e != nil {
 			return nil, e
 		}
