@@ -4,30 +4,30 @@ import (
 	"testing"
 )
 
-func revSetup() (c *Client, app *App) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
+func revSetup() (s Snapshot, app *App) {
+	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
-	app, err = NewApp("rev-test", "git://rev.git", "references", c.Snapshot)
+	app, err = NewApp("rev-test", "git://rev.git", "references", s)
 	if err != nil {
 		panic(err)
 	}
 
-	c.Del("/apps")
-	c, _ = c.FastForward(-1)
+	s.conn.Del("/apps", -1)
+	s = s.FastForward(s, -1).(Snapshot)
 
 	return
 }
 
 func TestRevisionRegister(t *testing.T) {
-	c, app := revSetup()
+	s, app := revSetup()
 	rev, err := NewRevision(app, "stable", app.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, _, err := c.conn.Exists(c.prefixPath(rev.Path()), nil)
+	check, _, err := s.conn.Exists(rev.Path(), nil)
 	if err != nil {
 		t.Error(err)
 		return
@@ -43,7 +43,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = c.conn.Exists(c.prefixPath(rev.Path()), nil)
+	check, _, err = s.conn.Exists(rev.Path(), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -58,7 +58,7 @@ func TestRevisionRegister(t *testing.T) {
 }
 
 func TestRevisionUnregister(t *testing.T) {
-	c, app := revSetup()
+	s, app := revSetup()
 	rev, err := NewRevision(app, "master", app.Snapshot)
 	if err != nil {
 		t.Error(err)
@@ -74,7 +74,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, err := c.Exists(rev.Path())
+	check, _, err := s.conn.Exists(rev.Path(), &s.rev)
 	if err != nil {
 		t.Error(err)
 	}
