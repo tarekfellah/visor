@@ -9,6 +9,10 @@ type Snapshotable interface {
 	CreateSnapshot(rev int64) Snapshotable
 }
 
+func (s Snapshot) CreateSnapshot(rev int64) Snapshotable {
+	return Snapshot{rev, s.conn}
+}
+
 func (s *Snapshot) FastForward(obj Snapshotable, rev int64) (newobj Snapshotable) {
 	var err error
 
