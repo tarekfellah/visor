@@ -89,8 +89,8 @@ func (i *Instance) String() string {
 }
 
 // Instances returns returns an array of all registered instances.
-func Instances(c *Client) (instances []*Instance, err error) {
-	revs, err := Revisions(c)
+func Instances(s Snapshot) (instances []*Instance, err error) {
+	revs, err := Revisions(s)
 	if err != nil {
 		return
 	}
@@ -98,7 +98,7 @@ func Instances(c *Client) (instances []*Instance, err error) {
 	instances = []*Instance{}
 
 	for i := range revs {
-		iss, e := RevisionInstances(c, revs[i])
+		iss, e := RevisionInstances(s, revs[i])
 		if e != nil {
 			return nil, e
 		}
@@ -110,8 +110,8 @@ func Instances(c *Client) (instances []*Instance, err error) {
 
 // RevisionInstances returns an array of all registered instances belonging
 // to the given revision.
-func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error) {
-	names, err := c.Keys(r.Path())
+func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err error) {
+	names, err := s.conn.Getdir(r.Path(), s.rev)
 	if err != nil {
 		return
 	}
@@ -119,20 +119,20 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 	instances = make([]*Instance, len(names))
 
 	for i := range names {
-		vals, e := c.GetMulti(r.Path()+"/"+names[i], nil)
+		vals, e := s.conn.GetMulti(r.Path()+"/"+names[i], nil, s.rev)
 
 		if e != nil {
 			return nil, e
 		}
 
-		s, e := strconv.Atoi(vals["state"].Value.String())
+		state, e := strconv.Atoi(string(vals["state"]))
 		if e != nil {
 			return nil, e
 		}
 
-		addr := vals["host"].Value.String() + ":" + vals["port"].Value.String()
+		addr := string(vals["host"]) + ":" + string(vals["port"])
 
-		instances[i], err = NewInstance(r, addr, ProcessType(vals["process-type"].Value.String()), State(s), c.Snapshot)
+		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(state), s)
 		if err != nil {
 			return
 		}

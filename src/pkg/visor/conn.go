@@ -14,7 +14,7 @@ type Conn struct {
 	conn *doozer.Conn
 }
 
-func DialConn(addr string, root string) (conn *Conn, rev int64, err error) {
+func DialConn(addr string, root string) (s Snapshot, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -25,12 +25,13 @@ func DialConn(addr string, root string) (conn *Conn, rev int64, err error) {
 		return
 	}
 
-	rev, err = dconn.Rev()
+	rev, err := dconn.Rev()
 	if err != nil {
 		return
 	}
 
-	return &Conn{tcpaddr, root, dconn}, rev, nil
+	s = Snapshot{rev, &Conn{tcpaddr, root, dconn}}
+	return
 }
 
 func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
@@ -108,6 +109,26 @@ func (c *Conn) Del(path string, rev int64) (err error) {
 		return nil
 	})
 
+	return
+}
+
+// GetMulti returns multiple key/value pairs organized in map
+func (c *Conn) GetMulti(path string, keys []string, rev int64) (values map[string][]byte, err error) {
+	if keys == nil {
+		keys, err = c.Getdir(path, rev)
+	}
+	if err != nil {
+		return
+	}
+	values = make(map[string][]byte)
+
+	for i := range keys {
+		val, _, e := c.Get(path+"/"+keys[i], &rev)
+		if e != nil {
+			return nil, e
+		}
+		values[keys[i]] = val
+	}
 	return
 }
 

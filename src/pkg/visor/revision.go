@@ -75,8 +75,8 @@ func (r *Revision) String() string {
 }
 
 // Revisions returns an array of all registered revisions.
-func Revisions(c *Client) (revisions []*Revision, err error) {
-	apps, err := Apps(c)
+func Revisions(s Snapshot) (revisions []*Revision, err error) {
+	apps, err := Apps(s)
 	if err != nil {
 		return
 	}
@@ -84,7 +84,7 @@ func Revisions(c *Client) (revisions []*Revision, err error) {
 	revisions = []*Revision{}
 
 	for i := range apps {
-		revs, e := AppRevisions(c, apps[i])
+		revs, e := AppRevisions(s, apps[i])
 		if e != nil {
 			return nil, e
 		}
@@ -96,15 +96,15 @@ func Revisions(c *Client) (revisions []*Revision, err error) {
 
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
-func AppRevisions(c *Client, app *App) (revisions []*Revision, err error) {
-	refs, err := c.Keys(app.Path() + "/revs")
+func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
+	refs, err := s.conn.Getdir(app.Path()+"/revs", s.rev)
 	if err != nil {
 		return
 	}
 	revisions = make([]*Revision, len(refs))
 
 	for i := range refs {
-		r, e := NewRevision(app, refs[i], c.Snapshot)
+		r, e := NewRevision(app, refs[i], s)
 		if e != nil {
 			return nil, e
 		}

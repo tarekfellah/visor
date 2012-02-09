@@ -37,12 +37,12 @@ type State int
 
 // Dial connects to the coordinator over 'tcp'
 func Dial(addr string, root string, codec Codec) (c *Client, err error) {
-	conn, rev, err := DialConn(addr, root)
+	snapshot, err := DialConn(addr, root)
 	if err != nil {
 		return
 	}
 
-	c = NewClient(conn, "/", rev, codec)
+	c = NewClient(snapshot.conn, "/", snapshot.rev, codec)
 
 	return
 }

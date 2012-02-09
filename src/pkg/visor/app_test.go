@@ -5,16 +5,16 @@ import (
 )
 
 func appSetup(name string) (app *App) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
+	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := c.conn.Rev()
-	err = c.conn.Del("apps", r)
-	c, _ = c.FastForward(-1)
+	r, _ := s.conn.Rev()
+	err = s.conn.Del("apps", r)
 
-	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: Snapshot{c.rev, c.conn}}
+	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s}
+	app = app.FastForward(-1)
 
 	return
 }
@@ -197,9 +197,9 @@ func TestApps(t *testing.T) {
 	}
 	app = app.FastForward(-1)
 
-	c, _ := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
+	s, _ := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 
-	apps, err := Apps(c)
+	apps, err := Apps(s)
 	if err != nil {
 		t.Error(err)
 	}

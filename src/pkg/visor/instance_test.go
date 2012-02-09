@@ -103,7 +103,7 @@ func TestInstances(t *testing.T) {
 	}
 
 	c, _ = c.FastForward(-1)
-	instances, err := Instances(c)
+	instances, err := Instances(c.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}

@@ -147,26 +147,26 @@ func (a *App) delPath(k string) error {
 }
 
 // Apps returns the list of all registered Apps.
-func Apps(c *Client) (apps []*App, err error) {
-	names, err := c.conn.Getdir(APPS_PATH, c.rev)
+func Apps(s Snapshot) (apps []*App, err error) {
+	names, err := s.conn.Getdir(APPS_PATH, s.rev)
 	if err != nil {
 		return
 	}
 	apps = make([]*App, len(names))
 
 	for i := range names {
-		a, e := NewApp(names[i], "", "", c.Snapshot)
+		a, e := NewApp(names[i], "", "", s)
 		if e != nil {
 			return nil, e
 		}
 
-		vals, e := c.GetMulti(a.Path(), appMetaKeys)
+		vals, e := s.conn.GetMulti(a.Path(), appMetaKeys, s.rev)
 		if e != nil {
 			return nil, e
 		}
 
-		a.RepoUrl = vals["repo-url"].Value.String()
-		a.Stack = Stack(vals["stack"].Value.String())
+		a.RepoUrl = string(vals["repo-url"])
+		a.Stack = Stack(string(vals["stack"]))
 		apps[i] = a
 	}
 

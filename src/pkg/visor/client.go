@@ -98,21 +98,17 @@ func (c *Client) Set(path string, value interface{}) (file *File, err error) {
 }
 
 // GetMulti returns multiple key/value pairs organized in map
-func (c *Client) GetMulti(path string, keys []string) (values map[string]*File, err error) {
-	if keys == nil {
-		keys, err = c.Keys(path)
-	}
+func (c *Client) GetMulti(path string, keys []string) (filevalues map[string]*File, err error) {
+	values, err := c.conn.GetMulti(path, keys, c.rev)
 	if err != nil {
 		return
 	}
-	values = make(map[string]*File)
+
+	filevalues = make(map[string]*File)
 
 	for i := range keys {
-		val, e := c.Get(path + "/" + keys[i])
-		if e != nil {
-			return nil, e
-		}
-		values[keys[i]] = val
+		key := keys[i]
+		filevalues[key] = NewFile(path+"/"+keys[i], c.rev, reflect.ValueOf(values[key]))
 	}
 	return
 }
