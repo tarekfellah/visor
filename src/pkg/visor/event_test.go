@@ -5,25 +5,25 @@ import (
 	"time"
 )
 
-func eventSetup(name string) (c *Client, app *App, l chan *Event) {
-	c, err := Dial(DEFAULT_ADDR, "/event-test", new(ByteCodec))
+func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
+	s, err := DialConn(DEFAULT_ADDR, "/event-test")
 	if err != nil {
 		panic(err)
 	}
-	r, _ := c.conn.Rev()
-	err = c.conn.Del("/", r)
-	c, _ = c.FastForward(-1)
+	r, _ := s.conn.Rev()
+	err = s.conn.Del("/", r)
+	s, _ = s.FastForward(s, -1).(Snapshot)
 
-	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: c.Snapshot}
+	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
 	l = make(chan *Event)
 
 	return
 }
 
 func TestEventAppRegistered(t *testing.T) {
-	c, app, l := eventSetup("regcat")
+	s, app, l := eventSetup("regcat")
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	_, err := app.Register()
 	if err != nil {
@@ -34,15 +34,15 @@ func TestEventAppRegistered(t *testing.T) {
 
 }
 func TestEventAppUnregistered(t *testing.T) {
-	c, app, l := eventSetup("unregcat")
+	s, app, l := eventSetup("unregcat")
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	c, _ = c.FastForward(app.rev)
+	s = s.FastForward(s, app.rev).(Snapshot)
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	_, err = app.Unregister()
 	if err != nil {
@@ -52,11 +52,11 @@ func TestEventAppUnregistered(t *testing.T) {
 	expectEvent(EvAppUnreg, "unregcat", l, t)
 }
 func TestEventRevRegistered(t *testing.T) {
-	c, app, l := eventSetup("regdog")
-	rev, _ := NewRevision(app, "stable", c.Snapshot)
-	rev = rev.FastForward(c.rev)
+	s, app, l := eventSetup("regdog")
+	rev, _ := NewRevision(app, "stable", s)
+	rev = rev.FastForward(s.rev)
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	_, err := rev.Register()
 	if err != nil {
@@ -66,16 +66,16 @@ func TestEventRevRegistered(t *testing.T) {
 	expectEvent(EvRevReg, "regdog", l, t)
 }
 func TestEventRevUnregistered(t *testing.T) {
-	c, app, l := eventSetup("unregdog")
-	rev, _ := NewRevision(app, "stable", c.Snapshot)
-	rev, err := rev.FastForward(c.rev).Register()
+	s, app, l := eventSetup("unregdog")
+	rev, _ := NewRevision(app, "stable", s)
+	rev, err := rev.FastForward(s.rev).Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	c, _ = c.FastForward(rev.rev)
+	s = s.FastForward(s, rev.rev).(Snapshot)
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	err = rev.Unregister()
 	if err != nil {
@@ -85,11 +85,11 @@ func TestEventRevUnregistered(t *testing.T) {
 	expectEvent(EvRevUnreg, "unregdog", l, t)
 }
 func TestEventInstanceRegistered(t *testing.T) {
-	c, app, l := eventSetup("regmouse")
-	rev, _ := NewRevision(app, "stable", c.Snapshot)
-	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, c.Snapshot)
+	s, app, l := eventSetup("regmouse")
+	rev, _ := NewRevision(app, "stable", s)
+	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, s)
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	_, err := ins.Register()
 	if err != nil {
@@ -99,16 +99,16 @@ func TestEventInstanceRegistered(t *testing.T) {
 	expectEvent(EvInsReg, "regmouse", l, t)
 }
 func TestEventInstanceUnregistered(t *testing.T) {
-	c, app, l := eventSetup("unregmouse")
-	rev, _ := NewRevision(app, "stable", c.Snapshot)
-	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, c.Snapshot)
+	s, app, l := eventSetup("unregmouse")
+	rev, _ := NewRevision(app, "stable", s)
+	ins, _ := NewInstance(rev, "127.0.0.1:8080", "web", 0, s)
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
-	c, _ = c.FastForward(ins.rev)
+	s = s.FastForward(s, ins.rev).(Snapshot)
 
-	go WatchEvent(c, l)
+	go WatchEvent(s, l)
 
 	err = ins.Unregister()
 	if err != nil {

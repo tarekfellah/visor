@@ -57,10 +57,10 @@ func (ev *Event) String() string {
 
 // WatchEvent watches for changes to the registry and sends
 // them as *Event objects to the provided channel.
-func WatchEvent(c *Client, listener chan *Event) error {
-	rev := c.rev
+func WatchEvent(s Snapshot, listener chan *Event) error {
+	rev := s.rev
 	for {
-		ev, err := c.conn.Wait("**", rev+1)
+		ev, err := s.conn.Wait("**", rev+1)
 		if err != nil {
 			return err
 		}
