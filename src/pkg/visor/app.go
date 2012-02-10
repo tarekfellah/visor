@@ -34,7 +34,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 
 // Register adds the App to the global process state.
 func (a *App) Register() (app *App, err error) {
-	exists, _, err := a.conn.Exists(a.Path(), &a.rev)
+	exists, _, err := a.conn.Exists(a.Path(), &a.Rev)
 	if err != nil {
 		return
 	}
@@ -63,7 +63,7 @@ func (a *App) Register() (app *App, err error) {
 
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() (app *App, err error) {
-	err = a.conn.Del(a.Path(), a.rev)
+	err = a.conn.Del(a.Path(), a.Rev)
 	if err != nil {
 		return
 	}
@@ -75,7 +75,7 @@ func (a *App) Unregister() (app *App, err error) {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars map[string]string, err error) {
-	varNames, err := a.conn.Getdir(a.Path()+"/env", a.rev)
+	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
 	if err != nil {
 		return
 	}
@@ -97,7 +97,7 @@ func (a *App) EnvironmentVars() (vars map[string]string, err error) {
 
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
-	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.rev)
+	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.Rev)
 	if err != nil {
 		return
 	}
@@ -122,7 +122,7 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 	if err != nil {
 		return
 	}
-	app = a.FastForward(a.rev + 1)
+	app = a.FastForward(a.Rev + 1)
 	return
 }
 
@@ -140,15 +140,15 @@ func (a *App) Path() (p string) {
 }
 
 func (a *App) setPath(k string, v string) (rev int64, err error) {
-	return a.conn.Set(a.prefixPath(k), a.rev, []byte(v))
+	return a.conn.Set(a.prefixPath(k), a.Rev, []byte(v))
 }
 func (a *App) delPath(k string) error {
-	return a.conn.Del(a.prefixPath(k), a.rev)
+	return a.conn.Del(a.prefixPath(k), a.Rev)
 }
 
 // Apps returns the list of all registered Apps.
 func Apps(s Snapshot) (apps []*App, err error) {
-	names, err := s.conn.Getdir(APPS_PATH, s.rev)
+	names, err := s.conn.Getdir(APPS_PATH, s.Rev)
 	if err != nil {
 		return
 	}
@@ -160,7 +160,7 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 
-		vals, e := s.conn.GetMulti(a.Path(), appMetaKeys, s.rev)
+		vals, e := s.conn.GetMulti(a.Path(), appMetaKeys, s.Rev)
 		if e != nil {
 			return nil, e
 		}

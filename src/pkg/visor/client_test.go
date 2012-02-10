@@ -25,7 +25,7 @@ func TestDel(t *testing.T) {
 	path := "del-test"
 	c, conn := setup(path)
 
-	_, err := conn.Set(DEFAULT_ROOT+"/del-test/deep/blue", c.rev, []byte{})
+	_, err := conn.Set(DEFAULT_ROOT+"/del-test/deep/blue", c.Rev, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -149,7 +149,7 @@ func TestDifferentRoot(t *testing.T) {
 	body := "test"
 	c, conn := setup(path)
 
-	client := NewClient(conn, "/notvisor", c.rev, c.codec)
+	client := NewClient(conn, "/notvisor", c.Rev, c.codec)
 	_, err := client.Set("root", []byte(body))
 	if err != nil {
 		t.Error(err)

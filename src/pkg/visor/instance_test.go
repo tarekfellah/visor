@@ -10,7 +10,7 @@ func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("apps", s.rev)
+	s.conn.Del("apps", s.Rev)
 	s = s.FastForward(s, -1).(Snapshot)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
@@ -37,7 +37,7 @@ func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
 func TestInstanceRegister(t *testing.T) {
 	ins := instanceSetup("localhost:12345", "web")
 
-	check, _, err := ins.conn.Exists(ins.Path(), &ins.rev)
+	check, _, err := ins.conn.Exists(ins.Path(), &ins.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -92,7 +92,7 @@ func TestInstances(t *testing.T) {
 	port := 1000
 
 	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(ins.Rev, host+strconv.Itoa(port+i), "clock", 0, ins.Snapshot)
+		ins, err := NewInstance(ins.AppRev, host+strconv.Itoa(port+i), "clock", 0, ins.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}

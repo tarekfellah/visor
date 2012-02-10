@@ -42,7 +42,7 @@ func Dial(addr string, root string, codec Codec) (c *Client, err error) {
 		return
 	}
 
-	c = NewClient(snapshot.conn, "/", snapshot.rev, codec)
+	c = NewClient(snapshot.conn, "/", snapshot.Rev, codec)
 
 	return
 }

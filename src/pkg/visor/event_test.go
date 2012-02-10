@@ -40,7 +40,7 @@ func TestEventAppUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(s, app.rev).(Snapshot)
+	s = s.FastForward(s, app.Rev).(Snapshot)
 
 	go WatchEvent(s, l)
 
@@ -54,7 +54,7 @@ func TestEventAppUnregistered(t *testing.T) {
 func TestEventRevRegistered(t *testing.T) {
 	s, app, l := eventSetup("regdog")
 	rev, _ := NewRevision(app, "stable", s)
-	rev = rev.FastForward(s.rev)
+	rev = rev.FastForward(s.Rev)
 
 	go WatchEvent(s, l)
 
@@ -68,12 +68,12 @@ func TestEventRevRegistered(t *testing.T) {
 func TestEventRevUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregdog")
 	rev, _ := NewRevision(app, "stable", s)
-	rev, err := rev.FastForward(s.rev).Register()
+	rev, err := rev.FastForward(s.Rev).Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	s = s.FastForward(s, rev.rev).(Snapshot)
+	s = s.FastForward(s, rev.Rev).(Snapshot)
 
 	go WatchEvent(s, l)
 
@@ -106,7 +106,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, ins.rev).(Snapshot)
+	s = s.FastForward(s, ins.Rev).(Snapshot)
 
 	go WatchEvent(s, l)
 

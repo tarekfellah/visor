@@ -1,7 +1,7 @@
 package visor
 
 type Snapshot struct {
-	rev  int64
+	Rev  int64
 	conn *Conn
 }
 
@@ -21,7 +21,7 @@ func (s *Snapshot) FastForward(obj Snapshotable, rev int64) (newobj Snapshotable
 		if err != nil {
 			return obj
 		}
-	} else if rev < s.rev {
+	} else if rev < s.Rev {
 		return obj
 	}
 	newobj = obj.CreateSnapshot(rev)

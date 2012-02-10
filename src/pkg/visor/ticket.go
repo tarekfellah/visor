@@ -37,8 +37,8 @@ func NewTicket(appName string, revName string, pType ProcessType, op OperationTy
 		o = "stop"
 	}
 
-	t = &Ticket{Id: s.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op, Snapshot: s}
-	_, err = s.conn.Set(t.path()+"/op", s.rev, []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
+	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op, Snapshot: s}
+	_, err = s.conn.Set(t.path()+"/op", s.Rev, []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
 	if err != nil {
 		return
 	}
@@ -48,7 +48,7 @@ func NewTicket(appName string, revName string, pType ProcessType, op OperationTy
 
 // Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(s Snapshot, host string) (err error) {
-	exists, _, err := s.conn.Exists(t.path()+"/claimed", &s.rev)
+	exists, _, err := s.conn.Exists(t.path()+"/claimed", &s.Rev)
 	if err != nil {
 		return
 	}
@@ -56,14 +56,14 @@ func (t *Ticket) Claim(s Snapshot, host string) (err error) {
 		return ErrTicketClaimed
 	}
 
-	_, err = s.conn.Set(t.path()+"/claimed", s.rev, []byte(host))
+	_, err = s.conn.Set(t.path()+"/claimed", s.Rev, []byte(host))
 
 	return
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.rev)
+	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.Rev)
 	if err != nil {
 		return
 	}
@@ -71,14 +71,14 @@ func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.path()+"/claimed", s.rev)
+	err = s.conn.Del(t.path()+"/claimed", s.Rev)
 
 	return
 }
 
 // Done marks the Ticket as done/solved in the registry.
 func (t *Ticket) Done(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.rev)
+	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.Rev)
 	if err != nil {
 		return
 	}
@@ -86,7 +86,7 @@ func (t *Ticket) Done(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.path(), s.rev)
+	err = s.conn.Del(t.path(), s.Rev)
 
 	return
 }

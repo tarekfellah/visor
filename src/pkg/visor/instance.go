@@ -12,7 +12,7 @@ import (
 // Instances belong to Revisions.
 type Instance struct {
 	Snapshot
-	Rev         *Revision    // Revision the instance belongs to
+	AppRev      *Revision    // Revision the instance belongs to
 	Addr        *net.TCPAddr // TCP address of the running instance
 	State       State        // Current state of the instance
 	ProcessType ProcessType  // Type of process the instance represents
@@ -23,13 +23,13 @@ const (
 )
 
 // NewInstance creates and returns a new Instance object.
-func NewInstance(rev *Revision, addr string, pType ProcessType, state State, snapshot Snapshot) (ins *Instance, err error) {
+func NewInstance(apprev *Revision, addr string, pType ProcessType, state State, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
 
-	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state, Snapshot: snapshot}
+	ins = &Instance{AppRev: apprev, Addr: tcpAddr, ProcessType: pType, State: state, Snapshot: snapshot}
 
 	return
 }
@@ -41,12 +41,12 @@ func (i *Instance) FastForward(rev int64) *Instance {
 }
 
 func (i *Instance) CreateSnapshot(rev int64) Snapshotable {
-	return &Instance{Rev: i.Rev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev: rev, conn: i.conn}}
+	return &Instance{AppRev: i.AppRev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev, i.conn}}
 }
 
 // Register registers an instance with the registry.
 func (i *Instance) Register() (instance *Instance, err error) {
-	exists, _, err := i.conn.Exists(i.Path(), &i.rev)
+	exists, _, err := i.conn.Exists(i.Path(), &i.Rev)
 	if err != nil {
 		return
 	}
@@ -62,7 +62,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		"host":         []byte(i.Addr.IP.String()),
 		"port":         []byte(strconv.Itoa(i.Addr.Port)),
 		"process-type": []byte(string(i.ProcessType)),
-		"state":        []byte(strconv.Itoa(int(i.State)))}, i.rev)
+		"state":        []byte(strconv.Itoa(int(i.State)))}, i.Rev)
 
 	if err != nil {
 		return i, err
@@ -74,14 +74,14 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	return i.conn.Del(i.Path(), i.rev)
+	return i.conn.Del(i.Path(), i.Rev)
 }
 
 // Path returns the instance's directory path in the registry.
 func (i *Instance) Path() (path string) {
 	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 
-	return i.Rev.Path() + "/" + id
+	return i.AppRev.Path() + "/" + id
 }
 
 func (i *Instance) String() string {
@@ -111,7 +111,7 @@ func Instances(s Snapshot) (instances []*Instance, err error) {
 // RevisionInstances returns an array of all registered instances belonging
 // to the given revision.
 func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err error) {
-	names, err := s.conn.Getdir(r.Path(), s.rev)
+	names, err := s.conn.Getdir(r.Path(), s.Rev)
 	if err != nil {
 		return
 	}
@@ -119,7 +119,7 @@ func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err erro
 	instances = make([]*Instance, len(names))
 
 	for i := range names {
-		vals, e := s.conn.GetMulti(r.Path()+"/"+names[i], nil, s.rev)
+		vals, e := s.conn.GetMulti(r.Path()+"/"+names[i], nil, s.Rev)
 
 		if e != nil {
 			return nil, e

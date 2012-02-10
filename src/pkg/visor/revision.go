@@ -20,7 +20,7 @@ func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err er
 }
 
 func (r *Revision) CreateSnapshot(rev int64) Snapshotable {
-	return &Revision{App: r.App, ref: r.ref, Snapshot: Snapshot{rev: rev, conn: r.conn}}
+	return &Revision{App: r.App, ref: r.ref, Snapshot: Snapshot{rev, r.conn}}
 }
 
 func (r *Revision) FastForward(rev int64) *Revision {
@@ -29,7 +29,7 @@ func (r *Revision) FastForward(rev int64) *Revision {
 
 // Register registers a new Revision with the registry.
 func (r *Revision) Register() (revision *Revision, err error) {
-	exists, _, err := r.conn.Exists(r.Path(), &r.rev)
+	exists, _, err := r.conn.Exists(r.Path(), &r.Rev)
 	if err != nil {
 		return
 	}
@@ -37,11 +37,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = r.conn.Set(r.Path()+"/registered", r.rev, []byte(time.Now().UTC().String()))
+	_, err = r.conn.Set(r.Path()+"/registered", r.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return
 	}
-	rev, err := r.conn.Set(r.Path()+"/scale", r.rev, []byte("0"))
+	rev, err := r.conn.Set(r.Path()+"/scale", r.Rev, []byte("0"))
 
 	revision = r.FastForward(rev)
 
@@ -50,7 +50,7 @@ func (r *Revision) Register() (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister() (err error) {
-	return r.conn.Del(r.Path(), r.rev)
+	return r.conn.Del(r.Path(), r.Rev)
 }
 func (r *Revision) Scale(proctype string, factor int) error {
 	return nil
@@ -65,7 +65,7 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 	return nil
 }
 
-// Path returns this revision's directory path in the registry.
+// Path returns this.Revision's directory path in the registry.
 func (r *Revision) Path() string {
 	return r.App.Path() + "/revs/" + r.ref
 }
@@ -97,7 +97,7 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	refs, err := s.conn.Getdir(app.Path()+"/revs", s.rev)
+	refs, err := s.conn.Getdir(app.Path()+"/revs", s.Rev)
 	if err != nil {
 		return
 	}

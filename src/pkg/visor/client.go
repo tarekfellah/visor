@@ -19,7 +19,7 @@ func NewClient(conn *Conn, root string, rev int64, codec Codec) *Client {
 	return c
 }
 
-// FastForward returns a copy of the current client with its revision
+// FastForward returns a copy of the current client with its.Revision
 // set to the specified revision. If -1 is passed as the revision,
 // it will advance to the latest revision.
 func (c *Client) FastForward(rev int64) (client *Client, err error) {
@@ -37,13 +37,13 @@ func (c *Client) Close() {
 
 // Del deletes the specified path
 func (c *Client) Del(path string) error {
-	return c.conn.Del(c.prefixPath(path), c.rev)
+	return c.conn.Del(c.prefixPath(path), c.Rev)
 }
 
 // Exists checks if the specified path exists at this client's
 // revision.
 func (c *Client) Exists(path string) (exists bool, err error) {
-	exists, _, err = c.conn.Exists(c.prefixPath(path), &c.rev)
+	exists, _, err = c.conn.Exists(c.prefixPath(path), &c.Rev)
 	return
 }
 
@@ -51,7 +51,7 @@ func (c *Client) Exists(path string) (exists bool, err error) {
 func (c *Client) Get(path string) (file *File, err error) {
 	path = c.prefixPath(path)
 
-	evalue, filerev, err := c.conn.Get(path, &c.rev)
+	evalue, filerev, err := c.conn.Get(path, &c.Rev)
 	if err != nil {
 		return
 	}
@@ -68,7 +68,7 @@ func (c *Client) Get(path string) (file *File, err error) {
 
 // Keys returns all keys for the given path
 func (c *Client) Keys(path string) (keys []string, err error) {
-	keys, err = c.conn.Getdir(c.prefixPath(path), c.rev)
+	keys, err = c.conn.Getdir(c.prefixPath(path), c.Rev)
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func (c *Client) Set(path string, value interface{}) (file *File, err error) {
 		return
 	}
 
-	filerev, err := c.conn.Set(path, c.rev, evalue)
+	filerev, err := c.conn.Set(path, c.Rev, evalue)
 	if err != nil {
 		return
 	}
@@ -99,7 +99,7 @@ func (c *Client) Set(path string, value interface{}) (file *File, err error) {
 
 // GetMulti returns multiple key/value pairs organized in map
 func (c *Client) GetMulti(path string, keys []string) (filevalues map[string]*File, err error) {
-	values, err := c.conn.GetMulti(path, keys, c.rev)
+	values, err := c.conn.GetMulti(path, keys, c.Rev)
 	if err != nil {
 		return
 	}
@@ -108,13 +108,13 @@ func (c *Client) GetMulti(path string, keys []string) (filevalues map[string]*Fi
 
 	for i := range keys {
 		key := keys[i]
-		filevalues[key] = NewFile(path+"/"+keys[i], c.rev, reflect.ValueOf(values[key]))
+		filevalues[key] = NewFile(path+"/"+keys[i], c.Rev, reflect.ValueOf(values[key]))
 	}
 	return
 }
 
 func (c *Client) SetMulti(path string, kvs map[string][]byte) (newrev int64, err error) {
-	return c.conn.SetMulti(path, kvs, c.rev)
+	return c.conn.SetMulti(path, kvs, c.Rev)
 }
 
 // Waits for the first change, on or after rev, to any file matching path
@@ -123,7 +123,7 @@ func (c *Client) Wait(path string, rev int64) (ev doozer.Event, newclient *Clien
 	if err != nil {
 		return
 	}
-	ev, err = newclient.conn.Wait(path, newclient.rev)
+	ev, err = newclient.conn.Wait(path, newclient.Rev)
 	newclient, err = newclient.FastForward(ev.Rev)
 	return
 }

@@ -74,7 +74,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Path(), &s.rev)
+	check, _, err := s.conn.Exists(rev.Path(), &s.Rev)
 	if err != nil {
 		t.Error(err)
 	}

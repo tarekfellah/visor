@@ -37,7 +37,7 @@ func TestAppRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = app.conn.Exists(app.Path(), &app.rev)
+	check, _, err = app.conn.Exists(app.Path(), &app.Rev)
 	if err != nil {
 		t.Error(err)
 		return
