@@ -8,6 +8,7 @@ import (
 
 // Ticket carries instructions to start and stop Instances.
 type Ticket struct {
+	Snapshot
 	Id           int64
 	AppName      string
 	RevisionName string
@@ -26,7 +27,7 @@ const (
 )
 
 // NewTicket returns a new Ticket as it is represented on the coordinator, given an application name, revision name, process type and operation.
-func NewTicket(c *Client, appName string, revName string, pType ProcessType, op OperationType) (t *Ticket, err error) {
+func NewTicket(appName string, revName string, pType ProcessType, op OperationType, s Snapshot) (t *Ticket, err error) {
 	var o string
 
 	switch op {
@@ -36,8 +37,8 @@ func NewTicket(c *Client, appName string, revName string, pType ProcessType, op 
 		o = "stop"
 	}
 
-	t = &Ticket{Id: c.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op}
-	_, err = c.Set(t.path()+"/op", []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
+	t = &Ticket{Id: s.rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op, Snapshot: s}
+	_, err = s.conn.Set(t.path()+"/op", s.rev, []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
 	if err != nil {
 		return
 	}
@@ -46,8 +47,8 @@ func NewTicket(c *Client, appName string, revName string, pType ProcessType, op 
 }
 
 // Claim locks the Ticket to the passed host.
-func (t *Ticket) Claim(c *Client, host string) (err error) {
-	exists, err := c.Exists(t.path() + "/claimed")
+func (t *Ticket) Claim(s Snapshot, host string) (err error) {
+	exists, _, err := s.conn.Exists(t.path()+"/claimed", &s.rev)
 	if err != nil {
 		return
 	}
@@ -55,37 +56,37 @@ func (t *Ticket) Claim(c *Client, host string) (err error) {
 		return ErrTicketClaimed
 	}
 
-	_, err = c.Set(t.path()+"/claimed", []byte(host))
+	_, err = s.conn.Set(t.path()+"/claimed", s.rev, []byte(host))
 
 	return
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
-func (t *Ticket) Unclaim(c *Client, host string) (err error) {
-	claimer, err := c.Get(t.path() + "/claimed")
+func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
+	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.rev)
 	if err != nil {
 		return
 	}
-	if claimer.Value.String() != host {
+	if string(claimer) != host {
 		return ErrUnauthorized
 	}
 
-	err = c.Del(t.path() + "/claimed")
+	err = s.conn.Del(t.path()+"/claimed", s.rev)
 
 	return
 }
 
 // Done marks the Ticket as done/solved in the registry.
-func (t *Ticket) Done(c *Client, host string) (err error) {
-	claimer, err := c.Get(t.path() + "/claimed")
+func (t *Ticket) Done(s Snapshot, host string) (err error) {
+	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.rev)
 	if err != nil {
 		return
 	}
-	if claimer.Value.String() != host {
+	if string(claimer) != host {
 		return ErrUnauthorized
 	}
 
-	err = c.Del(t.path())
+	err = s.conn.Del(t.path(), s.rev)
 
 	return
 }
