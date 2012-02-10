@@ -11,7 +11,7 @@ func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
 		panic(err)
 	}
 	s.conn.Del("apps", s.Rev)
-	s = s.FastForward(s, -1).(Snapshot)
+	s = s.FastForward(-1)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
 	if err != nil {

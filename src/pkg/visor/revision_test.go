@@ -15,7 +15,7 @@ func revSetup() (s Snapshot, app *App) {
 	}
 
 	s.conn.Del("/apps", -1)
-	s = s.FastForward(s, -1).(Snapshot)
+	s = s.FastForward(-1)
 
 	return
 }

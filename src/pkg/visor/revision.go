@@ -24,7 +24,7 @@ func (r *Revision) CreateSnapshot(rev int64) Snapshotable {
 }
 
 func (r *Revision) FastForward(rev int64) *Revision {
-	return r.Snapshot.FastForward(r, rev).(*Revision)
+	return r.Snapshot.fastForward(r, rev).(*Revision)
 }
 
 // Register registers a new Revision with the registry.

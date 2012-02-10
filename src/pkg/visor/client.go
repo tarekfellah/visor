@@ -23,7 +23,7 @@ func NewClient(conn *Conn, root string, rev int64, codec Codec) *Client {
 // set to the specified revision. If -1 is passed as the revision,
 // it will advance to the latest revision.
 func (c *Client) FastForward(rev int64) (client *Client, err error) {
-	return c.Snapshot.FastForward(c, rev).(*Client), nil
+	return c.Snapshot.fastForward(c, rev).(*Client), nil
 }
 
 func (c *Client) CreateSnapshot(rev int64) Snapshotable {

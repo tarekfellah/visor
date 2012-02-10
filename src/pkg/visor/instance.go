@@ -37,7 +37,7 @@ func NewInstance(apprev *Revision, addr string, pType ProcessType, state State, 
 // FastForward returns a copy of the current instance, with its
 // revision set to the supplied one.
 func (i *Instance) FastForward(rev int64) *Instance {
-	return i.Snapshot.FastForward(i, rev).(*Instance)
+	return i.Snapshot.fastForward(i, rev).(*Instance)
 }
 
 func (i *Instance) CreateSnapshot(rev int64) Snapshotable {

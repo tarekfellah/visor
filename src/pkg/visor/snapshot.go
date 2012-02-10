@@ -13,7 +13,11 @@ func (s Snapshot) CreateSnapshot(rev int64) Snapshotable {
 	return Snapshot{rev, s.conn}
 }
 
-func (s *Snapshot) FastForward(obj Snapshotable, rev int64) (newobj Snapshotable) {
+func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
+	return s.fastForward(s, rev).(Snapshot)
+}
+
+func (s *Snapshot) fastForward(obj Snapshotable, rev int64) (newobj Snapshotable) {
 	var err error
 
 	if rev == -1 {

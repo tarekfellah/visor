@@ -29,7 +29,7 @@ func (a *App) CreateSnapshot(rev int64) (app Snapshotable) {
 }
 
 func (a *App) FastForward(rev int64) (app *App) {
-	return a.Snapshot.FastForward(a, rev).(*App)
+	return a.Snapshot.fastForward(a, rev).(*App)
 }
 
 // Register adds the App to the global process state.

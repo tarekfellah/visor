@@ -17,7 +17,7 @@ func ticketSetup() (s Snapshot, hostname string) {
 	}
 
 	s.conn.Del("tickets", s.Rev)
-	s = s.FastForward(s, -1).(Snapshot)
+	s = s.FastForward(-1)
 
 	return
 }
@@ -30,7 +30,7 @@ func TestNewTicket(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, -1).(Snapshot)
+	s = s.FastForward(-1)
 
 	b, _, err := s.conn.Get(ticket.path()+"/op", &s.Rev)
 	if err != nil {
@@ -51,13 +51,13 @@ func TestClaim(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, rev).(Snapshot)
+	s = s.FastForward(rev)
 
 	err = ticket.Claim(s, host)
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, s.Rev+1).(Snapshot)
+	s = s.FastForward(s.Rev + 1)
 
 	body, _, err := s.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/claimed", &s.Rev)
 	if err != nil {
@@ -83,7 +83,7 @@ func TestUnclaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(s, rev).(Snapshot)
+	s = s.FastForward(rev)
 	err = ticket.Unclaim(s, host)
 	if err != nil {
 		t.Error(err)
@@ -108,7 +108,7 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(s, rev).(Snapshot)
+	s = s.FastForward(rev)
 	err = ticket.Unclaim(s, "foo.bar.local")
 	if err != ErrUnauthorized {
 		t.Error("ticket unclaimed with wrong lock")
@@ -124,7 +124,7 @@ func TestDone(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, rev).(Snapshot)
+	s = s.FastForward(rev)
 
 	err = ticket.Done(s, host)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestDoneWithWrongLock(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(s, -1).(Snapshot)
+	s = s.FastForward(-1)
 
 	err = ticket.Done(s, "foo.bar.local")
 	if err != ErrUnauthorized {
