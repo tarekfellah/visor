@@ -26,7 +26,7 @@ func (c *Client) FastForward(rev int64) (client *Client, err error) {
 	return c.Snapshot.fastForward(c, rev).(*Client), nil
 }
 
-func (c *Client) CreateSnapshot(rev int64) Snapshotable {
+func (c *Client) createSnapshot(rev int64) Snapshotable {
 	return NewClient(c.conn, c.Root, rev, c.codec)
 }
 

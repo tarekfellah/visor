@@ -19,10 +19,12 @@ func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err er
 	return
 }
 
-func (r *Revision) CreateSnapshot(rev int64) Snapshotable {
+func (r *Revision) createSnapshot(rev int64) Snapshotable {
 	return &Revision{App: r.App, ref: r.ref, Snapshot: Snapshot{rev, r.conn}}
 }
 
+// FastForward advances the revision in time. It returns
+// a new instance of Revision with the supplied revision.
 func (r *Revision) FastForward(rev int64) *Revision {
 	return r.Snapshot.fastForward(r, rev).(*Revision)
 }

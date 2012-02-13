@@ -34,13 +34,13 @@ func NewInstance(apprev *Revision, addr string, pType ProcessType, state State, 
 	return
 }
 
-// FastForward returns a copy of the current instance, with its
-// revision set to the supplied one.
+// FastForward advances the instance in time. It returns
+// a new instance of Instance with the supplied revision.
 func (i *Instance) FastForward(rev int64) *Instance {
 	return i.Snapshot.fastForward(i, rev).(*Instance)
 }
 
-func (i *Instance) CreateSnapshot(rev int64) Snapshotable {
+func (i *Instance) createSnapshot(rev int64) Snapshotable {
 	return &Instance{AppRev: i.AppRev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev, i.conn}}
 }
 

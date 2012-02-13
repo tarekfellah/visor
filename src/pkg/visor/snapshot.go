@@ -6,10 +6,10 @@ type Snapshot struct {
 }
 
 type Snapshotable interface {
-	CreateSnapshot(rev int64) Snapshotable
+	createSnapshot(rev int64) Snapshotable
 }
 
-func (s Snapshot) CreateSnapshot(rev int64) Snapshotable {
+func (s Snapshot) createSnapshot(rev int64) Snapshotable {
 	return Snapshot{rev, s.conn}
 }
 
@@ -28,7 +28,7 @@ func (s *Snapshot) fastForward(obj Snapshotable, rev int64) (newobj Snapshotable
 	} else if rev < s.Rev {
 		return obj
 	}
-	newobj = obj.CreateSnapshot(rev)
+	newobj = obj.createSnapshot(rev)
 
 	return
 }

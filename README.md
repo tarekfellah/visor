@@ -10,18 +10,17 @@ package main
 import "soundcloud/visor"
 
 func main() {
-  client, err := visor.Dial("coordinator:8046")
+  client, err := visor.Dial("coordinator:8046", "/", new(visor.ByteCodec))
   if err != nil {
     panic(err)
   }
 
   c := make(chan *visor.Event)
 
-  go client.WatchEvent(c)
+  go visor.WatchEvent(client.Snapshot, c)
 
-  // reading one event from the channel
-  e := <-c
-  fmt.Printf("%s", e.String())
+  // Read one event from the channel
+  fmt.Println(<-c)
 }
 ```
 

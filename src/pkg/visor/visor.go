@@ -1,5 +1,5 @@
-// Visor is a doozer client which provides an abstract interface
-// to a doozer cluster containing global process state information.
+// Visor is a library which provides an abstract interface
+// over a global process state.
 //
 // This process state is referred to as the registry.
 //
@@ -10,7 +10,7 @@
 //     import "soundcloud/visor"
 //
 //     func main() {
-//         client, err := visor.Dial("coordinator:8046", "/")
+//         client, err := visor.Dial("coordinator:8046", "/", new(visor.StringCodec))
 //         if err != nil {
 //           panic(err)
 //         }
@@ -18,11 +18,10 @@
 //         l := make(chan *visor.Event)
 //
 //         // Watch for changes in the global process state
-//         go visor.WatchEvent(client, l, 0)
+//         go visor.WatchEvent(client.Snapshot, l)
 //
 //         for {
-//             e := <-l
-//             fmt.Println(e)
+//             fmt.Println(<-l)
 //         }
 //     }
 //
@@ -35,7 +34,8 @@ type ProcessType string
 type Stack string
 type State int
 
-// Dial connects to the coordinator over 'tcp'
+// Dial connects to the coordinator over 'tcp'.
+// It takes an address, a base path and a codec.
 func Dial(addr string, root string, codec Codec) (c *Client, err error) {
 	snapshot, err := DialConn(addr, root)
 	if err != nil {

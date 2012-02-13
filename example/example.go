@@ -18,6 +18,8 @@ func main() {
 
 	go visor.WatchEvent(client.Snapshot, channel)
 
+	fmt.Println(<-channel)
+
 	for {
 		select {
 		case e := <-channel:
