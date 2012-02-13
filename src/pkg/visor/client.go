@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+// Client represents a generic Snapshot-based
+// interface to the coordinator, with a configurable codec.
 type Client struct {
 	Snapshot
 	Root  string
