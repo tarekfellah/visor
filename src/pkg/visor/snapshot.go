@@ -23,7 +23,9 @@ func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
 	return s.fastForward(s, rev).(Snapshot)
 }
 
-func (s *Snapshot) fastForward(obj Snapshotable, rev int64) (newobj Snapshotable) {
+// fastForward either calls *createSnapshot* on *obj* or returns *obj* if it
+// can't advance the object in time. Note that fastForward can never fail.
+func (s *Snapshot) fastForward(obj Snapshotable, rev int64) Snapshotable {
 	var err error
 
 	if rev == -1 {
@@ -34,7 +36,5 @@ func (s *Snapshot) fastForward(obj Snapshotable, rev int64) (newobj Snapshotable
 	} else if rev < s.Rev {
 		return obj
 	}
-	newobj = obj.createSnapshot(rev)
-
-	return
+	return obj.createSnapshot(rev)
 }
