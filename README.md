@@ -4,6 +4,52 @@ Visor is a library which provides an abstract interface over a global process st
 
 ## Usage
 
+... snapshots
+
+### Working with snapshots
+
+```go
+// Get a snapshot of the latest coordinator state
+snapshot, err := visor.DialConn("coordinator:8046", "/")
+
+// Get the list of applications at snapshot
+apps, _ := visor.Apps(snapshot)
+app := apps[0] // app.Rev == snapshot.Rev == 1
+
+// Set some environment vars on *app*. Every time state is
+// changed in the coordinator, a new App snapshot is returned.
+app, _ = app.SetEnvironmentVar("cow", "moo")  // app.Rev == 2
+app, _ = app.SetEnvironmentVar("cat", "meow") // app.Rev == 3
+
+// Attempt to get a recently set environment var from an old snapshot (apps[0].Rev == 1)
+apps[0].GetEnvironmentVar("cat") // "", ErrKeyNotFound
+
+// Get a recently set environment var from the latest snapshot (app.Rev == 3)
+app.GetEnvironmentVar("cat")     // "meow", nil
+
+```
+
+### Advancing in time
+
+```go
+// Get a snapshot of the latest coordinator state
+snapshot, err := visor.DialConn("coordinator:8046", "/")
+
+apps, _ := visor.Apps(snapshot) // len(apps) == 0
+
+app, _ := NewApp("soundcloud.com", "git://github.com/sc/soundcloud.com", "mystack", snapshot)
+app.Register()
+
+// *snapshot* still refers to the old state, so apps is still empty
+apps, _ := visor.Apps(snapshot) // len(apps) == 0
+
+// Get a snapshot of the latest coordinator state
+snapshot = snapshot.FastForward(-1)
+
+// Now that snapshot reflects the latest state, apps contains our registered app
+apps, _ := visor.Apps(snapshot) // len(apps) == 1
+```
+
 ### Watching for events
 
 ``` go
@@ -24,50 +70,6 @@ func main() {
   // Read one event from the channel
   fmt.Println(<-c)
 }
-```
-
-### Performing queries
-
-```go
-// Get a snapshot of the latest coordinator state
-snapshot, err := visor.DialConn("coordinator:8046", "/")
-
-// Get the list of applications
-apps, _ := visor.Apps(snapshot)
-app := apps[0]
-
-// Set some environment vars on *app*
-app, _ = app.SetEnvironmentVar("cow", "moo")
-app, _ = app.SetEnvironmentVar("cat", "meow")
-
-// Get a recently set environment var from the latest snapshot
-app.GetEnvironmentVar("cat")     // "meow", nil
-
-// Get a recently set environment var from our first snapshot
-apps[0].GetEnvironmentVar("cat") // "",     ErrKeyNotFound
-```
-
-### Working with time
-
-```go
-// Get a snapshot of the latest coordinator state
-snapshot, err := visor.DialConn("coordinator:8046", "/")
-
-apps, _ := visor.Apps(snapshot) // len(apps) == 0
-
-// ... time passes, the coordinator state is changed ...
-app, _ := NewApp("soundcloud.com", "git://github.com/sc/soundcloud.com", "mystack", snapshot)
-app.Register()
-// ...
-
-// *snapshot* still refers to the old state, so apps is still empty
-apps, _ := visor.Apps(snapshot) // len(apps) == 0
-
-// Get a snapshot of the latest coordinator state
-snapshot = snapshot.FastForward(-1)
-
-// Now that snapshot reflects the latest state, apps contains our registered app
-apps, _ := visor.Apps(snapshot) // len(apps) == 1
 ```
 
 ## Development
