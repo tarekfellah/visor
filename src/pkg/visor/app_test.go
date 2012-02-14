@@ -62,7 +62,7 @@ func TestAppUnregistration(t *testing.T) {
 		return
 	}
 
-	app, err = app.Unregister()
+	err = app.Unregister()
 	if err != nil {
 		t.Error(err)
 		return
@@ -86,13 +86,13 @@ func TestAppUnregistrationFailure(t *testing.T) {
 		return
 	}
 
-	_, err = app.Unregister()
+	err = app.Unregister()
 	if err == nil {
 		t.Error("App allowed to be unregistered with old revision")
 		return
 	}
 
-	_, err = app2.Unregister()
+	err = app2.Unregister()
 	if err != nil {
 		t.Error(err)
 		return

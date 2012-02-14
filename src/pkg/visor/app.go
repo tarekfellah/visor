@@ -64,15 +64,8 @@ func (a *App) Register() (app *App, err error) {
 }
 
 // Unregister removes the App form the global process state.
-func (a *App) Unregister() (app *App, err error) {
-	err = a.conn.Del(a.Path(), a.Rev)
-	if err != nil {
-		return
-	}
-	// TODO: do something smarter
-	app = a.FastForward(0)
-
-	return
+func (a *App) Unregister() error {
+	return a.conn.Del(a.Path(), a.Rev)
 }
 
 // EnvironmentVars returns all set variables for this app as a map.

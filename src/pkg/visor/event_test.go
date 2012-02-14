@@ -44,7 +44,7 @@ func TestEventAppUnregistered(t *testing.T) {
 
 	go WatchEvent(s, l)
 
-	_, err = app.Unregister()
+	err = app.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
