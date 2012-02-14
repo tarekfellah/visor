@@ -47,6 +47,29 @@ app.GetEnvironmentVar("cat")     // "meow", nil
 apps[0].GetEnvironmentVar("cat") // "",     ErrKeyNotFound
 ```
 
+### Working with time
+
+```go
+// Get a snapshot of the latest coordinator state
+snapshot, err := visor.DialConn("coordinator:8046", "/")
+
+apps, _ := visor.Apps(snapshot) // len(apps) == 0
+
+// ... time passes, the coordinator state is changed ...
+app, _ := NewApp("soundcloud.com", "git://github.com/sc/soundcloud.com", "mystack", snapshot)
+app.Register()
+// ...
+
+// *snapshot* still refers to the old state, so apps is still empty
+apps, _ := visor.Apps(snapshot) // len(apps) == 0
+
+// Get a snapshot of the latest coordinator state
+snapshot = snapshot.FastForward(-1)
+
+// Now that snapshot reflects the latest state, apps contains our registered app
+apps, _ := visor.Apps(snapshot) // len(apps) == 1
+```
+
 ## Development
 
 ### Setup
