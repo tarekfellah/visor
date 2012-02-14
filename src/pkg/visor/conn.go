@@ -8,12 +8,17 @@ import (
 	"strings"
 )
 
+// Conn is a wrapper around doozer.Conn,
+// providing some additional and sometimes
+// higher-level methods.
 type Conn struct {
 	Addr *net.TCPAddr
 	Root string
 	conn *doozer.Conn
 }
 
+// DialConn calls doozer.Dial and returns a Snapshot of the coordinator
+// at the latest revision.
 func DialConn(addr string, root string) (s Snapshot, err error) {
 	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
@@ -34,10 +39,12 @@ func DialConn(addr string, root string) (s Snapshot, err error) {
 	return
 }
 
+// Set calls (*doozer.Conn).Set with a prefixed path
 func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
 	return c.conn.Set(c.prefixPath(path), rev, value)
 }
 
+// Exists returns true or false depending on if the path exists at the specified revision.
 func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err error) {
 	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
 	if err != nil {
@@ -52,6 +59,7 @@ func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err 
 	return
 }
 
+// Create is a wrapper around (*Conn).Set which returns an error if the file already exists.
 func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
 	path = c.prefixPath(path)
 	exists, newrev, err := c.Exists(path, nil)
@@ -64,10 +72,12 @@ func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
 	return c.Set(path, newrev, value)
 }
 
+// Rev is a wrapper around (*doozer.Conn).Rev.
 func (c *Conn) Rev() (int64, error) {
 	return c.conn.Rev()
 }
 
+// Get is a wrapper around (*doozer.Conn).Get with a prefixed path.
 func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
 	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
 	if filerev == 0 {
@@ -76,10 +86,12 @@ func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err er
 	return
 }
 
+// Getdir is a wrapper around (*doozer.Conn).Getdir with a prefixed path.
 func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
 	return c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
 }
 
+// Wait is a wrapper around (*doozer.Conn).Wait
 func (c *Conn) Wait(path string, rev int64) (event doozer.Event, err error) {
 	path = c.prefixPath(path)
 	event, err = c.conn.Wait(path, rev)
@@ -87,10 +99,13 @@ func (c *Conn) Wait(path string, rev int64) (event doozer.Event, err error) {
 	return
 }
 
+// Wait is a wrapper around (*doozer.Conn).Close
 func (c *Conn) Close() {
 	c.conn.Close()
 }
 
+// Del is a wrapper around (*doozer.Conn).Del which also supports
+// deleting directories.
 func (c *Conn) Del(path string, rev int64) (err error) {
 	path = c.prefixPath(path)
 
@@ -112,7 +127,7 @@ func (c *Conn) Del(path string, rev int64) (err error) {
 	return
 }
 
-// GetMulti returns multiple key/value pairs organized in map
+// GetMulti returns multiple key/value pairs organized in a map.
 func (c *Conn) GetMulti(path string, keys []string, rev int64) (values map[string][]byte, err error) {
 	if keys == nil {
 		keys, err = c.Getdir(path, rev)
@@ -132,7 +147,7 @@ func (c *Conn) GetMulti(path string, keys []string, rev int64) (values map[strin
 	return
 }
 
-// SetMulti stores mutliple key/value pairs under the given path
+// SetMulti stores mutliple key/value pairs under the given path.
 func (c *Conn) SetMulti(path string, kvs map[string][]byte, rev int64) (newrev int64, err error) {
 	for k, v := range kvs {
 		newrev, err = c.Set(path+"/"+k, rev, v)
