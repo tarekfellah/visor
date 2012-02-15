@@ -20,6 +20,11 @@ func NewFile(path string, value reflect.Value, codec Codec, snapshot Snapshot) *
 	return f
 }
 
+func (f *File) createSnapshot(rev int64) (file Snapshotable) {
+	file = &File{Path: f.Path, Value: f.Value, Codec: f.Codec, Snapshot: Snapshot{rev, f.conn}}
+	return
+}
+
 // FastForward advances the file in time. It returns
 // a new instance of File with the supplied revision.
 func (f *File) FastForward(rev int64) *File {
@@ -39,7 +44,7 @@ func (f *File) Update(value interface{}) (file *File, err error) {
 
 	rev, err := f.conn.Set(f.Path, f.Rev, evalue)
 	if err != nil {
-		return
+		return f, err
 	}
 	file = f.FastForward(rev)
 
