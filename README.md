@@ -4,13 +4,30 @@ Visor is a library which provides an abstract interface over a global process st
 
 ## Usage
 
-... snapshots
+To understand how Visor works, we need to understand how it works with *time*. Each
+of the Visor data-types *File*, *App*, *Revision* and *Instance* are snapshots of
+a specific point in time in the coordinator. When a mutating operation is successfully
+performed on one of these data-types, a **new snapshot** is returned, representing the state
+of the coordinator *after* the operation. If the operation would fail, the old snapshot is
+returned with an error.
+
+With the new snapshot, we can perform an operation on this new state, and so on with
+every new snapshot. Here's an example to illustrate:
+
+```go
+snapshot, err := visor.Dial("localhost:8046", "/") // snapshot.Rev == 42
+
+file1, err := visor.Get(snapshot, "/path", codec)  // file1.Value == "billy",    file1.Rev == 42
+file2, err := file1.Update("bob")                  // file2.Value == "bob",      file2.Rev == 43
+file3, err := file2.Update("thornton")             // file3.Value == "thornton", file3.Rev == 44
+...
+```
 
 ### Working with snapshots
 
 ```go
 // Get a snapshot of the latest coordinator state
-snapshot, err := visor.DialConn("coordinator:8046", "/")
+snapshot, err := visor.Dial("coordinator:8046", "/")
 
 // Get the list of applications at snapshot
 apps, _ := visor.Apps(snapshot)
@@ -33,7 +50,7 @@ app.GetEnvironmentVar("cat")     // "meow", nil
 
 ```go
 // Get a snapshot of the latest coordinator state
-snapshot, err := visor.DialConn("coordinator:8046", "/")
+snapshot, err := visor.Dial("coordinator:8046", "/")
 
 apps, _ := visor.Apps(snapshot) // len(apps) == 0
 
@@ -58,14 +75,14 @@ package main
 import "soundcloud/visor"
 
 func main() {
-  client, err := visor.Dial("coordinator:8046", "/", new(visor.ByteCodec))
+  snapshot, err := visor.Dial("coordinator:8046", "/")
   if err != nil {
     panic(err)
   }
 
   c := make(chan *visor.Event)
 
-  go visor.WatchEvent(client.Snapshot, c)
+  go visor.WatchEvent(snapshot, c)
 
   // Read one event from the channel
   fmt.Println(<-c)
@@ -91,7 +108,7 @@ From the root of the project run `gb`:
 gb -g
 ```
 
-If you want to install WebReduce executables & packages into your `GOROOT` run:
+If you want to install Visor executables & packages into your `GOROOT` run:
 
 ```
 gb -g -i
