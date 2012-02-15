@@ -33,16 +33,3 @@ const DEFAULT_ROOT string = "/visor"
 type ProcessType string
 type Stack string
 type State int
-
-// Dial connects to the coordinator over 'tcp'.
-// It takes an address, a base path and a codec.
-func Dial(addr string, root string, codec Codec) (c *Client, err error) {
-	snapshot, err := DialConn(addr, root)
-	if err != nil {
-		return
-	}
-
-	c = NewClient(snapshot.conn, "/", snapshot.Rev, codec)
-
-	return
-}

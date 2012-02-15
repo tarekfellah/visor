@@ -1,5 +1,11 @@
 package visor
 
+import (
+	"github.com/soundcloud/doozer"
+	"net"
+	"reflect"
+)
+
 // Snapshot represents a specific point in time
 // within the coordinator state. It is used by
 // all time-aware interfaces to the coordinator.
@@ -13,6 +19,28 @@ type Snapshot struct {
 // by calling createSnapshot with a new revision.
 type Snapshotable interface {
 	createSnapshot(rev int64) Snapshotable
+}
+
+// Dial calls doozer.Dial and returns a Snapshot of the coordinator
+// at the latest revision.
+func Dial(addr string, root string) (s Snapshot, err error) {
+	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
+	if err != nil {
+		return
+	}
+
+	dconn, err := doozer.Dial(addr)
+	if err != nil {
+		return
+	}
+
+	rev, err := dconn.Rev()
+	if err != nil {
+		return
+	}
+
+	s = Snapshot{rev, &Conn{tcpaddr, root, dconn}}
+	return
 }
 
 func (s Snapshot) createSnapshot(rev int64) Snapshotable {
@@ -37,4 +65,21 @@ func (s *Snapshot) fastForward(obj Snapshotable, rev int64) Snapshotable {
 		return obj
 	}
 	return obj.createSnapshot(rev)
+}
+
+// Get returns the value for the given path
+func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
+	evalue, _, err := s.conn.Get(path, &s.Rev)
+	if err != nil {
+		return
+	}
+
+	value, err := codec.Decode(evalue)
+	if err != nil {
+		return
+	}
+
+	file = NewFile(path, reflect.ValueOf(value), codec, s)
+
+	return
 }

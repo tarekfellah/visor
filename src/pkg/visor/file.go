@@ -8,24 +8,41 @@ import (
 // File represents a coordinator file
 // at a specific point in time.
 type File struct {
+	Snapshot
 	Path  string
-	Rev   int64
 	Value reflect.Value
+	Codec Codec
 }
 
 // NewFile returns a new file object.
-func NewFile(path string, rev int64, value reflect.Value) *File {
-	f := &File{path, rev, value}
+func NewFile(path string, value reflect.Value, codec Codec, snapshot Snapshot) *File {
+	f := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot}
 	return f
 }
 
+// FastForward advances the file in time. It returns
+// a new instance of File with the supplied revision.
+func (f *File) FastForward(rev int64) *File {
+	return f.Snapshot.fastForward(f, rev).(*File)
+}
+
+func (f *File) Del() error {
+	return f.conn.Del(f.Path, f.Rev)
+}
+
 // Update sets the value at this file's path to a new value.
-func (f *File) Update(client *Client, value interface{}) (file *File, err error) {
-	client, err = client.FastForward(f.Rev)
+func (f *File) Update(value interface{}) (file *File, err error) {
+	evalue, err := f.Codec.Encode(value)
 	if err != nil {
 		return
 	}
-	file, err = client.Set(f.Path, value)
+
+	rev, err := f.conn.Set(f.Path, f.Rev, evalue)
+	if err != nil {
+		return
+	}
+	file = f.FastForward(rev)
+
 	return
 }
 

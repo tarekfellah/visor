@@ -17,28 +17,6 @@ type Conn struct {
 	conn *doozer.Conn
 }
 
-// DialConn calls doozer.Dial and returns a Snapshot of the coordinator
-// at the latest revision.
-func DialConn(addr string, root string) (s Snapshot, err error) {
-	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		return
-	}
-
-	dconn, err := doozer.Dial(addr)
-	if err != nil {
-		return
-	}
-
-	rev, err := dconn.Rev()
-	if err != nil {
-		return
-	}
-
-	s = Snapshot{rev, &Conn{tcpaddr, root, dconn}}
-	return
-}
-
 // Set calls (*doozer.Conn).Set with a prefixed path
 func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
 	return c.conn.Set(c.prefixPath(path), rev, value)
