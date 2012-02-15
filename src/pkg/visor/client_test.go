@@ -1,18 +1,22 @@
 package visor
 
 import (
-	"github.com/soundcloud/doozer"
 	"strconv"
 	"testing"
+	//"fmt"
 )
 
-func setup(path string) (c *Client, conn *doozer.Conn) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+func setup(path string) (c *Client, conn *Conn) {
+	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT, new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}
 
-	c.Del(path)
+	c.Del(c.prefixPath(path))
+	c, err = c.FastForward(-1)
+	if err != nil {
+		panic(err)
+	}
 
 	return c, c.conn
 }
@@ -26,12 +30,14 @@ func TestDel(t *testing.T) {
 		t.Error(err)
 	}
 
+	c, _ = c.FastForward(-1)
+
 	err = c.Del(path)
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, rev, err := conn.Stat(DEFAULT_ROOT+"/"+path, nil)
+	_, rev, err := conn.Exists(DEFAULT_ROOT+"/"+path, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,6 +50,7 @@ func TestDel(t *testing.T) {
 func TestExists(t *testing.T) {
 	path := "exists-test"
 	c, conn := setup(path)
+	prefix := DEFAULT_ROOT + "/"
 
 	exists, err := c.Exists(path)
 	if err != nil {
@@ -53,12 +60,12 @@ func TestExists(t *testing.T) {
 		t.Error("path shouldn't exist")
 	}
 
-	_, err = conn.Set(DEFAULT_ROOT+"/"+path, 0, []byte{})
+	_, err = conn.Set(prefix+path, 0, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
 
-	exists, err = c.Exists(path)
+	exists, _, err = conn.Exists(prefix+path, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,17 +79,19 @@ func TestGet(t *testing.T) {
 	body := "aloha"
 	c, conn := setup(path)
 
-	_, err := conn.Set(DEFAULT_ROOT+"/"+path, 0, []byte(body))
+	rev, err := conn.Set(DEFAULT_ROOT+"/"+path, 0, []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
 
+	c, _ = c.FastForward(rev)
 	b, err := c.Get(path)
 	if err != nil {
 		t.Error(err)
+		return
 	}
-	if string(b) != body {
-		t.Errorf("expected %s got %s", body, string(b))
+	if string(b.Value.Bytes()) != body {
+		t.Errorf("expected %s got %s", body, string(b.Value.Bytes()))
 	}
 }
 
@@ -97,6 +106,7 @@ func TestKeys(t *testing.T) {
 			t.Error(err)
 		}
 	}
+	c, _ = c.FastForward(-1)
 
 	k, err := c.Keys(path)
 	if err != nil {
@@ -118,14 +128,16 @@ func TestSet(t *testing.T) {
 	body := "hola"
 	c, conn := setup(path)
 
-	err := c.Set(path, []byte(body))
+	_, err := c.Set(path, []byte(body))
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	b, _, err := conn.Get(DEFAULT_ROOT+"/"+path, nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if string(b) != body {
 		t.Errorf("Expected %s got %s", body, string(b))
@@ -137,8 +149,8 @@ func TestDifferentRoot(t *testing.T) {
 	body := "test"
 	c, conn := setup(path)
 
-	client := &Client{Addr: c.Addr, conn: conn, Root: "/notvisor", Rev: c.Rev}
-	err := client.Set("root", []byte(body))
+	client := NewClient(conn, "/notvisor", c.Rev, c.codec)
+	_, err := client.Set("root", []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
@@ -156,7 +168,7 @@ func TestDifferentRoot(t *testing.T) {
 
 func setupBench(b *testing.B) *Client {
 	b.StopTimer()
-	c, err := Dial(DEFAULT_ADDR, "/client-benchmark")
+	c, err := Dial(DEFAULT_ADDR, "/client-benchmark", new(ByteCodec))
 	if err != nil {
 		panic(err)
 	}
@@ -171,12 +183,12 @@ func BenchmarkSetGet(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		s := strconv.Itoa(i)
-		err := c.Set("path-"+s, []byte(s))
+		_, err := c.Set("path-"+s, []byte(s))
 		if err != nil {
 			b.Error(err)
 		}
 		v, err := c.Get("path-" + s)
-		if err != nil || string(v) != s {
+		if err != nil || v.String() != s {
 			b.Error("client Get failed")
 		}
 	}
@@ -195,7 +207,7 @@ func BenchmarkGetSetMulti(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		s := strconv.Itoa(i)
-		err := c.SetMulti("path-"+s, files)
+		_, err := c.SetMulti("path-"+s, files)
 		if err != nil {
 			b.Error(err)
 		}

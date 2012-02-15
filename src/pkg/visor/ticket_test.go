@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func ticketSetup() (c *Client, hostname string) {
-	c, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+func ticketSetup() (s Snapshot, hostname string) {
+	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
@@ -16,46 +16,50 @@ func ticketSetup() (c *Client, hostname string) {
 		panic(err)
 	}
 
-	c.Del("tickets")
+	s.conn.Del("tickets", s.Rev)
+	s = s.FastForward(-1)
 
 	return
 }
 
 func TestNewTicket(t *testing.T) {
-	c, _ := ticketSetup()
+	s, _ := ticketSetup()
 	body := "lol cat app start"
 
-	ticket, err := NewTicket(c, "lol", "cat", "app", 0)
+	ticket, err := NewTicket("lol", "cat", "app", 0, s)
 	if err != nil {
 		t.Error(err)
 	}
+	s = s.FastForward(-1)
 
-	b, err := c.Get(ticket.path() + "/op")
+	b, _, err := s.conn.Get(ticket.path()+"/op", &s.Rev)
 	if err != nil {
 		t.Error(err)
 	}
 	if string(b) != body {
-		t.Errorf("expected %s got %s", body, b)
+		t.Errorf("expected %s got %s", body, string(b))
 	}
 }
 
 func TestClaim(t *testing.T) {
-	c, host := ticketSetup()
-	id := c.Rev
+	s, host := ticketSetup()
+	id := s.Rev
 	op := "claim abcd123 test start"
-	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
 
-	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", []byte(op))
+	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", s.Rev, []byte(op))
 	if err != nil {
 		t.Error(err)
 	}
+	s = s.FastForward(rev)
 
-	err = ticket.Claim(c, host)
+	err = ticket.Claim(s, host)
 	if err != nil {
 		t.Error(err)
 	}
+	s = s.FastForward(s.Rev + 1)
 
-	body, err := c.Get("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
+	body, _, err := s.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/claimed", &s.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,28 +67,29 @@ func TestClaim(t *testing.T) {
 		t.Error("Ticket not claimed")
 	}
 
-	err = ticket.Claim(c, host)
+	err = ticket.Claim(s, host)
 	if err != ErrTicketClaimed {
 		t.Error("Ticket claimed twice")
 	}
 }
 
 func TestUnclaim(t *testing.T) {
-	c, host := ticketSetup()
-	id := c.Rev
-	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	s, host := ticketSetup()
+	id := s.Rev
+	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
 
-	err := c.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", []byte(host))
+	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ticket.Unclaim(c, host)
+	s = s.FastForward(rev)
+	err = ticket.Unclaim(s, host)
 	if err != nil {
 		t.Error(err)
 	}
 
-	exists, err := c.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
+	exists, _, err := s.conn.Exists("tickets/"+strconv.FormatInt(id, 10)+"/claimed", nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -94,37 +99,39 @@ func TestUnclaim(t *testing.T) {
 }
 
 func TestUnclaimWithWrongLock(t *testing.T) {
-	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.Rev, 10) + "/claimed"
-	ticket := &Ticket{Id: c.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	s, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claimed"
+	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
 
-	err := c.Set(p, []byte(host))
+	rev, err := s.conn.Set(p, s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ticket.Unclaim(c, "foo.bar.local")
+	s = s.FastForward(rev)
+	err = ticket.Unclaim(s, "foo.bar.local")
 	if err != ErrUnauthorized {
 		t.Error("ticket unclaimed with wrong lock")
 	}
 }
 
 func TestDone(t *testing.T) {
-	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
-	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	s, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
 
-	err := c.Set(p+"/claimed", []byte(host))
+	rev, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
+	if err != nil {
+		t.Error(err)
+	}
+	s = s.FastForward(rev)
+
+	err = ticket.Done(s, host)
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ticket.Done(c, host)
-	if err != nil {
-		t.Error(err)
-	}
-
-	exists, err := c.Exists(p)
+	exists, _, err := s.conn.Exists(p, nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -134,16 +141,17 @@ func TestDone(t *testing.T) {
 }
 
 func TestDoneWithWrongLock(t *testing.T) {
-	c, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(c.Rev, 10)
-	ticket := &Ticket{Id: c.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0}
+	s, host := ticketSetup()
+	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
 
-	err := c.Set(p+"/claimed", []byte(host))
+	_, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
+	s = s.FastForward(-1)
 
-	err = ticket.Done(c, "foo.bar.local")
+	err = ticket.Done(s, "foo.bar.local")
 	if err != ErrUnauthorized {
 		t.Error("ticket resolved with wrong lock")
 	}

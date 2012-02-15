@@ -11,7 +11,8 @@ import (
 // An Instance represents a running process of a specific type.
 // Instances belong to Revisions.
 type Instance struct {
-	Rev         *Revision    // Revision the instance belongs to
+	Snapshot
+	AppRev      *Revision    // Revision the instance belongs to
 	Addr        *net.TCPAddr // TCP address of the running instance
 	State       State        // Current state of the instance
 	ProcessType ProcessType  // Type of process the instance represents
@@ -22,50 +23,65 @@ const (
 )
 
 // NewInstance creates and returns a new Instance object.
-func NewInstance(rev *Revision, addr string, pType ProcessType, state State) (ins *Instance, err error) {
+func NewInstance(apprev *Revision, addr string, pType ProcessType, state State, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
 
-	ins = &Instance{Rev: rev, Addr: tcpAddr, ProcessType: pType, State: state}
+	ins = &Instance{AppRev: apprev, Addr: tcpAddr, ProcessType: pType, State: state, Snapshot: snapshot}
 
 	return
 }
 
+// FastForward advances the instance in time. It returns
+// a new instance of Instance with the supplied revision.
+func (i *Instance) FastForward(rev int64) *Instance {
+	return i.Snapshot.fastForward(i, rev).(*Instance)
+}
+
+func (i *Instance) createSnapshot(rev int64) Snapshotable {
+	return &Instance{AppRev: i.AppRev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev, i.conn}}
+}
+
 // Register registers an instance with the registry.
-func (i *Instance) Register(c *Client) (err error) {
-	exists, err := c.Exists(i.Path())
+func (i *Instance) Register() (instance *Instance, err error) {
+	exists, _, err := i.conn.Exists(i.Path(), &i.Rev)
 	if err != nil {
 		return
 	}
 	if exists {
-		return ErrKeyConflict
+		return nil, ErrKeyConflict
 	}
 	if i.State != InsStateInitial {
-		return ErrInvalidState
+		return nil, ErrInvalidState
 	}
 
-	err = c.SetMulti(i.Path(), map[string][]byte{
+	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
 		"registered":   []byte(time.Now().UTC().String()),
 		"host":         []byte(i.Addr.IP.String()),
 		"port":         []byte(strconv.Itoa(i.Addr.Port)),
 		"process-type": []byte(string(i.ProcessType)),
-		"state":        []byte(strconv.Itoa(int(i.State)))})
+		"state":        []byte(strconv.Itoa(int(i.State)))}, i.Rev)
+
+	if err != nil {
+		return i, err
+	}
+	instance = i.FastForward(rev)
 
 	return
 }
 
 // Unregister unregisters an instance with the registry.
-func (i *Instance) Unregister(c *Client) (err error) {
-	return c.Del(i.Path())
+func (i *Instance) Unregister() (err error) {
+	return i.conn.Del(i.Path(), i.Rev)
 }
 
 // Path returns the instance's directory path in the registry.
 func (i *Instance) Path() (path string) {
 	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 
-	return i.Rev.Path() + "/" + id
+	return i.AppRev.Path() + "/" + id
 }
 
 func (i *Instance) String() string {
@@ -73,8 +89,8 @@ func (i *Instance) String() string {
 }
 
 // Instances returns returns an array of all registered instances.
-func Instances(c *Client) (instances []*Instance, err error) {
-	revs, err := Revisions(c)
+func Instances(s Snapshot) (instances []*Instance, err error) {
+	revs, err := Revisions(s)
 	if err != nil {
 		return
 	}
@@ -82,7 +98,7 @@ func Instances(c *Client) (instances []*Instance, err error) {
 	instances = []*Instance{}
 
 	for i := range revs {
-		iss, e := RevisionInstances(c, revs[i])
+		iss, e := RevisionInstances(s, revs[i])
 		if e != nil {
 			return nil, e
 		}
@@ -94,8 +110,8 @@ func Instances(c *Client) (instances []*Instance, err error) {
 
 // RevisionInstances returns an array of all registered instances belonging
 // to the given revision.
-func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error) {
-	names, err := c.Keys(r.Path())
+func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err error) {
+	names, err := s.conn.Getdir(r.Path(), s.Rev)
 	if err != nil {
 		return
 	}
@@ -103,20 +119,20 @@ func RevisionInstances(c *Client, r *Revision) (instances []*Instance, err error
 	instances = make([]*Instance, len(names))
 
 	for i := range names {
-		vals, e := c.GetMulti(r.Path()+"/"+names[i], nil)
+		vals, e := s.conn.GetMulti(r.Path()+"/"+names[i], nil, s.Rev)
 
 		if e != nil {
 			return nil, e
 		}
 
-		s, e := strconv.Atoi(string(vals["state"]))
+		state, e := strconv.Atoi(string(vals["state"]))
 		if e != nil {
 			return nil, e
 		}
 
 		addr := string(vals["host"]) + ":" + string(vals["port"])
 
-		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(s))
+		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(state), s)
 		if err != nil {
 			return
 		}

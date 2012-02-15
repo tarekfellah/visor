@@ -4,65 +4,71 @@ import (
 	"testing"
 )
 
-func appSetup(name string) (c *Client, app *App) {
-	app, err := NewApp(name, "git://cat.git", "whiskers")
-	if err != nil {
-		panic(err)
-	}
-	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+func appSetup(name string) (app *App) {
+	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
 
-	c.Del("apps")
+	r, _ := s.conn.Rev()
+	err = s.conn.Del("apps", r)
+
+	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s}
+	app = app.FastForward(-1)
 
 	return
 }
 
 func TestAppRegistration(t *testing.T) {
-	c, app := appSetup("lolcatapp")
+	app := appSetup("lolcatapp")
 
-	check, err := c.Exists(app.Path())
+	check, _, err := app.conn.Exists(app.Path(), nil)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if check {
 		t.Error("App already registered")
+		return
 	}
 
-	err = app.Register(c)
+	app, err = app.Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
-
-	check, err = c.Exists(app.Path())
+	check, _, err = app.conn.Exists(app.Path(), &app.Rev)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 	if !check {
 		t.Error("App registration failed")
+		return
 	}
 
-	err = app.Register(c)
+	_, err = app.Register()
 	if err == nil {
 		t.Error("App allowed to be registered twice")
 	}
 }
 
 func TestAppUnregistration(t *testing.T) {
-	c, app := appSetup("dog")
+	app := appSetup("dog")
 
-	err := app.Register(c)
+	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	err = app.Unregister(c)
+	err = app.Unregister()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	check, err := c.Exists(app.Path())
+	check, _, err := app.conn.Exists(app.Path(), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -71,17 +77,54 @@ func TestAppUnregistration(t *testing.T) {
 	}
 }
 
-func TestSetAndGetEnvironmentVar(t *testing.T) {
-	c, app := appSetup("lolcatapp")
+func TestAppUnregistrationFailure(t *testing.T) {
+	app := appSetup("dog-fail")
 
-	err := app.SetEnvironmentVar(c, "meow", "w00t")
+	app2, err := app.Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	value, err := app.GetEnvironmentVar(c, "meow")
+	err = app.Unregister()
+	if err == nil {
+		t.Error("App allowed to be unregistered with old revision")
+		return
+	}
+
+	err = app2.Unregister()
 	if err != nil {
 		t.Error(err)
+		return
+	}
+
+	_, err = app2.Register()
+	if err == nil {
+		t.Error("App should already be registered at current rev")
+		return
+	}
+
+	app3 := app2.FastForward(-1)
+	_, err = app3.Register()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+}
+
+func TestSetAndGetEnvironmentVar(t *testing.T) {
+	app := appSetup("lolcatapp")
+
+	app, err := app.SetEnvironmentVar("meow", "w00t")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	value, err := app.GetEnvironmentVar("meow")
+	if err != nil {
+		t.Error(err)
+		return
 	}
 
 	if value != "w00t" {
@@ -90,22 +133,23 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 }
 
 func TestSetAndDelEnvironmentVar(t *testing.T) {
-	c, app := appSetup("catalolna")
+	app := appSetup("catalolna")
 
-	err := app.SetEnvironmentVar(c, "wuff", "lulz")
+	app, err := app.SetEnvironmentVar("wuff", "lulz")
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = app.DelEnvironmentVar(c, "wuff")
+	app, err = app.DelEnvironmentVar("wuff")
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
-	_, err = app.GetEnvironmentVar(c, "wuff")
+	v, err := app.GetEnvironmentVar("wuff")
 	if err == nil {
-		t.Error(err)
-		t.Error("EnvironmentVar wasn't deleted")
+		t.Errorf("EnvironmentVar wasn't deleted: %#v", v)
+		return
 	}
 
 	if err != ErrKeyNotFound {
@@ -114,18 +158,18 @@ func TestSetAndDelEnvironmentVar(t *testing.T) {
 }
 
 func TestEnvironmentVars(t *testing.T) {
-	c, app := appSetup("cat-A-log")
+	app := appSetup("cat-A-log")
 
-	err := app.SetEnvironmentVar(c, "whiskers", "purr")
+	_, err := app.SetEnvironmentVar("whiskers", "purr")
 	if err != nil {
 		t.Error(err)
 	}
-	err = app.SetEnvironmentVar(c, "lasers", "pew pew")
+	app, err = app.SetEnvironmentVar("lasers", "pew pew")
 	if err != nil {
 		t.Error(err)
 	}
 
-	vars, err := app.EnvironmentVars(c)
+	vars, err := app.EnvironmentVars()
 	if err != nil {
 		t.Error(err)
 	}
@@ -138,21 +182,24 @@ func TestEnvironmentVars(t *testing.T) {
 }
 
 func TestApps(t *testing.T) {
-	c, _ := appSetup("apps-test")
+	app := appSetup("apps-test")
 	names := []string{"cat", "dog", "lol"}
 
 	for i := range names {
-		a, err := NewApp(names[i], "zebra", "joke")
+		a, err := NewApp(names[i], "zebra", "joke", app.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}
-		err = a.Register(c)
+		_, err = a.Register()
 		if err != nil {
 			t.Error(err)
 		}
 	}
+	app = app.FastForward(-1)
 
-	apps, err := Apps(c)
+	s, _ := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
+
+	apps, err := Apps(s)
 	if err != nil {
 		t.Error(err)
 	}

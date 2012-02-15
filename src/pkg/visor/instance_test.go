@@ -5,27 +5,28 @@ import (
 	"testing"
 )
 
-func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
-	app, err := NewApp("ins-test", "git://ins.git", "insane")
+func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
+	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}
-	rev, err := NewRevision(app, "7abcde6")
+	s.conn.Del("apps", s.Rev)
+	s = s.FastForward(-1)
+
+	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
 	if err != nil {
 		panic(err)
 	}
-	ins, err = NewInstance(rev, addr, pType, 0)
+	rev, err := NewRevision(app, "7abcde6", s)
+	if err != nil {
+		panic(err)
+	}
+	ins, err = NewInstance(rev, addr, pType, 0, s)
 	if err != nil {
 		panic(err)
 	}
 
-	c, err = Dial(DEFAULT_ADDR, DEFAULT_ROOT)
-	if err != nil {
-		panic(err)
-	}
-
-	c.Del("apps")
-	err = app.Register(c)
+	_, err = app.Register()
 	if err != nil {
 		panic(err)
 	}
@@ -34,9 +35,9 @@ func instanceSetup(addr string, pType ProcessType) (c *Client, ins *Instance) {
 }
 
 func TestInstanceRegister(t *testing.T) {
-	c, ins := instanceSetup("localhost:12345", "web")
+	ins := instanceSetup("localhost:12345", "web")
 
-	check, err := c.Exists(ins.Path())
+	check, _, err := ins.conn.Exists(ins.Path(), &ins.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -44,12 +45,12 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance already registered")
 	}
 
-	err = ins.Register(c)
+	_, err = ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, err = c.Exists(ins.Path())
+	check, _, err = ins.conn.Exists(ins.Path(), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -57,26 +58,26 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	err = ins.Register(c)
+	_, err = ins.Register()
 	if err == nil {
 		t.Error("Instance allowed to be registered twice")
 	}
 }
 
 func TestInstanceUnregister(t *testing.T) {
-	c, ins := instanceSetup("localhost:54321", "worker")
+	ins := instanceSetup("localhost:54321", "worker")
 
-	err := ins.Register(c)
+	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = ins.Unregister(c)
+	err = ins.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, err := c.Exists(ins.Path())
+	check, _, err := ins.conn.Exists(ins.Path(), nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -86,22 +87,23 @@ func TestInstanceUnregister(t *testing.T) {
 }
 
 func TestInstances(t *testing.T) {
-	c, instance := instanceSetup("127.0.0.1:1337", "clock")
+	ins := instanceSetup("127.0.0.1:1337", "clock")
 	host := "127.0.0.1:"
 	port := 1000
 
 	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(instance.Rev, host+strconv.Itoa(port+i), "clock", 0)
+		ins, err := NewInstance(ins.AppRev, host+strconv.Itoa(port+i), "clock", 0, ins.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}
-		err = ins.Register(c)
+		_, err = ins.Register()
 		if err != nil {
 			t.Error(err)
 		}
 	}
 
-	instances, err := Instances(c)
+	ins = ins.FastForward(-1)
+	instances, err := Instances(ins.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}

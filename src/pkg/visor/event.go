@@ -5,7 +5,6 @@ import (
 	"github.com/soundcloud/doozer"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 // An Event represents a change to a file in the registry.
@@ -58,23 +57,22 @@ func (ev *Event) String() string {
 
 // WatchEvent watches for changes to the registry and sends
 // them as *Event objects to the provided channel.
-func WatchEvent(c *Client, listener chan *Event, rev int64) error {
-	path := c.prefixPath("**")
-
+func WatchEvent(s Snapshot, listener chan *Event) error {
+	rev := s.Rev
 	for {
-		ev, err := c.Wait(path, rev+1)
+		ev, err := s.conn.Wait("**", rev+1)
 		if err != nil {
 			return err
 		}
-		event := parseEvent(c.Root, &ev)
+		event := parseEvent(&ev)
 		listener <- event
 		rev = ev.Rev
 	}
 	return nil
 }
 
-func parseEvent(prefix string, src *doozer.Event) *Event {
-	path := strings.Replace(src.Path, prefix, "", 1)
+func parseEvent(src *doozer.Event) *Event {
+	path := src.Path
 
 	etype := EventType(-1)
 	emitter := map[string]string{}

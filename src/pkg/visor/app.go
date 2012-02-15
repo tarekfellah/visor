@@ -9,6 +9,7 @@ import (
 const APPS_PATH = "apps"
 
 type App struct {
+	Snapshot
 	Name    string
 	RepoUrl string
 	Stack   Stack
@@ -17,47 +18,59 @@ type App struct {
 var appMetaKeys = []string{"repo-url", "stack"}
 
 // NewApp returns a new App given a name, repository url and stack.
-func NewApp(name string, repourl string, stack Stack) (app *App, err error) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack}
+func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot}
 	return
 }
 
+func (a *App) createSnapshot(rev int64) (app Snapshotable) {
+	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}}
+	return
+}
+
+// FastForward advances the application in time. It returns
+// a new instance of Application with the supplied revision.
+func (a *App) FastForward(rev int64) (app *App) {
+	return a.Snapshot.fastForward(a, rev).(*App)
+}
+
 // Register adds the App to the global process state.
-func (a *App) Register(c *Client) (err error) {
-	exists, err := c.Exists(a.Path())
+func (a *App) Register() (app *App, err error) {
+	exists, _, err := a.conn.Exists(a.Path(), &a.Rev)
 	if err != nil {
 		return
 	}
 	if exists {
-		return ErrKeyConflict
+		return nil, ErrKeyConflict
 	}
 
-	err = a.setPath(c, "registered", time.Now().UTC().String())
+	_, err = a.setPath("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
 
-	err = a.setPath(c, "repo-url", a.RepoUrl)
+	_, err = a.setPath("repo-url", a.RepoUrl)
 	if err != nil {
 		return
 	}
 
-	err = a.setPath(c, "stack", string(a.Stack))
+	rev, err := a.setPath("stack", string(a.Stack))
 	if err != nil {
-		return
+		return a, err
 	}
+	app = a.FastForward(rev)
 
 	return
 }
 
 // Unregister removes the App form the global process state.
-func (a *App) Unregister(c *Client) error {
-	return c.Del(a.Path())
+func (a *App) Unregister() error {
+	return a.conn.Del(a.Path(), a.Rev)
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
-func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
-	varNames, err := c.Keys(a.Path() + "/env")
+func (a *App) EnvironmentVars() (vars map[string]string, err error) {
+	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
 	if err != nil {
 		return
 	}
@@ -66,7 +79,7 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 	var v string
 
 	for i := range varNames {
-		v, err = a.GetEnvironmentVar(c, varNames[i])
+		v, err = a.GetEnvironmentVar(varNames[i])
 		if err != nil {
 			return
 		}
@@ -78,29 +91,38 @@ func (a *App) EnvironmentVars(c *Client) (vars map[string]string, err error) {
 }
 
 // GetEnvironmentVar returns the value stored for the given key.
-func (a *App) GetEnvironmentVar(c *Client, k string) (value string, err error) {
-	bytes, err := c.Get(a.Path() + "/env/" + k)
+func (a *App) GetEnvironmentVar(k string) (value string, err error) {
+	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.Rev)
 	if err != nil {
 		return
 	}
-	value = string(bytes)
+	value = string(val)
 
 	return
 }
 
 // SetEnvironmentVar stores the value for the given key.
-func (a *App) SetEnvironmentVar(c *Client, k string, v string) (err error) {
-	return a.setPath(c, "env/"+k, v)
-}
-
-// DelEnvironmentVar removes the env variable for the given key.
-func (a *App) DelEnvironmentVar(c *Client, k string) (err error) {
-	err = c.Del(a.Path() + "/env/" + k)
+func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
+	rev, err := a.setPath("env/"+k, v)
 	if err != nil {
 		return
 	}
-
+	app = a.FastForward(rev)
 	return
+}
+
+// DelEnvironmentVar removes the env variable for the given key.
+func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
+	err = a.delPath("env/" + k)
+	if err != nil {
+		return
+	}
+	app = a.FastForward(a.Rev + 1)
+	return
+}
+
+func (a *App) prefixPath(path string) string {
+	return strings.Join([]string{a.Path(), path}, "/")
 }
 
 func (a *App) String() string {
@@ -112,33 +134,34 @@ func (a *App) Path() (p string) {
 	return strings.Join([]string{APPS_PATH, a.Name}, "/")
 }
 
-func (a *App) setPath(c *Client, k string, v string) error {
-	path := strings.Join([]string{a.Path(), k}, "/")
-
-	return c.Set(path, []byte(v))
+func (a *App) setPath(k string, v string) (rev int64, err error) {
+	return a.conn.Set(a.prefixPath(k), a.Rev, []byte(v))
+}
+func (a *App) delPath(k string) error {
+	return a.conn.Del(a.prefixPath(k), a.Rev)
 }
 
 // Apps returns the list of all registered Apps.
-func Apps(c *Client) (apps []*App, err error) {
-	names, err := c.Keys(APPS_PATH)
+func Apps(s Snapshot) (apps []*App, err error) {
+	names, err := s.conn.Getdir(APPS_PATH, s.Rev)
 	if err != nil {
 		return
 	}
 	apps = make([]*App, len(names))
 
 	for i := range names {
-		a, e := NewApp(names[i], "", "")
+		a, e := NewApp(names[i], "", "", s)
 		if e != nil {
 			return nil, e
 		}
 
-		vals, e := c.GetMulti(a.Path(), appMetaKeys)
+		vals, e := s.conn.GetMulti(a.Path(), appMetaKeys, s.Rev)
 		if e != nil {
 			return nil, e
 		}
 
 		a.RepoUrl = string(vals["repo-url"])
-		a.Stack = Stack(vals["stack"])
+		a.Stack = Stack(string(vals["stack"]))
 		apps[i] = a
 	}
 
