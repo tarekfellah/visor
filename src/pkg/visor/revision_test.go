@@ -5,7 +5,7 @@ import (
 )
 
 func revSetup() (s Snapshot, app *App) {
-	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}

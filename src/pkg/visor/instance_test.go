@@ -6,7 +6,7 @@ import (
 )
 
 func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
-	s, err := DialConn(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
 	if err != nil {
 		panic(err)
 	}

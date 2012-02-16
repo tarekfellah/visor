@@ -8,7 +8,7 @@ import (
 func main() {
 	addr := visor.DEFAULT_ADDR
 	root := visor.DEFAULT_ROOT
-	client, err := visor.Dial(addr, root, new(visor.ByteCodec))
+	snapshot, err := visor.Dial(addr, root)
 
 	if err != nil {
 		panic(err)
@@ -16,7 +16,7 @@ func main() {
 
 	channel := make(chan *visor.Event)
 
-	go visor.WatchEvent(client.Snapshot, channel)
+	go visor.WatchEvent(snapshot, channel)
 
 	fmt.Println(<-channel)
 

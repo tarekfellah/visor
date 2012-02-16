@@ -99,3 +99,13 @@ func (t *Ticket) String() string {
 func (t *Ticket) path() (path string) {
 	return "tickets/" + strconv.FormatInt(t.Id, 10)
 }
+
+func Tickets() ([]Ticket, error) {
+	return nil, nil
+}
+func HostTickets(addr string) ([]Ticket, error) {
+	return nil, nil
+}
+func WatchTicket(listener chan *Ticket) error {
+	return nil
+}

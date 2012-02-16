@@ -143,6 +143,6 @@ func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err erro
 
 // HostInstances returns an array of all registered instances belonging
 // to the given host.
-func (c *Client) HostInstances(addr string) ([]Instance, error) {
+func HostInstances(s Snapshot, addr string) ([]Instance, error) {
 	return nil, nil
 }
