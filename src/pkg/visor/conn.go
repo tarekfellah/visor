@@ -22,6 +22,11 @@ func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 	return c.conn.Set(c.prefixPath(path), rev, value)
 }
 
+// Stat calls (*doozer.Conn).Stat with a prefixed path
+func (c *Conn) Stat(path string, rev *int64) (len int, pathrev int64, err error) {
+	return c.conn.Stat(c.prefixPath(path), rev)
+}
+
 // Exists returns true or false depending on if the path exists at the specified revision.
 func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err error) {
 	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)

@@ -44,6 +44,30 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestFastForward(t *testing.T) {
+	path := "ff-path"
+	value := "ff-val"
+
+	f := fileSetup(path, reflect.ValueOf(value))
+
+	newRev, err := f.conn.Set(path, f.Rev, []byte(value))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	_, err = f.conn.Set(path+"-1", newRev, []byte(value))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	f = f.FastForward(-1)
+	if f.Rev != newRev {
+		t.Errorf("expected %d got %d", newRev, f.Rev)
+	}
+}
+
 func TestUpdateConflict(t *testing.T) {
 	path := "conflict-path"
 	value := "conflict-val"

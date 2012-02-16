@@ -28,6 +28,13 @@ func (f *File) createSnapshot(rev int64) (file Snapshotable) {
 // FastForward advances the file in time. It returns
 // a new instance of File with the supplied revision.
 func (f *File) FastForward(rev int64) *File {
+	if rev == -1 {
+		var err error
+		_, rev, err = f.conn.Stat(f.Path, nil)
+		if err != nil {
+			return f
+		}
+	}
 	return f.Snapshot.fastForward(f, rev).(*File)
 }
 
