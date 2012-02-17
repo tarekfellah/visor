@@ -21,12 +21,20 @@ func instanceSetup(addr string, pType ProcessType) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	ins, err = NewInstance(rev, addr, pType, 0, s)
+	pty, err := NewProcType(rev, pType, s)
+	if err != nil {
+		panic(err)
+	}
+	ins, err = NewInstance(pty, addr, 0, s)
 	if err != nil {
 		panic(err)
 	}
 
 	_, err = app.Register()
+	if err != nil {
+		panic(err)
+	}
+	_, err = pty.Register()
 	if err != nil {
 		panic(err)
 	}
@@ -92,7 +100,7 @@ func TestInstances(t *testing.T) {
 	port := 1000
 
 	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(ins.AppRev, host+strconv.Itoa(port+i), "clock", 0, ins.Snapshot)
+		ins, err := NewInstance(ins.ProcType, host+strconv.Itoa(port+i), 0, ins.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}
