@@ -59,6 +59,7 @@ func (f *File) Update(value interface{}) (file *File, err error) {
 		return f, err
 	}
 	file = f.FastForward(rev)
+	file.Value = value
 
 	return
 }
