@@ -3,7 +3,6 @@ package visor
 import (
 	"github.com/soundcloud/doozer"
 	"net"
-	"reflect"
 )
 
 // Snapshot represents a specific point in time
@@ -79,7 +78,7 @@ func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = NewFile(path, reflect.ValueOf(value), codec, s)
+	file = NewFile(path, value, codec, s)
 
 	return
 }

@@ -1,11 +1,10 @@
 package visor
 
 import (
-	"reflect"
 	"testing"
 )
 
-func fileSetup(path string, value reflect.Value) *File {
+func fileSetup(path string, value interface{}) *File {
 	s, err := Dial(DEFAULT_ADDR, "/file-test")
 	if err != nil {
 		panic(err)
@@ -23,7 +22,7 @@ func TestUpdate(t *testing.T) {
 	path := "update-path"
 	value := "update-val"
 
-	f := fileSetup(path, reflect.ValueOf(value))
+	f := fileSetup(path, value)
 
 	rev, _ := f.conn.Set(path, f.Rev, []byte(value))
 	f = f.FastForward(rev)
@@ -32,6 +31,10 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 		return
+	}
+
+	if string(f.Value.([]byte)) != value+"!" {
+		t.Errorf("expected (*File).Value to be update, got %s", string(f.Value.([]byte)))
 	}
 
 	val, _, err := f.conn.Get(path, &f.Rev)
@@ -48,7 +51,7 @@ func TestFastForward(t *testing.T) {
 	path := "ff-path"
 	value := "ff-val"
 
-	f := fileSetup(path, reflect.ValueOf(value))
+	f := fileSetup(path, value)
 
 	newRev, err := f.conn.Set(path, f.Rev, []byte(value))
 	if err != nil {
@@ -72,7 +75,7 @@ func TestUpdateConflict(t *testing.T) {
 	path := "conflict-path"
 	value := "conflict-val"
 
-	f := fileSetup(path, reflect.ValueOf(value))
+	f := fileSetup(path, value)
 
 	rev, _ := f.conn.Set(path, f.Rev, []byte(value))
 	f = f.FastForward(rev)
@@ -94,7 +97,7 @@ func TestDel(t *testing.T) {
 	path := "del-path"
 	value := "del-val"
 
-	f := fileSetup(path, reflect.ValueOf(value))
+	f := fileSetup(path, value)
 
 	_, err := f.conn.Set(path, f.Rev, []byte{})
 	if err != nil {

@@ -2,7 +2,6 @@ package visor
 
 import (
 	"fmt"
-	"reflect"
 )
 
 // File represents a coordinator file
@@ -10,12 +9,12 @@ import (
 type File struct {
 	Snapshot
 	Path  string
-	Value reflect.Value
+	Value interface{}
 	Codec Codec
 }
 
 // NewFile returns a new file object.
-func NewFile(path string, value reflect.Value, codec Codec, snapshot Snapshot) *File {
+func NewFile(path string, value interface{}, codec Codec, snapshot Snapshot) *File {
 	f := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot}
 	return f
 }
