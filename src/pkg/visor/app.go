@@ -15,8 +15,6 @@ type App struct {
 	Stack   Stack
 }
 
-var appMetaKeys = []string{"repo-url", "stack"}
-
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot}
@@ -49,16 +47,17 @@ func (a *App) Register() (app *App, err error) {
 		return
 	}
 
-	_, err = a.setPath("repo-url", a.RepoUrl)
+	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]string{
+		"repo-url": a.RepoUrl,
+		"stack":    string(a.Stack),
+	}, new(JSONCodec)}
+
+	f, err := attrs.Create()
 	if err != nil {
 		return
 	}
 
-	rev, err := a.setPath("stack", string(a.Stack))
-	if err != nil {
-		return a, err
-	}
-	app = a.FastForward(rev)
+	app = a.FastForward(f.Rev)
 
 	return
 }
@@ -155,13 +154,13 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 
-		vals, e := s.conn.GetMulti(a.Path(), appMetaKeys, s.Rev)
+		f, e := Get(s, a.Path()+"/attrs", new(JSONCodec))
 		if e != nil {
 			return nil, e
 		}
 
-		a.RepoUrl = string(vals["repo-url"])
-		a.Stack = Stack(string(vals["stack"]))
+		a.RepoUrl = f.Value.(map[string]interface{})["repo-url"].(string)
+		a.Stack = Stack(f.Value.(map[string]interface{})["stack"].(string))
 		apps[i] = a
 	}
 

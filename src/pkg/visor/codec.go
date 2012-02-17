@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"encoding/json"
 	"errors"
 )
 
@@ -38,4 +39,14 @@ func (*StringCodec) Encode(input interface{}) (output []byte, err error) {
 }
 func (*StringCodec) Decode(input []byte) (interface{}, error) {
 	return string(input), nil
+}
+
+type JSONCodec struct{}
+
+func (*JSONCodec) Encode(input interface{}) ([]byte, error) {
+	return json.Marshal(input)
+}
+func (*JSONCodec) Decode(input []byte) (val interface{}, err error) {
+	err = json.Unmarshal(input, &val)
+	return
 }

@@ -37,8 +37,14 @@ func (f *File) FastForward(rev int64) *File {
 	return f.Snapshot.fastForward(f, rev).(*File)
 }
 
+// Del deletes a file
 func (f *File) Del() error {
 	return f.conn.Del(f.Path, f.Rev)
+}
+
+// Create creates a file from its Value attribute
+func (f *File) Create() (file *File, err error) {
+	return f.Update(f.Value)
 }
 
 // Update sets the value at this file's path to a new value.
