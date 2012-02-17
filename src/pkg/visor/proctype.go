@@ -9,14 +9,14 @@ import (
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
 	Snapshot
-	Name     ProcessType
+	Name     ProcessName
 	Revision *Revision
 	Scale    int
 }
 
 var procTypeMetaKeys = []string{"name", "scale"}
 
-func NewProcType(revision *Revision, name ProcessType, s Snapshot) (*ProcType, error) {
+func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
 	return &ProcType{Name: name, Scale: 0, Revision: revision, Snapshot: s}, nil
 }
 
@@ -78,7 +78,7 @@ func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err 
 			return nil, e
 		}
 
-		name := ProcessType(string(vals["name"]))
+		name := ProcessName(string(vals["name"]))
 
 		ptypes[i] = &ProcType{Name: name, Revision: revision, Scale: scale, Snapshot: s}
 	}

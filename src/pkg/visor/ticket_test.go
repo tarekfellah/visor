@@ -45,7 +45,7 @@ func TestClaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
 	op := "claim abcd123 test start"
-	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
 
 	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", s.Rev, []byte(op))
 	if err != nil {
@@ -76,7 +76,7 @@ func TestClaim(t *testing.T) {
 func TestUnclaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
-	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
 
 	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", s.Rev, []byte(host))
 	if err != nil {
@@ -101,7 +101,7 @@ func TestUnclaim(t *testing.T) {
 func TestUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claimed"
-	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
 
 	rev, err := s.conn.Set(p, s.Rev, []byte(host))
 	if err != nil {
@@ -118,7 +118,7 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 func TestDone(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
 
 	rev, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
 	if err != nil {
@@ -143,7 +143,7 @@ func TestDone(t *testing.T) {
 func TestDoneWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessType: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
 
 	_, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
 	if err != nil {
