@@ -12,10 +12,9 @@ import (
 // Instances belong to Revisions.
 type Instance struct {
 	Snapshot
-	AppRev      *Revision    // Revision the instance belongs to
-	Addr        *net.TCPAddr // TCP address of the running instance
-	State       State        // Current state of the instance
-	ProcessType ProcessType  // Type of process the instance represents
+	ProcType *ProcType    // ProcType the instance belongs to
+	Addr     *net.TCPAddr // TCP address of the running instance
+	State    State        // Current state of the instance
 }
 
 const (
@@ -23,13 +22,13 @@ const (
 )
 
 // NewInstance creates and returns a new Instance object.
-func NewInstance(apprev *Revision, addr string, pType ProcessType, state State, snapshot Snapshot) (ins *Instance, err error) {
+func NewInstance(ptype *ProcType, addr string, state State, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
 
-	ins = &Instance{AppRev: apprev, Addr: tcpAddr, ProcessType: pType, State: state, Snapshot: snapshot}
+	ins = &Instance{Addr: tcpAddr, ProcType: ptype, State: state, Snapshot: snapshot}
 
 	return
 }
@@ -41,7 +40,7 @@ func (i *Instance) FastForward(rev int64) *Instance {
 }
 
 func (i *Instance) createSnapshot(rev int64) Snapshotable {
-	return &Instance{AppRev: i.AppRev, Addr: i.Addr, State: i.State, ProcessType: i.ProcessType, Snapshot: Snapshot{rev, i.conn}}
+	return &Instance{Addr: i.Addr, State: i.State, ProcType: i.ProcType, Snapshot: Snapshot{rev, i.conn}}
 }
 
 // Register registers an instance with the registry.
@@ -58,11 +57,10 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 
 	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
-		"registered":   []byte(time.Now().UTC().String()),
-		"host":         []byte(i.Addr.IP.String()),
-		"port":         []byte(strconv.Itoa(i.Addr.Port)),
-		"process-type": []byte(string(i.ProcessType)),
-		"state":        []byte(strconv.Itoa(int(i.State)))}, i.Rev)
+		"registered": []byte(time.Now().UTC().String()),
+		"host":       []byte(i.Addr.IP.String()),
+		"port":       []byte(strconv.Itoa(i.Addr.Port)),
+		"state":      []byte(strconv.Itoa(int(i.State)))}, i.Rev)
 
 	if err != nil {
 		return i, err
@@ -81,7 +79,7 @@ func (i *Instance) Unregister() (err error) {
 func (i *Instance) Path() (path string) {
 	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 
-	return i.AppRev.Path() + "/" + id
+	return i.ProcType.Path() + "/instances/" + id
 }
 
 func (i *Instance) String() string {
@@ -90,15 +88,15 @@ func (i *Instance) String() string {
 
 // Instances returns returns an array of all registered instances.
 func Instances(s Snapshot) (instances []*Instance, err error) {
-	revs, err := Revisions(s)
+	ptypes, err := ProcTypes(s)
 	if err != nil {
 		return
 	}
 
 	instances = []*Instance{}
 
-	for i := range revs {
-		iss, e := RevisionInstances(s, revs[i])
+	for i := range ptypes {
+		iss, e := ProcTypeInstances(s, ptypes[i])
 		if e != nil {
 			return nil, e
 		}
@@ -108,10 +106,11 @@ func Instances(s Snapshot) (instances []*Instance, err error) {
 	return
 }
 
-// RevisionInstances returns an array of all registered instances belonging
-// to the given revision.
-func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err error) {
-	names, err := s.conn.Getdir(r.Path(), s.Rev)
+// ProcTypeInstances returns an array of all registered instances belonging
+// to the given ProcType.
+func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err error) {
+	path := ptype.Path() + "/instances"
+	names, err := s.conn.Getdir(path, s.Rev)
 	if err != nil {
 		return
 	}
@@ -119,7 +118,7 @@ func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err erro
 	instances = make([]*Instance, len(names))
 
 	for i := range names {
-		vals, e := s.conn.GetMulti(r.Path()+"/"+names[i], nil, s.Rev)
+		vals, e := s.conn.GetMulti(path+"/"+names[i], nil, s.Rev)
 
 		if e != nil {
 			return nil, e
@@ -132,7 +131,7 @@ func RevisionInstances(s Snapshot, r *Revision) (instances []*Instance, err erro
 
 		addr := string(vals["host"]) + ":" + string(vals["port"])
 
-		instances[i], err = NewInstance(r, addr, ProcessType(string(vals["process-type"])), State(state), s)
+		instances[i], err = NewInstance(ptype, addr, State(state), s)
 		if err != nil {
 			return
 		}

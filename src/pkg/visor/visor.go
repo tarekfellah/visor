@@ -30,6 +30,6 @@ package visor
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
 
-type ProcessType string
+type ProcessName string
 type Stack string
 type State int

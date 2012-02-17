@@ -57,10 +57,10 @@ func (r *Revision) Unregister() (err error) {
 func (r *Revision) Scale(proctype string, factor int) error {
 	return nil
 }
-func (r *Revision) Instances(proctype ProcessType) ([]Instance, error) {
+func (r *Revision) Instances(proctype ProcessName) ([]Instance, error) {
 	return nil, nil
 }
-func (r *Revision) RegisterInstance(proctype ProcessType, address string) (*Instance, error) {
+func (r *Revision) RegisterInstance(proctype ProcessName, address string) (*Instance, error) {
 	return nil, nil
 }
 func (r *Revision) UnregisterInstance(instance *Instance) error {

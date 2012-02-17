@@ -12,7 +12,7 @@ type Ticket struct {
 	Id           int64
 	AppName      string
 	RevisionName string
-	ProcessType  ProcessType
+	ProcessName  ProcessName
 	Op           OperationType
 	Addr         net.TCPAddr
 	source       *Event
@@ -27,7 +27,7 @@ const (
 )
 
 // NewTicket returns a new Ticket as it is represented on the coordinator, given an application name, revision name, process type and operation.
-func NewTicket(appName string, revName string, pType ProcessType, op OperationType, s Snapshot) (t *Ticket, err error) {
+func NewTicket(appName string, revName string, pType ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	var o string
 
 	switch op {
@@ -37,7 +37,7 @@ func NewTicket(appName string, revName string, pType ProcessType, op OperationTy
 		o = "stop"
 	}
 
-	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessType: pType, Op: op, Snapshot: s}
+	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pType, Op: op, Snapshot: s}
 	_, err = s.conn.Set(t.path()+"/op", s.Rev, []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
 	if err != nil {
 		return
