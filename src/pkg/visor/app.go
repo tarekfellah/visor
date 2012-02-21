@@ -159,8 +159,10 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 
-		a.RepoUrl = f.Value.(map[string]interface{})["repo-url"].(string)
-		a.Stack = Stack(f.Value.(map[string]interface{})["stack"].(string))
+		value := f.Value.(map[string]interface{})
+
+		a.RepoUrl = value["repo-url"].(string)
+		a.Stack = Stack(value["stack"].(string))
 		apps[i] = a
 	}
 

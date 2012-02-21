@@ -14,7 +14,7 @@ type ProcType struct {
 	Scale    int
 }
 
-var procTypeMetaKeys = []string{"name", "scale"}
+var procTypeMetaKeys = []string{"scale"}
 
 func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
 	return &ProcType{Name: name, Scale: 0, Revision: revision, Snapshot: s}, nil
@@ -42,7 +42,6 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 
 	rev, err := p.conn.SetMulti(p.Path(), map[string][]byte{
 		"registered": []byte(time.Now().UTC().String()),
-		"name":       []byte(p.Name),
 		"scale":      []byte("0")}, p.Rev)
 
 	if err != nil {
@@ -78,7 +77,7 @@ func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err 
 			return nil, e
 		}
 
-		name := ProcessName(string(vals["name"]))
+		name := ProcessName(names[i])
 
 		ptypes[i] = &ProcType{Name: name, Revision: revision, Scale: scale, Snapshot: s}
 	}
