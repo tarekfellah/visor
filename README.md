@@ -99,10 +99,7 @@ func main() {
     execute this and add it to your `~/.bashrc`:
 
         export GOROOT=<somepath>                 
-        export GOBIN=$GOROOT/bin
-        export GOARCH=amd64
-        export GOOS=darwin
-        export PATH=$PATH:$GOBIN:$GOROOT/pkg/tool/${GOOS}_${GOARCH} 
+        export PATH=$PATH:$GOROOT/bin
         alias updatego="cd $GOROOT; hg pull; hg update weekly; cd src; ./all.bash"
 
     then do the following:
@@ -114,11 +111,7 @@ func main() {
 
     the alias `updatego` will update your go version to weekly when you call it.
     
-  - [go-gb](http://code.google.com/p/go-gb/) (weekly)
-
-        go get code.google.com/p/go-gb/gb
-
-  - [Doozer](https://github.com/ha/doozer) (implicit)
+  - [doozer](https://github.com/ha/doozer) (implicit)
 
         go get github.com/ha/doozer
    
@@ -129,7 +122,7 @@ func main() {
         hg update 
         make install
 
-  - [Doozerd](https://github.com/soundcloud/doozerd) (testing)
+  - [doozerd](https://github.com/soundcloud/doozerd) (testing)
 
         go get github.com/soundcloud/doozerd
 
@@ -143,16 +136,10 @@ func main() {
 
 #### Installation
 
-From the root of the project run `gb`:
+From the root of the project run:
 
 ```
-gb -g
-```
-
-If you want to install Visor executables & packages into your `GOROOT` run:
-
-```
-gb -g -i
+go install
 ```
 
 ### Testing
@@ -160,7 +147,7 @@ gb -g -i
 First start `doozerd` with default configuration. If listening run:
 
 ```
-gb -t
+go test
 ```
 
 ### Conventions
