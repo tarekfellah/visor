@@ -95,10 +95,51 @@ func main() {
 
 #### Dependencies
 
-[Go](http://golang.org) (weekly)
-[go-gb](http://code.google.com/p/go-gb/) (weekly)
-[Doozer](https://github.com/ha/doozer) (implicit)
-[Doozerd](https://github.com/soundcloud/doozerd) (testing)
+  - [Go](http://golang.org) (weekly)
+    execute this and add it to your `~/.bashrc`:
+
+        export GOROOT=<somepath>                 
+        export GOBIN=$GOROOT/bin
+        export GOARCH=amd64
+        export GOOS=darwin
+        export PATH=$PATH:$GOBIN:$GOROOT/pkg/tool/${GOOS}_${GOARCH} 
+        alias updatego="cd $GOROOT; hg pull; hg update weekly; cd src; ./all.bash"
+
+    then do the following:
+ 
+        hg clone -u weekly https://go.googlecode.com/hg/ go
+        hg update weekly
+        cd src
+        ./all.bash
+
+    the alias `updatego` will update your go version to weekly when you call it.
+    
+  - [go-gb](http://code.google.com/p/go-gb/) (weekly)
+
+        go get code.google.com/p/go-gb/gb
+
+  - [Doozer](https://github.com/ha/doozer) (implicit)
+
+        go get github.com/ha/doozer
+   
+    if you run in trouble with the protobuf, do a:
+
+        cd src/pkg/code.google.com/p/goprotobuf
+        hg pull
+        hg update 
+        make install
+
+  - [Doozerd](https://github.com/soundcloud/doozerd) (testing)
+
+        go get github.com/soundcloud/doozerd
+
+    if this fails, do the following
+
+        cd $GOROOT/src/pkg/github.com/ha/doozerd 
+        git remote add soundcloud git@github.com:soundcloud/doozerd
+        git pull soundcloud master
+        ./make.sh
+        go install
 
 #### Installation
 
