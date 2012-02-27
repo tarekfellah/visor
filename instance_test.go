@@ -6,7 +6,7 @@ import (
 )
 
 func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
-	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DEFAULT_ADDR, "/instance-test")
 	if err != nil {
 		panic(err)
 	}
@@ -18,6 +18,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 		panic(err)
 	}
 	rev, err := NewRevision(app, "7abcde6", s)
+	rev.ArchiveUrl = "archive"
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +32,10 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	}
 
 	_, err = app.Register()
+	if err != nil {
+		panic(err)
+	}
+	_, err = rev.Register()
 	if err != nil {
 		panic(err)
 	}
