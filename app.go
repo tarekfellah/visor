@@ -140,6 +140,26 @@ func (a *App) delPath(k string) error {
 	return a.conn.Del(a.prefixPath(k), a.Rev)
 }
 
+// GetApp fetches an app with the given name.
+func GetApp(s Snapshot, name string) (app *App, err error) {
+	app, err = NewApp(name, "", "", s)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := Get(s, app.Path()+"/attrs", new(JSONCodec))
+	if err != nil {
+		return nil, err
+	}
+
+	value := f.Value.(map[string]interface{})
+
+	app.RepoUrl = value["repo-url"].(string)
+	app.Stack = Stack(value["stack"].(string))
+
+	return
+}
+
 // Apps returns the list of all registered Apps.
 func Apps(s Snapshot) (apps []*App, err error) {
 	names, err := s.conn.Getdir(APPS_PATH, s.Rev)
@@ -149,22 +169,11 @@ func Apps(s Snapshot) (apps []*App, err error) {
 	apps = make([]*App, len(names))
 
 	for i := range names {
-		a, e := NewApp(names[i], "", "", s)
-		if e != nil {
+		a, e := GetApp(s, names[i])
+		if err != nil {
 			return nil, e
 		}
-
-		f, e := Get(s, a.Path()+"/attrs", new(JSONCodec))
-		if e != nil {
-			return nil, e
-		}
-
-		value := f.Value.(map[string]interface{})
-
-		a.RepoUrl = value["repo-url"].(string)
-		a.Stack = Stack(value["stack"].(string))
 		apps[i] = a
 	}
-
 	return
 }

@@ -76,6 +76,24 @@ func (r *Revision) String() string {
 	return fmt.Sprintf("%#v", r)
 }
 
+func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
+	path := app.Path() + "/revs/" + ref
+	codec := new(StringCodec)
+
+	f, err := Get(s, path+"/archive-url", codec)
+	if err != nil {
+		return
+	}
+
+	r = &Revision{
+		Snapshot:   s,
+		App:        app,
+		ref:        ref,
+		ArchiveUrl: f.Value.(string),
+	}
+	return
+}
+
 // Revisions returns an array of all registered revisions.
 func Revisions(s Snapshot) (revisions []*Revision, err error) {
 	apps, err := Apps(s)
@@ -106,7 +124,7 @@ func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
 	revisions = make([]*Revision, len(refs))
 
 	for i := range refs {
-		r, e := NewRevision(app, refs[i], s)
+		r, e := GetRevision(s, app, refs[i])
 		if e != nil {
 			return nil, e
 		}
