@@ -9,8 +9,9 @@ import (
 // identifiable by its `ref`.
 type Revision struct {
 	Snapshot
-	App *App
-	ref string
+	App        *App
+	ref        string
+	ArchiveUrl string
 }
 
 // NewRevision returns a new instance of Revision.
@@ -43,7 +44,7 @@ func (r *Revision) Register() (revision *Revision, err error) {
 	if err != nil {
 		return
 	}
-	rev, err := r.conn.Set(r.Path()+"/scale", r.Rev, []byte("0"))
+	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(r.ArchiveUrl))
 
 	revision = r.FastForward(rev)
 
