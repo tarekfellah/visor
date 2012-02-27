@@ -106,6 +106,6 @@ func Tickets() ([]Ticket, error) {
 func HostTickets(addr string) ([]Ticket, error) {
 	return nil, nil
 }
-func WatchTicket(listener chan *Ticket) error {
+func WatchTicket(snapshot Snapshot, listener chan *Ticket) error {
 	return nil
 }
