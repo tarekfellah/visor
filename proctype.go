@@ -53,12 +53,13 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 }
 
 func (p *ProcType) Path() (path string) {
-	return p.Revision.Path() + "/" + string(p.Name)
+	return p.Revision.Path() + "/procs/" + string(p.Name)
 }
 
 // ProcTypes returns an array of all registered proctypes belonging to the specified revision.
 func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err error) {
-	names, err := s.conn.Getdir(revision.Path(), s.Rev)
+	path := revision.Path() + "/procs"
+	names, err := s.conn.Getdir(path, s.Rev)
 	if err != nil {
 		return
 	}
@@ -66,7 +67,7 @@ func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err 
 	ptypes = make([]*ProcType, len(names))
 
 	for i := range names {
-		vals, e := s.conn.GetMulti(revision.Path()+"/"+names[i], procTypeMetaKeys, s.Rev)
+		vals, e := s.conn.GetMulti(path+"/"+names[i], procTypeMetaKeys, s.Rev)
 
 		if e != nil {
 			return nil, e

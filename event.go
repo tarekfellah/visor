@@ -30,10 +30,10 @@ const (
 var (
 	eventRegexps = map[string]*regexp.Regexp{}
 	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                                      EvAppReg,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":                         EvRevReg,
-		"^/apps/([^/]+)/revs/([^/]+)/[^/]+/instances/([^/]+)/registered$": EvInsReg,
-		"^/apps/([^/]+)/revs/([^/]+)/[^/]+/instances([^/]+)/state$":       EvInsStateChange,
+		"^/apps/([^/]+)/registered$":                                            EvAppReg,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":                               EvRevReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances/([^/]+)/registered$": EvInsReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances([^/]+)/state$":       EvInsStateChange,
 	}
 )
 
