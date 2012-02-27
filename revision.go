@@ -10,18 +10,18 @@ import (
 type Revision struct {
 	Snapshot
 	App        *App
-	ref        string
+	Ref        string
 	ArchiveUrl string
 }
 
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
-	rev = &Revision{App: app, ref: ref, Snapshot: snapshot}
+	rev = &Revision{App: app, Ref: ref, Snapshot: snapshot}
 	return
 }
 
 func (r *Revision) createSnapshot(rev int64) Snapshotable {
-	return &Revision{App: r.App, ref: r.ref, Snapshot: Snapshot{rev, r.conn}}
+	return &Revision{App: r.App, Ref: r.Ref, Snapshot: Snapshot{rev, r.conn}}
 }
 
 // FastForward advances the revision in time. It returns
@@ -70,7 +70,7 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 
 // Path returns this.Revision's directory path in the registry.
 func (r *Revision) Path() string {
-	return r.App.Path() + "/revs/" + r.ref
+	return r.App.Path() + "/revs/" + r.Ref
 }
 
 func (r *Revision) String() string {
@@ -89,7 +89,7 @@ func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
 	r = &Revision{
 		Snapshot:   s,
 		App:        app,
-		ref:        ref,
+		Ref:        ref,
 		ArchiveUrl: f.Value.(string),
 	}
 	return
