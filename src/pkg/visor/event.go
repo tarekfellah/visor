@@ -2,7 +2,7 @@ package visor
 
 import (
 	"fmt"
-	"github.com/soundcloud/doozer"
+	"github.com/ha/doozer"
 	"regexp"
 	"strconv"
 )
