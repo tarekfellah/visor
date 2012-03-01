@@ -60,3 +60,18 @@ The Visor CLI works with subcommands; The general call looks like this:
     
     Ticket:
       ticket create
+
+### Register app:
+
+    Usage: visor [opts] app register <name> [-t <deploytype>] [-r <repourl>] [-s <stack>] [-i <irc>]
+    
+    Options:
+        -t, --deploytype=<deploytype>   deploy type (one of mount, bazapta, lxc) (default: lxc)
+        -r, --repourl=<repourl>         repository url of this app (default: http://github.com/soundcloud/<name>)
+        -s, --stack=<stack>             stack version this app should be pinned to -- ommit if you always want the latest stack
+        -i, --irc=<irc>                 comma separated list of irc channels where a deploy should be announced (default: deploys)
+        -h, --help                      usage (-h) / detailed help text (--help)
+    
+    Arguments:
+        <name>                          app's name
+    
