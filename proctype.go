@@ -85,6 +85,24 @@ func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err 
 	return
 }
 
+// GetProcType fetches a ProcType from the coordinator
+func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType, err error) {
+	path := revision.Path() + "/procs/" + string(name)
+
+	f, err := Get(s, path+"/scale", new(IntCodec))
+	if err != nil {
+		return
+	}
+
+	p = &ProcType{
+		Name:     name,
+		Snapshot: s,
+		Revision: revision,
+		Scale:    f.Value.(int),
+	}
+	return
+}
+
 // ProcTypes returns an array of all registered proctypes.
 func ProcTypes(s Snapshot) (ptypes []*ProcType, err error) {
 	revs, err := Revisions(s)

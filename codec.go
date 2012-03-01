@@ -3,6 +3,7 @@ package visor
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
 )
 
 // A Codec represents a protocol for encoding and
@@ -49,4 +50,13 @@ func (*JSONCodec) Encode(input interface{}) ([]byte, error) {
 func (*JSONCodec) Decode(input []byte) (val interface{}, err error) {
 	err = json.Unmarshal(input, &val)
 	return
+}
+
+type IntCodec struct{}
+
+func (*IntCodec) Encode(input interface{}) ([]byte, error) {
+	return []byte(strconv.Itoa(input.(int))), nil
+}
+func (*IntCodec) Decode(input []byte) (interface{}, error) {
+	return strconv.Atoi(string(input))
 }
