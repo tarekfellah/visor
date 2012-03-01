@@ -13,7 +13,7 @@ func main() {
 		{"server|s", "doozer server", getopt.Required, ""},
 		{"port|p", "port the doozer server is listening on", getopt.Optional | getopt.ExampleIsDefault, "8046"},
     {"root|r", "visor namespace within doozer: all entries will be prepended with this path", getopt.Optional | getopt.ExampleIsDefault, "/visor"},
-    {"component", "component scope a command should be executed on; call 'visor help' for an overview", getopt.IsArg | getopt.Required, ""},
+    {"scope", "scope a command should be executed on; call 'visor help' for an overview", getopt.IsArg | getopt.Required, ""},
     {"command", "command to execute", getopt.IsArg | getopt.Required, ""},
     {"...", "command's arguments and options", getopt.IsArg | getopt.Optional, ""},
 	}
