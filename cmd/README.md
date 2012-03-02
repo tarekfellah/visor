@@ -1,8 +1,8 @@
 Visor CLI
 =========
 
-A CLI to visor
--------------
+General
+------
 
 The Visor CLI works with subcommands; The general call looks like this:
 
@@ -22,6 +22,7 @@ The Visor CLI works with subcommands; The general call looks like this:
         <command>                 command to execute
         <...>                     command's arguments and options
 
+
 ### Help
 
     Usage: visor help <scope> [<command>]
@@ -33,7 +34,7 @@ The Visor CLI works with subcommands; The general call looks like this:
     App:
       app list       
       app describe   
-      app register   
+      app register <name>
       app unregister 
       app setenv     
       app getenv     
@@ -61,7 +62,10 @@ The Visor CLI works with subcommands; The general call looks like this:
     Ticket:
       ticket create
 
-### Register app:
+App Scope
+---------
+
+### Register an app:
 
     Usage: visor [opts] app register <name> [-t <deploytype>] [-r <repourl>] [-s <stack>] [-i <irc>]
     
@@ -75,3 +79,9 @@ The Visor CLI works with subcommands; The general call looks like this:
     Arguments:
         <name>                          app's name
     
+### show app details
+
+Usage: visor [opts] app describe <name>
+
+Arguments:
+    <name>              app's name
