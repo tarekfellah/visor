@@ -207,3 +207,37 @@ Revision Scope
     Arguments:
         <app>             app's name
         <rev>             revision
+
+
+Instances Scope
+---------------
+
+### describe
+
+    Usage: visor [opts] instance describe <instanceid>
+    
+    Arguments:
+        <instanceid>                    id of the instance (<hostname>:<port>)
+    
+### tail
+
+    Usage: visor [opts] instance tail <instanceid>
+    
+    tail the stdout / stderr of the instance
+    
+    Arguments:
+        <instanceid>                    id of the instance (<hostname>:<port>)
+
+### kill
+
+   Usage: visor [opts] instance tail <instanceid> [-s <signalname>]
+   
+   send a signal to an instance
+   
+   Options:
+       -s, --signalname=<signalname>   signal to send to instance (according to the normal unix kill command) (default: SIGTERM)
+       -h, --help                      usage (-h) / detailed help text (--help)
+   
+   Arguments:
+       <instanceid>                    id of the instance (<hostname>:<port>)
+   
