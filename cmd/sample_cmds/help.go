@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"os"
 	getopt "github.com/kesselborn/go-getopt"
+	"os"
 )
 
 func main() {
-  //  visor [-c config] -s <server> [-p <port>] [-r <root>]
+	//  visor [-c config] -s <server> [-p <port>] [-r <root>]
 	optionDefinition := getopt.Options{
-    {"scope", "Show commands for one of these scopes: app, revision, instance", getopt.IsArg | getopt.Required, ""},
-    {"command", `Show help for a specific command; available scopes and their commands:
+		{"scope", "Show commands for one of these scopes: app, revision, instance", getopt.IsArg | getopt.Required, ""},
+		{"command", `Show help for a specific command; available scopes and their commands:
 
 App:
   app list       
@@ -44,11 +44,11 @@ Ticket:
   ticket create
     
     `, getopt.IsArg | getopt.Optional, ""},
-  }
+	}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()
 
-  os.Args[0] = "visor help"
+	os.Args[0] = "visor help"
 
 	if e != nil {
 		exit_code := 0

@@ -8,16 +8,18 @@ import (
 
 func main() {
 	optionDefinition := getopt.Options{
-		{"name|n", "app's name", getopt.IsArg | getopt.Required, ""},
+		{"name", "app's name", getopt.IsArg | getopt.Required, ""},
+		{"key", "environment variable's name", getopt.IsArg | getopt.Required, ""},
+		{"value", "environment variable's value (omit in order to delete variable)", getopt.IsArg | getopt.Optional, ""},
 	}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()
 
-	os.Args[0] = "visor [opts] app describe"
+	os.Args[0] = "visor [opts] app setenv"
 
 	if e != nil {
 		exit_code := 0
-		description := ""
+		description := "Sets an environment variable that will be set passed to the application when it's started"
 
 		switch {
 		case e.ErrorCode == getopt.WantsUsage:

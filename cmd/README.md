@@ -33,12 +33,12 @@ The Visor CLI works with subcommands; The general call looks like this:
     
     App:
       app list       
-      app describe   
+      app describe <name>
       app register <name>
-      app unregister 
-      app setenv     
-      app getenv     
-      app env        
+      app unregister <name>
+      app setenv <name> <key> [<value>]
+      app getenv <name> <key>
+      app env <name>       
         
     
     Instance:
@@ -78,10 +78,57 @@ App Scope
     
     Arguments:
         <name>                          app's name
+
+### Unregister app:
+
+    Usage: visor [opts] app register <name>
     
+    deletes an app from the coordinator -- does not stop currently running instances.
+    
+    Arguments:
+        <name>              app's name
+        
 ### show app details
 
 Usage: visor [opts] app describe <name>
 
 Arguments:
     <name>              app's name
+
+### list 
+
+    Usage: visor [opts] app list
+    
+    Lists all available applications
+
+
+### set env variable
+
+    Usage: visor [opts] app setenv <appname> <key> [<value>]
+    
+    Sets an environment variable that will be set passed to the application when it's started
+    
+    Arguments:
+        <name>                    app's name
+        <key>                     environment variable's name
+        <value>                   environment variable's value (omit in order to delete variable)
+
+### get env variable
+    
+    Usage: visor [opts] app getenv <name> <key>
+    
+    Gets an app environment variable
+    
+    Arguments:
+        <name>              app's name
+        <key>               environment variable's name
+    
+### get env
+
+    Usage: visor [opts] app env <name>
+    
+    Gets an application's environment
+    
+    Arguments:
+        <name>              app's name
+

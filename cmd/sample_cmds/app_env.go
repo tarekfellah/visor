@@ -8,16 +8,16 @@ import (
 
 func main() {
 	optionDefinition := getopt.Options{
-		{"name|n", "app's name", getopt.IsArg | getopt.Required, ""},
+		{"name", "app's name", getopt.IsArg | getopt.Required, ""},
 	}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()
 
-	os.Args[0] = "visor [opts] app describe"
+	os.Args[0] = "visor [opts] app env"
 
 	if e != nil {
 		exit_code := 0
-		description := ""
+		description := "Gets an application's environment"
 
 		switch {
 		case e.ErrorCode == getopt.WantsUsage:
