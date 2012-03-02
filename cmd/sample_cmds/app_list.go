@@ -7,17 +7,15 @@ import (
 )
 
 func main() {
-	optionDefinition := getopt.Options{
-		{"name|n", "app's name", getopt.IsArg | getopt.Required, ""},
-	}
+	optionDefinition := getopt.Options{}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()
 
-	os.Args[0] = "visor [opts] app describe"
+	os.Args[0] = "visor [opts] app list"
 
 	if e != nil {
 		exit_code := 0
-		description := ""
+		description := "Lists all available applications"
 
 		switch {
 		case e.ErrorCode == getopt.WantsUsage:
