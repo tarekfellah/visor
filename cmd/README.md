@@ -50,7 +50,7 @@ The Visor CLI works with subcommands; The general call looks like this:
     
     Revision:
       revision add         
-      revision describe    
+      revision describe <app> <rev>
       revision list        
       revision register    
       revision unregister  
@@ -132,3 +132,78 @@ Arguments:
     Arguments:
         <name>              app's name
 
+### revisions
+
+    Usage: visor [opts] app revisions <name>
+    
+    Lists all available revisions of an app
+    
+    Arguments:
+        <name>              app's name
+
+Revision Scope
+--------------
+
+### describe
+
+    Usage: visor [opts] revision describe <app> [<rev>]
+    
+    Arguments:
+        <app>             app's name
+        <rev>             revision (default: HEAD)
+
+### list
+
+    Usage: visor [opts] app list <app>
+    
+    Lists all available revisions of an application
+    
+    Arguments:
+        <app>             app's name
+
+
+### register
+
+    Usage: visor [opts] revision register <app> <rev> -u <artifacturl> [-t <proctypes>]
+    
+    Options:
+        -u, --artifacturl=<artifacturl>   url of the build artifact for this application-revision
+        -t, --proctypes=<proctypes>       comma seperated list of proc types available in this application-revision
+        -h, --help                        usage (-h) / detailed help text (--help)
+    
+    Arguments:
+        <app>                             app's name
+        <rev>                             revision
+
+
+### unregister
+
+   Usage: visor [opts] app unregister <app> <rev>
+   
+   deletes an application-revision from the coordinator -- does not stop currently running instances.
+   
+   Arguments:
+       <app>             app's name
+       <rev>             revision
+
+### scale
+
+    Usage: visor [opts] revision scale <app> <rev> <proc> <num>
+    
+    Scale application-revision-proc-type to a number of instances
+    
+    Arguments:
+        <app>               app's name
+        <rev>               revision
+        <proc>              proc type that is to be scaled
+        <num>               number of instances that should be running of this app-rev-proc-type (N for absolute values, -N for scaling down by N, +N for scaling up by N)
+
+### instances
+
+    Usage: visor [opts] revision instances <app> <rev>
+    
+    Lists all available revisions of an app
+    
+    Arguments:
+        <app>             app's name
+        <rev>             revision
