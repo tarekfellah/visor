@@ -55,6 +55,16 @@ func (r *Revision) Register() (revision *Revision, err error) {
 func (r *Revision) Unregister() (err error) {
 	return r.conn.Del(r.Path(), r.Rev)
 }
+
+func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
+	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(url))
+	if err != nil {
+		return
+	}
+	revision = r.FastForward(rev)
+	return
+}
+
 func (r *Revision) Scale(proctype string, factor int) error {
 	return nil
 }
