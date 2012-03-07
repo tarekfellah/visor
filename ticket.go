@@ -1,9 +1,13 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
+	"github.com/soundcloud/doozer"
 	"net"
+	"path"
 	"strconv"
+	"strings"
 )
 
 // Ticket carries instructions to start and stop Instances.
@@ -15,40 +19,50 @@ type Ticket struct {
 	ProcessName  ProcessName
 	Op           OperationType
 	Addr         net.TCPAddr
-	source       *Event
+	source       *doozer.Event
 }
 
 // OperationType identifies different operations.
 type OperationType int
 
-const (
-	OpStart OperationType = iota
-	OpStop
-)
+func NewOperationType(opStr string) OperationType {
+	var op OperationType
+	switch opStr {
+	case "start":
+		op = OpStart
+	case "stop":
+		op = OpStop
+	}
+	return op
+}
 
-// NewTicket returns a new Ticket as it is represented on the coordinator, given an application name, revision name, process type and operation.
-func NewTicket(appName string, revName string, pType ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
+func (op OperationType) String() string {
 	var o string
-
 	switch op {
 	case OpStart:
 		o = "start"
 	case OpStop:
 		o = "stop"
 	}
+	return o
+}
 
-	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pType, Op: op, Snapshot: s}
-	_, err = s.conn.Set(t.path()+"/op", s.Rev, []byte(fmt.Sprintf("%s %s %s %s", appName, revName, pType, o)))
-	if err != nil {
-		return
-	}
+const TICKETS_PATH = "tickets"
 
-	return
+const (
+	OpStart OperationType = iota
+	OpStop
+)
+
+func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
+	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil}
+	_, err = CreateFile(s, t.prefixPath("op"), t.toStringList(), new(ListCodec))
+	return t, err
 }
 
 // Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(s Snapshot, host string) (err error) {
-	exists, _, err := s.conn.Exists(t.path()+"/claimed", &s.Rev)
+	exists, _, err := s.conn.Exists(t.prefixPath("claimed"), &s.Rev)
 	if err != nil {
 		return
 	}
@@ -56,14 +70,14 @@ func (t *Ticket) Claim(s Snapshot, host string) (err error) {
 		return ErrTicketClaimed
 	}
 
-	_, err = s.conn.Set(t.path()+"/claimed", s.Rev, []byte(host))
+	_, err = s.conn.Set(t.prefixPath("claimed"), s.Rev, []byte(host))
 
 	return
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.Rev)
+	claimer, _, err := s.conn.Get(t.prefixPath("claimed"), &s.Rev)
 	if err != nil {
 		return
 	}
@@ -71,14 +85,14 @@ func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.path()+"/claimed", s.Rev)
+	err = s.conn.Del(t.prefixPath("claimed"), s.Rev)
 
 	return
 }
 
 // Done marks the Ticket as done/solved in the registry.
 func (t *Ticket) Done(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.path()+"/claimed", &s.Rev)
+	claimer, _, err := s.conn.Get(t.prefixPath("claimed"), &s.Rev)
 	if err != nil {
 		return
 	}
@@ -86,7 +100,7 @@ func (t *Ticket) Done(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.path(), s.Rev)
+	err = s.conn.Del(t.Path(), s.Rev)
 
 	return
 }
@@ -96,16 +110,63 @@ func (t *Ticket) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
-func (t *Ticket) path() (path string) {
-	return "tickets/" + strconv.FormatInt(t.Id, 10)
+func (t *Ticket) Path() (path string) {
+	return ticketPath(t.Id)
+}
+
+func (t *Ticket) prefixPath(aPath string) string {
+	return path.Join(t.Path(), aPath)
 }
 
 func Tickets() ([]Ticket, error) {
 	return nil, nil
 }
+
 func HostTickets(addr string) ([]Ticket, error) {
 	return nil, nil
 }
-func WatchTicket(snapshot Snapshot, listener chan *Ticket) error {
-	return nil
+
+func WatchTicket(s Snapshot, listener chan *Ticket) (err error) {
+	rev := s.Rev
+	for {
+		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "op"), rev+1)
+		if err != nil {
+			return err
+		}
+		if !ev.IsSet() {
+			continue
+		}
+		ticket, err := parseTicket(s.FastForward(ev.Rev), &ev)
+		if err != nil {
+			// TODO log failure
+			return err
+		}
+		listener <- ticket
+		rev = ev.Rev
+	}
+	return err
+}
+
+func parseTicket(snapshot Snapshot, ev *doozer.Event) (t *Ticket, err error) {
+	idStr := strings.Split(ev.Path, "/")[2]
+	id, err := strconv.ParseInt(idStr, 0, 64)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("ticket id %s can't be parsed as an int64", idStr))
+	}
+	decoded, err := new(ListCodec).Decode(ev.Body)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("invalid ticket body: %s", ev.Body))
+	}
+	data := decoded.([]string)
+
+	t = &Ticket{Id: id, AppName: data[0], RevisionName: data[1], ProcessName: ProcessName(data[2]), Op: NewOperationType(data[3]), Snapshot: snapshot, source: ev}
+	return t, err
+}
+
+func (t *Ticket) toStringList() []string {
+	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
+}
+
+func ticketPath(id int64) string {
+	return path.Join(TICKETS_PATH, strconv.FormatInt(id, 10))
 }

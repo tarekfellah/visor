@@ -4,10 +4,11 @@ import (
 	"os"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func ticketSetup() (s Snapshot, hostname string) {
-	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DEFAULT_ADDR, "/ticket-test")
 	if err != nil {
 		panic(err)
 	}
@@ -22,26 +23,27 @@ func ticketSetup() (s Snapshot, hostname string) {
 	return
 }
 
-func TestNewTicket(t *testing.T) {
+func TestTicketCreateTicket(t *testing.T) {
 	s, _ := ticketSetup()
-	body := "lol cat app start"
 
-	ticket, err := NewTicket("lol", "cat", "app", 0, s)
+	ticket, err := CreateTicket("lol", "cat", "app", 0, s)
 	if err != nil {
 		t.Error(err)
 	}
 	s = s.FastForward(-1)
 
-	b, _, err := s.conn.Get(ticket.path()+"/op", &s.Rev)
+	b, _, err := s.conn.Get(ticket.Path()+"/op", &s.Rev)
 	if err != nil {
 		t.Error(err)
 	}
+
+	body := "lol cat app start"
 	if string(b) != body {
 		t.Errorf("expected %s got %s", body, string(b))
 	}
 }
 
-func TestClaim(t *testing.T) {
+func TestTicketClaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
 	op := "claim abcd123 test start"
@@ -73,7 +75,7 @@ func TestClaim(t *testing.T) {
 	}
 }
 
-func TestUnclaim(t *testing.T) {
+func TestTicketUnclaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
 	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
@@ -98,7 +100,7 @@ func TestUnclaim(t *testing.T) {
 	}
 }
 
-func TestUnclaimWithWrongLock(t *testing.T) {
+func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claimed"
 	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
@@ -115,7 +117,7 @@ func TestUnclaimWithWrongLock(t *testing.T) {
 	}
 }
 
-func TestDone(t *testing.T) {
+func TestTicketDone(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
 	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
@@ -140,7 +142,7 @@ func TestDone(t *testing.T) {
 	}
 }
 
-func TestDoneWithWrongLock(t *testing.T) {
+func TestTicketDoneWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
 	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
@@ -154,5 +156,39 @@ func TestDoneWithWrongLock(t *testing.T) {
 	err = ticket.Done(s, "foo.bar.local")
 	if err != ErrUnauthorized {
 		t.Error("ticket resolved with wrong lock")
+	}
+}
+
+func TestTicketWatch(t *testing.T) {
+	s, _ := ticketSetup()
+	l := make(chan *Ticket)
+
+	go WatchTicket(s, l)
+
+	_, err := CreateTicket("lol", "cat", "app", 0, s)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectTicket("lol", "cat", "app", 0, l, t)
+}
+
+func expectTicket(appName, revName, pName string, op OperationType, l chan *Ticket, t *testing.T) {
+	for {
+		select {
+		case ticket := <-l:
+			if ticket.AppName == appName &&
+				ticket.RevisionName == revName &&
+				string(ticket.ProcessName) == pName &&
+				ticket.Op == op {
+				return
+			} else {
+				t.Errorf("received unexpected ticket: %s", ticket.String())
+				return
+			}
+		case <-time.After(time.Second):
+			t.Errorf("expected ticket, got timeout")
+			return
+		}
 	}
 }
