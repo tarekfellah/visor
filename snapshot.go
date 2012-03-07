@@ -42,6 +42,10 @@ func Dial(addr string, root string) (s Snapshot, err error) {
 	return
 }
 
+func (s Snapshot) Conn() *Conn {
+	return s.conn
+}
+
 func (s Snapshot) createSnapshot(rev int64) Snapshotable {
 	return Snapshot{rev, s.conn}
 }
