@@ -110,8 +110,8 @@ func (t *Ticket) String() string {
 	return fmt.Sprintf("%#v", t)
 }
 
-func (t *Ticket) Path() (path string) {
-	return ticketPath(t.Id)
+func (t *Ticket) Path() string {
+	return path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 }
 
 func (t *Ticket) prefixPath(aPath string) string {
@@ -165,8 +165,4 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event) (t *Ticket, err error) {
 
 func (t *Ticket) toStringList() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
-}
-
-func ticketPath(id int64) string {
-	return path.Join(TICKETS_PATH, strconv.FormatInt(id, 10))
 }
