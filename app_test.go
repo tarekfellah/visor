@@ -208,7 +208,7 @@ func TestApps(t *testing.T) {
 	} else {
 		for i := range apps {
 			if apps[i].Name != names[i] {
-				t.Error("expected %s got %s", names[i], apps[i].Name)
+				t.Errorf("expected %s got %s", names[i], apps[i].Name)
 			}
 		}
 	}
