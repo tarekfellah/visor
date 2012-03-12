@@ -7,12 +7,14 @@ import (
 )
 
 const APPS_PATH = "apps"
+const DEPLOY_LXC = "lxc"
 
 type App struct {
 	Snapshot
-	Name    string
-	RepoUrl string
-	Stack   Stack
+	Name       string
+	RepoUrl    string
+	Stack      Stack
+	DeployType string
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -47,9 +49,14 @@ func (a *App) Register() (app *App, err error) {
 		return
 	}
 
+	if a.DeployType == "" {
+		a.DeployType = DEPLOY_LXC
+	}
+
 	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]string{
-		"repo-url": a.RepoUrl,
-		"stack":    string(a.Stack),
+		"repo-url":    a.RepoUrl,
+		"stack":       string(a.Stack),
+		"deploy-type": a.DeployType,
 	}, new(JSONCodec)}
 
 	f, err := attrs.Create()
@@ -156,6 +163,7 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = Stack(value["stack"].(string))
+	app.DeployType = value["deploy-type"].(string)
 
 	return
 }
