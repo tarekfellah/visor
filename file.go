@@ -13,10 +13,9 @@ type File struct {
 	Codec Codec
 }
 
-// NewFile returns a new file object.
-func NewFile(path string, value interface{}, codec Codec, snapshot Snapshot) *File {
-	f := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot}
-	return f
+func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*File, error) {
+	file := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot}
+	return file.Create()
 }
 
 func (f *File) createSnapshot(rev int64) (file Snapshotable) {
@@ -43,7 +42,7 @@ func (f *File) Del() error {
 }
 
 // Create creates a file from its Value attribute
-func (f *File) Create() (file *File, err error) {
+func (f *File) Create() (*File, error) {
 	return f.Update(f.Value)
 }
 

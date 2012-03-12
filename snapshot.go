@@ -82,7 +82,7 @@ func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = NewFile(path, value, codec, s)
+	file = &File{Path: path, Value: value, Codec: codec, Snapshot: s}
 
 	return
 }
