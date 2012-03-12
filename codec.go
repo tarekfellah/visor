@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"strings"
 )
 
 // A Codec represents a protocol for encoding and
@@ -59,4 +60,13 @@ func (*IntCodec) Encode(input interface{}) ([]byte, error) {
 }
 func (*IntCodec) Decode(input []byte) (interface{}, error) {
 	return strconv.Atoi(string(input))
+}
+
+type ListCodec struct{}
+
+func (*ListCodec) Encode(input interface{}) ([]byte, error) {
+	return []byte(strings.Join(input.([]string), " ")), nil
+}
+func (*ListCodec) Decode(input []byte) (interface{}, error) {
+	return strings.Split(string(input), " "), nil
 }
