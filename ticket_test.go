@@ -30,9 +30,8 @@ func TestTicketCreateTicket(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(-1)
 
-	b, _, err := s.conn.Get(ticket.Path()+"/op", &s.Rev)
+	b, _, err := s.conn.Get(ticket.Path()+"/op", &ticket.Snapshot.Rev)
 	if err != nil {
 		t.Error(err)
 	}

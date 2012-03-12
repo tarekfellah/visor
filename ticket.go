@@ -56,7 +56,10 @@ const (
 
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil}
-	_, err = CreateFile(s, t.prefixPath("op"), t.toStringList(), new(ListCodec))
+	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
+	if err == nil {
+	  t.Snapshot = t.Snapshot.FastForward(f.Rev)
+	}
 	return t, err
 }
 
@@ -139,7 +142,7 @@ func WatchTicket(s Snapshot, listener chan *Ticket) (err error) {
 		ticket, err := parseTicket(s.FastForward(ev.Rev), &ev)
 		if err != nil {
 			// TODO log failure
-			return err
+			continue
 		}
 		listener <- ticket
 		rev = ev.Rev
@@ -158,11 +161,17 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event) (t *Ticket, err error) {
 		return nil, errors.New(fmt.Sprintf("invalid ticket body: %s", ev.Body))
 	}
 	data := decoded.([]string)
-
-	t = &Ticket{Id: id, AppName: data[0], RevisionName: data[1], ProcessName: ProcessName(data[2]), Op: NewOperationType(data[3]), Snapshot: snapshot, source: ev}
+	t = &Ticket{
+		Id: id,
+		AppName: data[0],
+		RevisionName: data[1],
+		ProcessName: ProcessName(data[2]),
+		Op: NewOperationType(data[3]),
+		Snapshot: snapshot,
+		source: ev}
 	return t, err
 }
 
-func (t *Ticket) toStringList() []string {
+func (t *Ticket) toArray() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
 }
