@@ -148,15 +148,6 @@ Revision Scope
         <app>             app's name
         <rev>             revision (default: HEAD)
 
-### list
-
-    Usage: visor [opts] revision list <app>
-    
-    Lists all available revisions of an application
-    
-    Arguments:
-        <app>             app's name
-
 
 ### register
 
