@@ -10,7 +10,7 @@ func main() {
 	optionDefinition := getopt.Options{
 		{"app", "app's name", getopt.IsArg | getopt.Required, ""},
 		{"rev", "revision", getopt.IsArg | getopt.Required, ""},
-		{"proc", "proc type that is to be scaled", getopt.IsArg |  getopt.Required, ""},
+		{"proc", "proc type that is to be scaled", getopt.IsArg | getopt.Required, ""},
 		{"num", "number of instances that should be running of this app-rev-proc-type (N for absolute values, -N for scaling down by N, +N for scaling up by N)", getopt.IsArg | getopt.Required, ""},
 	}
 

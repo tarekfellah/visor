@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -9,7 +8,7 @@ import (
 
 func main() {
 	optionDefinition := getopt.Options{
-    {"instanceid", "id of the instance (<hostname>:<port>)", getopt.IsArg | getopt.Required, ""},
+		{"instanceid", "id of the instance (<hostname>:<port>)", getopt.IsArg | getopt.Required, ""},
 	}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()

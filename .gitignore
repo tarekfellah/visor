@@ -2,3 +2,5 @@ _bin
 _obj
 example/example
 bin
+*.swp
+cmd/visor

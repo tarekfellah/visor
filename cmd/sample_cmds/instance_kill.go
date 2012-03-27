@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -9,8 +8,8 @@ import (
 
 func main() {
 	optionDefinition := getopt.Options{
-    {"instanceid", "id of the instance (<hostname>:<port>)", getopt.IsArg | getopt.Required, ""},
-    {"signalname|s", "signal to send to instance (according to the normal unix kill command)", getopt.Optional | getopt.ExampleIsDefault, "SIGTERM"},
+		{"instanceid", "id of the instance (<hostname>:<port>)", getopt.IsArg | getopt.Required, ""},
+		{"signalname|s", "signal to send to instance (according to the normal unix kill command)", getopt.Optional | getopt.ExampleIsDefault, "SIGTERM"},
 	}
 
 	_, _, _, e := optionDefinition.ParseCommandLine()
