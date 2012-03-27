@@ -32,33 +32,29 @@ The Visor CLI works with subcommands; The general call looks like this:
         <command>                 Show help for a specific command; available scopes and their commands:
     
     App:
-      app list       
+      app list
       app describe <name>
-      app register <name>
+      app register <name> [-t <deploytype>] [-r <repourl>] [-s <stack>] [-i <irc>]
       app unregister <name>
-      app setenv <name> <key> [<value>]
+      app setenv <appname> <key> [<value>]
       app getenv <name> <key>
-      app env <name>       
+      app env <name>
+      app revisions <name>
         
+    Revision:
+      revision list <app>
+      revision describe <app> [<rev>]
+      revision register <app> <rev> -u <artifacturl> [-t <proctypes>]
+      revision unregister <app> <rev>
+      revision scale <app> <rev> <proc> <num>
+      revision instances <app> <rev>
     
     Instance:
-      instance add         
-      instance describe    
-      instance list        
-      instance register    
-      instance unregister  
+      instance describe <instanceid>
+      instance tail <instanceid>
+      instance kill <instanceid> [-s <signalname>]
     
-    Revision:
-      revision add         
-      revision describe <app> <rev>
-      revision list        
-      revision register    
-      revision unregister  
-      revision scale       
-      revision instances   
-      revision reginst     
-      revision unreginst   
-    
+
     Ticket:
       ticket create
 
@@ -154,7 +150,7 @@ Revision Scope
 
 ### list
 
-    Usage: visor [opts] app list <app>
+    Usage: visor [opts] revision list <app>
     
     Lists all available revisions of an application
     
@@ -178,7 +174,7 @@ Revision Scope
 
 ### unregister
 
-   Usage: visor [opts] app unregister <app> <rev>
+   Usage: visor [opts] revision unregister <app> <rev>
    
    deletes an application-revision from the coordinator -- does not stop currently running instances.
    
@@ -230,7 +226,7 @@ Instances Scope
 
 ### kill
 
-   Usage: visor [opts] instance tail <instanceid> [-s <signalname>]
+   Usage: visor [opts] instance kill <instanceid> [-s <signalname>]
    
    send a signal to an instance
    
