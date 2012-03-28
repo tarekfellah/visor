@@ -12,9 +12,9 @@ func main() {
 			"A cli interface to visor (see http://github.com/soundcloud/visor)",
 			getopt.Definitions{
 				{"config|c|CONFIG", "config file", getopt.IsConfigFile | getopt.ExampleIsDefault, "/etc/visor.conf"},
-				{"doozer|d|DOOZERD_HOST", "doozer server", getopt.Required, ""},
-				{"port|p|DOOZERD_PORT", "doozer server port", getopt.Required | getopt.ExampleIsDefault, "8046"},
-				{"root|r|ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Required | getopt.ExampleIsDefault, "/bazooka"},
+				{"doozerd|d|DOOZERD_HOST", "doozer server", getopt.Required, ""},
+				{"port|p|DOOZERD_PORT", "doozer server port", getopt.Optional | getopt.ExampleIsDefault, "8046"},
+				{"root|r|ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Optional | getopt.ExampleIsDefault, "/bazooka"},
 				{"scope", "scope to operate on", getopt.IsSubCommand, ""},
 			},
 		},
@@ -148,12 +148,6 @@ func main() {
 
 	help, wantsHelp := options["help"]
 
-	fmt.Printf("scope: %s\n", scope)
-	fmt.Printf("subCommand: %s\n", subCommand)
-	fmt.Printf("options:%#v\n", options)
-	fmt.Printf("arguments: %#v\n", arguments)
-	fmt.Printf("passThrough: %#v\n", passThrough)
-
 	if e != nil || wantsHelp {
 		exit_code := 0
 
@@ -163,10 +157,22 @@ func main() {
 		case wantsHelp && help.String == "help":
 			fmt.Print(ssco.Help())
 		default:
-			fmt.Println("**** Error: ", e.Error(), "\n", ssco.Help())
+			fmt.Printf("\n**** Error: %s\n\n%s", e.Error(), ssco.Help())
+			if subCommand != "" && e.ErrorCode != getopt.UnknownSubCommand {
+				fmt.Printf("**** See as well the help for the scope command by doing a\n\t%s %s --help\n\n", os.Args[0], scope)
+			}
+			if scope != "*" && e.ErrorCode != getopt.UnknownScope {
+				fmt.Printf("**** See as well the help for the global command by doing a\n\t%s --help\n\n", os.Args[0])
+			}
 			exit_code = e.ErrorCode
 		}
 		os.Exit(exit_code)
 	}
+
+	fmt.Printf("scope: %s\n", scope)
+	fmt.Printf("subCommand: %s\n", subCommand)
+	fmt.Printf("options:%#v\n", options)
+	fmt.Printf("arguments: %#v\n", arguments)
+	fmt.Printf("passThrough: %#v\n", passThrough)
 
 }
