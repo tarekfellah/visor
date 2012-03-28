@@ -1,8 +1,7 @@
 EXE=visor
 
 $(EXE): visorcli.go
-	go build
-	mv cmd $(EXE)
+	go build -o $(EXE)
 
 clean:
 	rm $(EXE)
