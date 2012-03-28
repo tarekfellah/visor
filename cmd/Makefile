@@ -1,6 +1,6 @@
 EXE=visor
 
-$(EXE): visorcli.go
+$(EXE): *.go
 	go build -o $(EXE)
 
 clean:
