@@ -21,11 +21,13 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 		}
 		err = AppSetenv(arguments[0], arguments[1], value)
 	case "getenv":
-		err = AppGetenv(options, arguments, passThrough)
+		err = AppGetenv(arguments[0], arguments[1])
 	case "register":
 		err = AppRegister(arguments[0], options["type"].String, options["repourl"].String, options["stack"].String)
+	case "unregister":
+		err = AppUnRegister(arguments[0])
 	case "env":
-		err = AppEnv(options, arguments, passThrough)
+		err = AppEnv(arguments[0])
 	case "revisions":
 		err = AppRevisions(options, arguments, passThrough)
 	}
@@ -87,14 +89,56 @@ func AppSetenv(name string, key string, value string) (err error) {
 	return
 }
 
-func AppGetenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	name := arguments[0]
-	key := arguments[1]
+func AppGetenv(name string, key string) (err error) {
+	var app *visor.App
+	app, err = visor.GetApp(snapshot(), name)
 
-	print("\napp_getenv\n")
-	print("\n\tname                  : " + name)
-	print("\n\tkey                   : " + key)
-	print("\n")
+	if err == nil {
+		var value string
+		if value, err = app.GetEnvironmentVar(key); err == nil {
+			fmt.Println(value)
+		}
+	}
+
+	return
+}
+
+func AppUnRegister(name string) (err error) {
+	var app *visor.App
+	app, err = visor.GetApp(snapshot(), name)
+
+	if err == nil {
+		answer := ""
+
+		for answer != "y" && answer != "n" {
+			fmt.Printf("\nThis will delete the app and all revisions from bazooka and stop all running instances. Really continue? (y/n): ")
+			_, err = fmt.Scanf("%s", &answer)
+		}
+
+		if answer == "n" {
+			fmt.Println("pussy!")
+		} else {
+			// TODO: delete revisions and stop instances
+			err = app.Unregister()
+		}
+	}
+
+	return
+
+}
+
+func AppEnv(name string) (err error) {
+	var app *visor.App
+	app, err = visor.GetApp(snapshot(), name)
+
+	if err == nil {
+		var envVars map[string]string
+		if envVars, err = app.EnvironmentVars(); err == nil {
+			for key, value := range envVars {
+				fmt.Printf("%s=%s\n", key, value)
+			}
+		}
+	}
 
 	return
 }
@@ -107,16 +151,6 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 	if err != nil {
 		print(err.Error())
 	}
-
-	return
-}
-
-func AppEnv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	name := arguments[0]
-
-	print("\napp_env\n")
-	print("\n\tname                  : " + name)
-	print("\n")
 
 	return
 }

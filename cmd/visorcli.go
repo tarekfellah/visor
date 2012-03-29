@@ -55,6 +55,12 @@ func main() {
 							{"key", "key (name) of the env variable", getopt.IsArg | getopt.Required, ""},
 						},
 					},
+					"unregister": {
+						"unregister / delete a new application, and all it's revisions and stop all running instances",
+						getopt.Definitions{
+							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
+						},
+					},
 					"register": {
 						"register a new application with bazooka",
 						getopt.Definitions{
