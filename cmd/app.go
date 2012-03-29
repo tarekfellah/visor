@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"strconv"
 )
 
 func App(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
@@ -28,8 +30,23 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 }
 
 func AppList(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	print("\napp_list\n")
-	print("\n")
+	entryFmtStr := "| %-3.3s | %-30.30s | %-40.40s | %-9.9s | %-15.15s |\n"
+	rulerFmtStr := "+-%-3.3s-+-%-30.30s-+-%-40.40s-+-%-9.9s-+-%-15.15s-+\n"
+	ruler := "--------------------------------------------------"
+
+	var apps []*visor.App
+
+	if apps, err = visor.Apps(snapshot()); err == nil {
+		fmt.Println()
+		fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+		fmt.Printf(entryFmtStr, "No.", "Name", "Repo-Url", "Stack", "Deploy-Type")
+		fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+		for i, app := range apps {
+			fmt.Printf(entryFmtStr, strconv.Itoa(i), app.Name, app.RepoUrl, app.Stack, app.DeployType)
+		}
+		fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+		fmt.Println()
+	}
 
 	return
 }
