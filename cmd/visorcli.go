@@ -55,9 +55,9 @@ func main() {
 					"register": {
 						"register a new application with bazooka",
 						getopt.Definitions{
-							{"type|t", "deploy type of the application (lxc, mount or bazapta)", getopt.Required | getopt.ExampleIsDefault, "lxc"},
-							{"repourl|r", "url to the repository of this app", getopt.Optional, "http://github.com/soundcloud/<your_project>"},
-							{"stack|s", "stack version ... should usually be HEAD", getopt.Required | getopt.ExampleIsDefault, "HEAD"},
+							{"type|t", "deploy type of the application (lxc, mount or bazapta)", getopt.Optional | getopt.ExampleIsDefault, "lxc"},
+							{"repourl|u", "url to the repository of this app", getopt.Required, "http://github.com/soundcloud/<your_project>"},
+							{"stack|s", "stack version ... should usually be HEAD", getopt.Optional | getopt.ExampleIsDefault, "HEAD"},
 							{"irc|i|", "comma separated list of irc channels where to announce new deployments", getopt.Optional, []string{"#deploys"}},
 							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
 						},
@@ -79,14 +79,16 @@ func main() {
 			"revision": {
 				getopt.Options{
 					"everything that has to do with revisions",
-					getopt.Definitions{},
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
 				},
 				getopt.SubCommands{
 					"describe": {
 						"describe revision of an app",
 						getopt.Definitions{
 							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
-							{"revision", "revision to use", getopt.IsArg | getopt.Required | getopt.ExampleIsDefault, "HEAD"},
+							{"revision", "revision to use", getopt.IsArg | getopt.Optional | getopt.ExampleIsDefault, "HEAD"},
 						},
 					},
 					"unregister": {
@@ -117,7 +119,9 @@ func main() {
 			"instance": {
 				getopt.Options{
 					"everything that has to do with instances",
-					getopt.Definitions{},
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
 				},
 				getopt.SubCommands{
 					"describe": {
