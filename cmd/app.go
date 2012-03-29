@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
+	"github.com/soundcloud/visor"
 )
 
 func app(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
@@ -73,20 +73,22 @@ func app_getenv(options map[string]getopt.OptionValue, arguments []string, passT
 }
 
 func app_register(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
-	appType := options["type"].String
-	repourl := options["repourl"].String
-	stack := options["stack"].String
-	irc_announce_channels := options["irc"].StrArray
+	//appType := options["type"].String
+	repoUrl := options["repourl"].String
+	stack := visor.Stack(options["stack"].String)
+	//ircChannels  := options["irc"].StrArray
 	name := arguments[0]
+	doozerd := options["doozerd"].String + ":" + options["port"].String
+	root := options["root"].String // visor.DEFAULT_ROOT
 
-	print("\napp_register\n")
+	snapshot, err := visor.Dial(doozerd, root)
+	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot}
+	app, err = app.Register()
 
-	print("\n\ttype                  : " + appType)
-	print("\n\trepourl               : " + repourl)
-	print("\n\tstack                 : " + stack)
-	print("\n\tirc_announce_channels : " + fmt.Sprintf("%#v", irc_announce_channels))
-	print("\n\tname                  : " + name)
-	print("\n")
+	if err != nil {
+		print(err.Error())
+	}
+
 	return
 }
 
