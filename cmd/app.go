@@ -11,15 +11,15 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 
 	switch subCommand {
 	case "list":
-		err = AppList(options, arguments, passThrough)
+		err = AppList()
 	case "describe":
-		err = AppDescribe(options, arguments, passThrough)
+		err = AppDescribe(arguments[0])
 	case "setenv":
 		err = AppSetenv(options, arguments, passThrough)
 	case "getenv":
 		err = AppGetenv(options, arguments, passThrough)
 	case "register":
-		err = AppRegister(options, arguments, passThrough)
+		err = AppRegister(arguments[0], options["type"].String, options["repourl"].String, options["stack"].String)
 	case "env":
 		err = AppEnv(options, arguments, passThrough)
 	case "revisions":
@@ -29,7 +29,7 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	return
 }
 
-func AppList(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func AppList() (err error) {
 	entryFmtStr := "| %-3.3s | %-30.30s | %-40.40s | %-9.9s | %-15.15s |\n"
 	rulerFmtStr := "+-%-3.3s-+-%-30.30s-+-%-40.40s-+-%-9.9s-+-%-15.15s-+\n"
 	ruler := "--------------------------------------------------"
@@ -51,8 +51,7 @@ func AppList(options map[string]getopt.OptionValue, arguments []string, passThro
 	return
 }
 
-func AppDescribe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	name := arguments[0]
+func AppDescribe(name string) (err error) {
 
 	print("\napp_describe\n")
 	print("\n\tname                  : " + name)
@@ -89,14 +88,9 @@ func AppGetenv(options map[string]getopt.OptionValue, arguments []string, passTh
 	return
 }
 
-func AppRegister(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	deployType := options["type"].String
-	repoUrl := options["repourl"].String
-	stack := visor.Stack(options["stack"].String)
-	//ircChannels  := options["irc"].StrArray
-	name := arguments[0]
+func AppRegister(name string, deployType string, repoUrl string, stack string) (err error) {
 
-	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot(), DeployType: deployType}
+	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: visor.Stack(stack), Snapshot: snapshot(), DeployType: deployType}
 	app, err = app.Register()
 
 	if err != nil {
