@@ -1,7 +1,7 @@
 package visor
 
 import (
-	"github.com/ha/doozer"
+	"github.com/soundcloud/doozer"
 	"net"
 )
 
