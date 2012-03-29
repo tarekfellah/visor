@@ -15,7 +15,11 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	case "describe":
 		err = AppDescribe(arguments[0])
 	case "setenv":
-		err = AppSetenv(options, arguments, passThrough)
+		value := ""
+		if len(arguments) > 2 {
+			value = arguments[2]
+		}
+		err = AppSetenv(arguments[0], arguments[1], value)
 	case "getenv":
 		err = AppGetenv(options, arguments, passThrough)
 	case "register":
@@ -52,26 +56,33 @@ func AppList() (err error) {
 }
 
 func AppDescribe(name string) (err error) {
+	fmtStr := "%15.15s: %s\n"
 
-	print("\napp_describe\n")
-	print("\n\tname                  : " + name)
-	print("\n")
+	app, err := visor.GetApp(snapshot(), name)
+
+	if err == nil {
+		fmt.Println()
+		fmt.Printf(fmtStr, "Name", app.Name)
+		fmt.Printf(fmtStr, "Repo-Url", app.RepoUrl)
+		fmt.Printf(fmtStr, "Stack", app.Stack)
+		fmt.Printf(fmtStr, "Deploy-Type", app.DeployType)
+		fmt.Println()
+	}
+
 	return
 }
 
-func AppSetenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	name := arguments[0]
-	key := arguments[1]
+func AppSetenv(name string, key string, value string) (err error) {
+	var app *visor.App
+	app, err = visor.GetApp(snapshot(), name)
 
-	print("\napp_setenv\n")
-	print("\n\tname                  : " + name)
-	print("\n\tkey                   : " + key)
-
-	if len(arguments) > 2 {
-		print("\n\tvalue                 : " + arguments[2])
-	} else {
+	if err == nil {
+		if value != "" {
+			_, err = app.SetEnvironmentVar(key, value)
+		} else {
+			_, err = app.DelEnvironmentVar(key)
+		}
 	}
-	print("\n")
 
 	return
 }
