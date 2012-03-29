@@ -3,7 +3,7 @@ package visor
 import (
 	"errors"
 	"fmt"
-	"github.com/ha/doozer"
+	"github.com/soundcloud/doozer"
 	"net"
 	"strings"
 )

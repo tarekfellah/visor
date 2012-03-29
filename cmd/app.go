@@ -73,7 +73,7 @@ func app_getenv(options map[string]getopt.OptionValue, arguments []string, passT
 }
 
 func app_register(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
-	//appType := options["type"].String
+	deployType := options["type"].String
 	repoUrl := options["repourl"].String
 	stack := visor.Stack(options["stack"].String)
 	//ircChannels  := options["irc"].StrArray
@@ -82,7 +82,7 @@ func app_register(options map[string]getopt.OptionValue, arguments []string, pas
 	root := options["root"].String // visor.DEFAULT_ROOT
 
 	snapshot, err := visor.Dial(doozerd, root)
-	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot}
+	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot, DeployType: deployType}
 	app, err = app.Register()
 
 	if err != nil {

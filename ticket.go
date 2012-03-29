@@ -54,11 +54,12 @@ const (
 	OpStop
 )
 
+//                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
 	if err == nil {
-	  t.Snapshot = t.Snapshot.FastForward(f.Rev)
+		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
 	return t, err
 }
@@ -162,13 +163,13 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event) (t *Ticket, err error) {
 	}
 	data := decoded.([]string)
 	t = &Ticket{
-		Id: id,
-		AppName: data[0],
+		Id:           id,
+		AppName:      data[0],
 		RevisionName: data[1],
-		ProcessName: ProcessName(data[2]),
-		Op: NewOperationType(data[3]),
-		Snapshot: snapshot,
-		source: ev}
+		ProcessName:  ProcessName(data[2]),
+		Op:           NewOperationType(data[3]),
+		Snapshot:     snapshot,
+		source:       ev}
 	return t, err
 }
 
