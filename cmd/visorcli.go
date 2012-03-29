@@ -194,11 +194,11 @@ func main() {
 	var err error
 	switch scope {
 	case "app":
-		err = app(subCommand, options, arguments, passThrough)
+		err = App(subCommand, options, arguments, passThrough)
 	case "revision":
-		err = revision(subCommand, options, arguments, passThrough)
+		err = Revision(subCommand, options, arguments, passThrough)
 	case "instance":
-		err = instance(subCommand, options, arguments, passThrough)
+		err = Instance(subCommand, options, arguments, passThrough)
 	default:
 		fmt.Println("no fucking way did this happen!")
 	}

@@ -4,21 +4,21 @@ import (
 	getopt "github.com/kesselborn/go-getopt"
 )
 
-func revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	switch subCommand {
 	case "describe":
-		err = revision_describe(options, arguments, passThrough)
+		err = RevisionDescribe(options, arguments, passThrough)
 	case "unregister":
-		err = revision_unregister(options, arguments, passThrough)
+		err = RevisionUnregister(options, arguments, passThrough)
 	case "scale":
-		err = revision_scale(options, arguments, passThrough)
+		err = RevisionScale(options, arguments, passThrough)
 	case "instances":
-		err = revision_instances(options, arguments, passThrough)
+		err = RevisionInstances(options, arguments, passThrough)
 	}
 	return
 }
 
-func revision_describe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func RevisionDescribe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	app := arguments[0]
 	revision := arguments[1]
 
@@ -30,7 +30,7 @@ func revision_describe(options map[string]getopt.OptionValue, arguments []string
 	return
 }
 
-func revision_unregister(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func RevisionUnregister(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	app := arguments[0]
 	revision := arguments[1]
 
@@ -42,7 +42,7 @@ func revision_unregister(options map[string]getopt.OptionValue, arguments []stri
 	return
 }
 
-func revision_scale(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func RevisionScale(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	app := arguments[0]
 	revision := arguments[1]
 	proc := arguments[2]
@@ -58,7 +58,7 @@ func revision_scale(options map[string]getopt.OptionValue, arguments []string, p
 	return
 }
 
-func revision_instances(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func RevisionInstances(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	app := arguments[0]
 	revision := arguments[1]
 
