@@ -5,36 +5,36 @@ import (
 	"github.com/soundcloud/visor"
 )
 
-func app(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 
 	switch subCommand {
 	case "list":
-		return_code = app_list(options, arguments, passThrough)
+		err = app_list(options, arguments, passThrough)
 	case "describe":
-		return_code = app_describe(options, arguments, passThrough)
+		err = app_describe(options, arguments, passThrough)
 	case "setenv":
-		return_code = app_setenv(options, arguments, passThrough)
+		err = app_setenv(options, arguments, passThrough)
 	case "getenv":
-		return_code = app_getenv(options, arguments, passThrough)
+		err = app_getenv(options, arguments, passThrough)
 	case "register":
-		return_code = app_register(options, arguments, passThrough)
+		err = app_register(options, arguments, passThrough)
 	case "env":
-		return_code = app_env(options, arguments, passThrough)
+		err = app_env(options, arguments, passThrough)
 	case "revisions":
-		return_code = app_revisions(options, arguments, passThrough)
+		err = app_revisions(options, arguments, passThrough)
 	}
 
 	return
 }
 
-func app_list(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_list(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	print("\napp_list\n")
 	print("\n")
 
 	return
 }
 
-func app_describe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_describe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 
 	print("\napp_describe\n")
@@ -43,7 +43,7 @@ func app_describe(options map[string]getopt.OptionValue, arguments []string, pas
 	return
 }
 
-func app_setenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_setenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 	key := arguments[1]
 
@@ -60,7 +60,7 @@ func app_setenv(options map[string]getopt.OptionValue, arguments []string, passT
 	return
 }
 
-func app_getenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_getenv(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 	key := arguments[1]
 
@@ -72,7 +72,7 @@ func app_getenv(options map[string]getopt.OptionValue, arguments []string, passT
 	return
 }
 
-func app_register(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_register(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	deployType := options["type"].String
 	repoUrl := options["repourl"].String
 	stack := visor.Stack(options["stack"].String)
@@ -92,7 +92,7 @@ func app_register(options map[string]getopt.OptionValue, arguments []string, pas
 	return
 }
 
-func app_env(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_env(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 
 	print("\napp_env\n")
@@ -102,7 +102,7 @@ func app_env(options map[string]getopt.OptionValue, arguments []string, passThro
 	return
 }
 
-func app_revisions(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (return_code int) {
+func app_revisions(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 
 	print("\napp_revisions\n")

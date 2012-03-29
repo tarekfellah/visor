@@ -176,18 +176,21 @@ func main() {
 		os.Exit(exit_code)
 	}
 
-	var return_code int
+	var err error
 	switch scope {
 	case "app":
-		return_code = app(subCommand, options, arguments, passThrough)
+		err = app(subCommand, options, arguments, passThrough)
 	case "revision":
-		return_code = revision(subCommand, options, arguments, passThrough)
+		err = revision(subCommand, options, arguments, passThrough)
 	case "instance":
-		return_code = instance(subCommand, options, arguments, passThrough)
+		err = instance(subCommand, options, arguments, passThrough)
 	default:
 		fmt.Println("no fucking way did this happen!")
 	}
 
-	os.Exit(return_code)
+	if err != nil {
+		fmt.Printf("**** Error: " + err.Error())
+		os.Exit(1)
+	}
 
 }
