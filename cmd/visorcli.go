@@ -7,6 +7,8 @@ import (
 	"os"
 )
 
+var snapshot func() (s visor.Snapshot)
+
 func main() {
 	ssco := getopt.SubSubCommandOptions{
 		getopt.Options{
@@ -174,6 +176,19 @@ func main() {
 			exit_code = e.ErrorCode
 		}
 		os.Exit(exit_code)
+	}
+
+	snapshot = func() (s visor.Snapshot) {
+		root := options["root"].String
+		doozerd := options["doozerd"].String + ":" + options["port"].String
+		s, err := visor.Dial(doozerd, root)
+
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "**** Error: %s\n", err.Error())
+			os.Exit(2)
+		}
+
+		return s
 	}
 
 	var err error

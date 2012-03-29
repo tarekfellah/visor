@@ -78,11 +78,8 @@ func app_register(options map[string]getopt.OptionValue, arguments []string, pas
 	stack := visor.Stack(options["stack"].String)
 	//ircChannels  := options["irc"].StrArray
 	name := arguments[0]
-	doozerd := options["doozerd"].String + ":" + options["port"].String
-	root := options["root"].String // visor.DEFAULT_ROOT
 
-	snapshot, err := visor.Dial(doozerd, root)
-	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot, DeployType: deployType}
+	app := &visor.App{Name: name, RepoUrl: repoUrl, Stack: stack, Snapshot: snapshot(), DeployType: deployType}
 	app, err = app.Register()
 
 	if err != nil {
