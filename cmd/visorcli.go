@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
+	"github.com/soundcloud/visor"
 	"os"
 )
 
@@ -14,7 +15,7 @@ func main() {
 				{"config|c|CONFIG", "config file", getopt.IsConfigFile | getopt.ExampleIsDefault, "/etc/visor.conf"},
 				{"doozerd|d|DOOZERD_HOST", "doozer server", getopt.Required, ""},
 				{"port|p|DOOZERD_PORT", "doozer server port", getopt.Optional | getopt.ExampleIsDefault, "8046"},
-				{"root|r|VISOR_ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Optional | getopt.ExampleIsDefault, "/bazooka"},
+				{"root|r|VISOR_ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Optional | getopt.ExampleIsDefault, visor.DEFAULT_ROOT},
 				{"scope", "scope to operate on", getopt.IsSubCommand, ""},
 			},
 		},
