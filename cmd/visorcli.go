@@ -122,7 +122,7 @@ func main() {
 							{"app", "name of the app", getopt.IsArg | getopt.Required, "myapp"},
 							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
 							{"proc", "proc type", getopt.IsArg | getopt.Required, "web"},
-							{"num", "scaling factor", getopt.IsArg | getopt.Required, ""},
+							{"num", "scaling factor", getopt.IsArg | getopt.Required, "0"},
 						},
 					},
 					"instances": {

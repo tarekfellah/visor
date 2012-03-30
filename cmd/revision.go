@@ -1,10 +1,13 @@
 package main
 
+// TODO: use return-often style
+
 import (
 	"errors"
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"strconv"
 )
 
 func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
@@ -16,7 +19,9 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 	case "register":
 		err = RevisionRegister(arguments[0], arguments[1], options["artifacturl"].String, options["proctypes"].StrArray)
 	case "scale":
-		err = RevisionScale(options, arguments, passThrough)
+		if scalingFactor, err := strconv.Atoi(arguments[3]); err == nil {
+			err = RevisionScale(arguments[0], arguments[1], arguments[2], scalingFactor)
+		}
 	case "instances":
 		err = RevisionInstances(options, arguments, passThrough)
 	}
@@ -76,23 +81,26 @@ func RevisionUnregister(appName string, revision string) (err error) {
 	return
 }
 
-func RevisionScale(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	app := arguments[0]
-	revision := arguments[1]
-	proc := arguments[2]
-	num := arguments[3]
+func RevisionScale(appName string, revision string, procTypeName string, scalingFactor int) (err error) {
+	snapshot := snapshot()
+	var app *visor.App
 
-	print("\nrevision_scale\n")
+	if app, err = visor.GetApp(snapshot, appName); err == nil {
+		var rev *visor.Revision
+		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
+			var procType *visor.ProcType
+			if procType, err = visor.GetProcType(snapshot, rev, visor.ProcessName(procTypeName)); err == nil {
+				procType.Scale = scalingFactor
+				// TODO: PERSIST!
+			}
+		}
+	}
 
-	print("\n\tapp                  : " + app)
-	print("\n\trevision             : " + revision)
-	print("\n\tproc                 : " + proc)
-	print("\n\tnum                  : " + num)
-	print("\n")
 	return
 }
 
 func RevisionInstances(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+	// TODO
 	app := arguments[0]
 	revision := arguments[1]
 
