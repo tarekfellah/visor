@@ -58,7 +58,7 @@ func AppList() (err error) {
 }
 
 func AppDescribe(name string) (err error) {
-	fmtStr := "%15.15s: %s\n"
+	fmtStr := "%-15.15s: %s\n"
 
 	app, err := visor.GetApp(snapshot(), name)
 

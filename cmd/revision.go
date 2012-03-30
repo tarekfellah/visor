@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
 )
@@ -9,9 +10,9 @@ import (
 func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	switch subCommand {
 	case "describe":
-		err = RevisionDescribe(options, arguments, passThrough)
+		err = RevisionDescribe(arguments[0], arguments[1])
 	case "unregister":
-		err = RevisionUnregister(options, arguments, passThrough)
+		err = RevisionUnregister(arguments[0], arguments[1])
 	case "register":
 		err = RevisionRegister(arguments[0], arguments[1], options["artifacturl"].String, options["proctypes"].StrArray)
 	case "scale":
@@ -37,27 +38,35 @@ func RevisionRegister(appName string, revision string, artifactUrl string, procT
 	return
 }
 
-func RevisionDescribe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	app := arguments[0]
-	revision := arguments[1]
+func RevisionDescribe(appName string, revision string) (err error) {
+	snapshot := snapshot()
+	var app *visor.App
+	fmtStr := "%-15.15s: %s\n"
 
-	print("\nrevision_describe\n")
-
-	print("\n\tapp                  : " + app)
-	print("\n\trevision             : " + revision)
-	print("\n")
+	if app, err = visor.GetApp(snapshot, appName); err == nil {
+		var rev *visor.Revision
+		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
+			fmt.Println()
+			fmt.Printf(fmtStr, "App", appName)
+			fmt.Printf(fmtStr, "Revision", rev.Ref)
+			fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
+			fmt.Println()
+		}
+	}
 	return
 }
 
-func RevisionUnregister(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	app := arguments[0]
-	revision := arguments[1]
+func RevisionUnregister(appName string, revision string) (err error) {
+	snapshot := snapshot()
+	var app *visor.App
 
-	print("\nrevision_unregister\n")
+	if app, err = visor.GetApp(snapshot, appName); err == nil {
+		var rev *visor.Revision
+		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
+			err = rev.Unregister()
+		}
+	}
 
-	print("\n\tapp                  : " + app)
-	print("\n\trevision             : " + revision)
-	print("\n")
 	return
 }
 
