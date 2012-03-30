@@ -28,11 +28,16 @@ func RevisionRegister(appName string, revision string, artifactUrl string, procT
 	var app *visor.App
 
 	if app, err = visor.GetApp(snapshot, appName); err == nil {
-		_, err = (&visor.Revision{App: app, Ref: revision, Snapshot: snapshot, ArchiveUrl: artifactUrl}).Register()
-	}
-
-	if err == visor.ErrKeyConflict {
-		err = errors.New("Revision '" + revision + "' for app '" + appName + "' already registered!")
+		var rev *visor.Revision
+		if rev, err = (&visor.Revision{App: app, Ref: revision, Snapshot: snapshot, ArchiveUrl: artifactUrl}).Register(); err == nil {
+			for _, pt := range procTypes {
+				_, err = (&visor.ProcType{Name: visor.ProcessName(pt), Scale: 0, Revision: rev, Snapshot: snapshot}).Register()
+			}
+		} else {
+			if err == visor.ErrKeyConflict {
+				err = errors.New("Revision '" + revision + "' for app '" + appName + "' already registered!")
+			}
+		}
 	}
 
 	return
@@ -50,6 +55,7 @@ func RevisionDescribe(appName string, revision string) (err error) {
 			fmt.Printf(fmtStr, "App", appName)
 			fmt.Printf(fmtStr, "Revision", rev.Ref)
 			fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
+			fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
 			fmt.Println()
 		}
 	}

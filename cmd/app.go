@@ -29,7 +29,7 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	case "env":
 		err = AppEnv(arguments[0])
 	case "revisions":
-		err = AppRevisions(options, arguments, passThrough)
+		err = AppRevisions(arguments[0])
 	}
 
 	return
@@ -155,13 +155,28 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 	return
 }
 
-func AppRevisions(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
-	name := arguments[0]
+func AppRevisions(appName string) (err error) {
+	entryFmtStr := "| %-3.3s | %-20.20s | %-15.15s | %-50.50s | %-40.40s |\n"
+	rulerFmtStr := "+-%-3.3s-+-%-20.20s-+-%-15.15s-+-%-50.50s-+-%-40.40s-+\n"
+	ruler := "--------------------------------------------------"
 
-	// TODO: implement
-	print("\napp_revisions\n")
-	print("\n\tname                  : " + name)
-	print("\n")
+	var app *visor.App
+	snapshot := snapshot()
+
+	if app, err = visor.GetApp(snapshot, appName); err == nil {
+		var revs []*visor.Revision
+
+		if revs, err = visor.AppRevisions(snapshot, app); err == nil {
+			fmt.Println()
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+			fmt.Printf(entryFmtStr, "No.", "App", "Revision", "Archive-Url", "Proctypes")
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+			for i, rev := range revs {
+				fmt.Printf(entryFmtStr, strconv.Itoa(i), appName, rev.Ref, rev.ArchiveUrl, procTypeList(snapshot, rev))
+			}
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+		}
+	}
 
 	return
 }
