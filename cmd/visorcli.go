@@ -100,6 +100,15 @@ func main() {
 							{"revision", "revision to use", getopt.IsArg | getopt.Optional | getopt.ExampleIsDefault, "HEAD"},
 						},
 					},
+					"register": {
+						"register an app-revision",
+						getopt.Definitions{
+							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
+							{"revision", "revision to use", getopt.IsArg | getopt.Required, ""},
+							{"artifacturl|u", "url to the deployed artifact", getopt.Required, ""},
+							{"proctypes|t", "list of proctypes", getopt.Optional, []string{"web", "worker"}},
+						},
+					},
 					"unregister": {
 						"unregister an app-revision",
 						getopt.Definitions{
@@ -210,7 +219,7 @@ func main() {
 	}
 
 	if err != nil {
-		fmt.Printf("**** Error: " + err.Error())
+		fmt.Printf("**** Error: " + err.Error() + "\n")
 		os.Exit(1)
 	}
 

@@ -158,6 +158,7 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 func AppRevisions(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	name := arguments[0]
 
+	// TODO: implement
 	print("\napp_revisions\n")
 	print("\n\tname                  : " + name)
 	print("\n")
