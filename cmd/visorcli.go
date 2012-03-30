@@ -87,7 +87,7 @@ func main() {
 			},
 			"revision": {
 				getopt.Options{
-					"everything that has to do with revisions",
+					"Everything that has to do with revisions",
 					getopt.Definitions{
 						{"command", "command to execute", getopt.IsSubCommand, ""},
 					},
@@ -136,7 +136,7 @@ func main() {
 			},
 			"instance": {
 				getopt.Options{
-					"everything that has to do with instances",
+					"Everything that has to do with instances",
 					getopt.Definitions{
 						{"command", "command to execute", getopt.IsSubCommand, ""},
 					},
