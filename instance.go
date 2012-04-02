@@ -23,7 +23,7 @@ type InstanceInfo struct {
 	Name         string
 	AppName      string
 	RevisionName string
-	ProcessName  string
+	ProcessName  ProcessName
 	Host         string
 	Port         int
 	State        State
@@ -206,7 +206,7 @@ func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string
 		Name:         ins,
 		AppName:      app,
 		RevisionName: rev,
-		ProcessName:  proc,
+		ProcessName:  ProcessName(proc),
 		Host:         string(host),
 		Port:         iport,
 		State:        State(istate),
