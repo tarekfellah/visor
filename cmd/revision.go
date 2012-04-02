@@ -23,7 +23,7 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 			err = RevisionScale(arguments[0], arguments[1], arguments[2], scalingFactor)
 		}
 	case "instances":
-		err = RevisionInstances(options, arguments, passThrough)
+		err = RevisionInstances(arguments[0], arguments[1])
 	}
 	return
 }
@@ -99,14 +99,11 @@ func RevisionScale(appName string, revision string, procTypeName string, scaling
 	return
 }
 
-func RevisionInstances(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+func RevisionInstances(appName string, revision string) (err error) {
 	// TODO
-	app := arguments[0]
-	revision := arguments[1]
-
 	print("\nrevision_instances\n")
 
-	print("\n\tapp                  : " + app)
+	print("\n\tapp                  : " + appName)
 	print("\n\trevision             : " + revision)
 	print("\n")
 	return

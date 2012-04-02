@@ -85,6 +85,26 @@ func main() {
 					},
 				},
 			},
+			"ticket": {
+				getopt.Options{
+					"Show and list tickets",
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
+				},
+				getopt.SubCommands{
+					"describe": {
+						"describe ticket",
+						getopt.Definitions{
+							{"ticketid", "id of the ticket you would like to inspect", getopt.IsArg | getopt.Required, ""},
+						},
+					},
+					"list": {
+						"list current tickets",
+						getopt.Definitions{},
+					},
+				},
+			},
 			"revision": {
 				getopt.Options{
 					"Everything that has to do with revisions",
@@ -142,6 +162,16 @@ func main() {
 					},
 				},
 				getopt.SubCommands{
+					"create": {
+						"create a new instance entry",
+						getopt.Definitions{
+							{"app", "app", getopt.IsArg | getopt.Required, ""},
+							{"revision", "revision", getopt.IsArg | getopt.Required, ""},
+							{"proctype", "proctype", getopt.IsArg | getopt.Required, ""},
+							{"ip", "host where this instance is running on", getopt.IsArg | getopt.Required, "10.20.30.40"},
+							{"iport", "instance port this app is listening on (leave empty if app is not listening on a port)", getopt.IsArg | getopt.Optional, "80"},
+						},
+					},
 					"describe": {
 						"describe instance",
 						getopt.Definitions{
