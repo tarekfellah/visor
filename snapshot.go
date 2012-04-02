@@ -70,6 +70,16 @@ func (s *Snapshot) fastForward(obj Snapshotable, rev int64) Snapshotable {
 	return obj.createSnapshot(rev)
 }
 
+func Set(s Snapshot, path string, value interface{}, codec Codec) (snapshot Snapshot, err error) {
+	evalue, err := codec.Encode(value)
+
+	revision, err := s.conn.Set(path, s.Rev, evalue)
+
+	snapshot = s.FastForward(revision)
+
+	return
+}
+
 // Get returns the value for the given path
 func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
 	evalue, _, err := s.conn.Get(path, &s.Rev)
