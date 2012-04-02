@@ -48,10 +48,6 @@ func init() {
 	}
 }
 
-func newEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
-	return &Event{etype, emitter, body, nil, src}
-}
-
 func (ev *Event) String() string {
 	return fmt.Sprintf("%#v", ev)
 }
@@ -131,5 +127,5 @@ func parseEvent(src *doozer.Event) *Event {
 			break
 		}
 	}
-	return newEvent(etype, emitter, string(src.Body), src)
+	return &Event{etype, emitter, string(src.Body), nil, src}
 }
