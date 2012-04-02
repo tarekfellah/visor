@@ -30,10 +30,10 @@ const (
 var (
 	eventRegexps = map[string]*regexp.Regexp{}
 	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                                            EvAppReg,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":                               EvRevReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances/([^/]+)/registered$": EvInsReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances([^/]+)/state$":       EvInsStateChange,
+		"^/apps/([^/]+)/registered$":                                              EvAppReg,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":                                 EvRevReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/instances/([^/]+)/registered$": EvInsReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/instances([^/]+)/state$":       EvInsStateChange,
 	}
 )
 
@@ -82,8 +82,11 @@ func parseEvent(src *doozer.Event) *Event {
 
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch {
-			case len(match) >= 4: // Instance
-				emitter["instance"] = match[3]
+			case len(match) >= 5: // Instance
+				emitter["instance"] = match[4]
+				fallthrough
+			case len(match) >= 4: // ProcType
+				emitter["proctype"] = match[3]
 				fallthrough
 			case len(match) >= 3: // Revision
 				emitter["rev"] = match[2]
