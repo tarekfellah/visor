@@ -12,6 +12,7 @@ type Event struct {
 	Type   EventType         // Type of event
 	Path   map[string]string // The parsed file path
 	Body   string            // Body of the changed file
+	Info   interface{}       // Extra information, such as InstanceInfo
 	source *doozer.Event     // Original event returned by doozer
 }
 type EventType int
@@ -48,7 +49,7 @@ func init() {
 }
 
 func newEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
-	return &Event{etype, emitter, body, src}
+	return &Event{etype, emitter, body, nil, src}
 }
 
 func (ev *Event) String() string {

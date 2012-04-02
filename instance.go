@@ -167,31 +167,26 @@ func HostInstances(s Snapshot, addr string) ([]Instance, error) {
 }
 
 // WatchInstance is WatchEvent for instances.
-func WatchInstance(s Snapshot, listener chan *InstanceInfo) (err error) {
-	rev := s.Rev
+func WatchInstance(s Snapshot, listener chan *Event) (err error) {
+	events := make(chan *Event, 1)
+	go WatchEvent(s, events)
+
 	for {
-		ev, err := s.conn.Wait("/apps/*/revs/*/procs/*/instances/*/registered", rev+1)
-		event := parseEvent(&ev)
-		if err != nil {
-			return err
-		}
-		if !ev.IsSet() {
-			continue
-		}
+		event := <-events
 		path := event.Path
-		ins, err := GetInstanceInfo(
-			s.FastForward(ev.Rev),
+		instance, err := GetInstanceInfo(
+			s.FastForward(event.source.Rev),
 			path["app"],
 			path["rev"],
 			path["proctype"],
 			path["instance"])
 
 		if err != nil {
-			// TODO log failure
+			// TODO: Log
 			continue
 		}
-		listener <- ins
-		rev = ev.Rev
+		event.Info = instance
+		listener <- event
 	}
 	return err
 }
