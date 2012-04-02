@@ -142,6 +142,10 @@ func TestWatchInstance(t *testing.T) {
 
 	event := <-l
 
+	if event.Type != EvInsReg {
+		t.Error("expected EvInsReg event")
+	}
+
 	info := event.Info.(*InstanceInfo)
 
 	if info.AppName != ins.ProcType.Revision.App.Name ||
