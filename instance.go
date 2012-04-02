@@ -57,11 +57,14 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 
 	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
-		"registered": []byte(time.Now().UTC().String()),
-		"host":       []byte(i.Addr.IP.String()),
-		"port":       []byte(strconv.Itoa(i.Addr.Port)),
-		"state":      []byte(strconv.Itoa(int(i.State)))}, i.Rev)
+		"host":  []byte(i.Addr.IP.String()),
+		"port":  []byte(strconv.Itoa(i.Addr.Port)),
+		"state": []byte(strconv.Itoa(int(i.State)))}, i.Rev)
+	if err != nil {
+		return i, err
+	}
 
+	rev, err = i.conn.Set(i.Path()+"/registered", i.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return i, err
 	}
