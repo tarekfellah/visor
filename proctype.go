@@ -2,7 +2,7 @@ package visor
 
 import (
 	"fmt"
-	"strconv"
+	"path"
 	"time"
 )
 
@@ -11,17 +11,16 @@ type ProcType struct {
 	Snapshot
 	Name     ProcessName
 	Revision *Revision
-	Scale    int
 }
 
-var procTypeMetaKeys = []string{"scale"}
+const PROCS_PATH = "procs"
 
 func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
-	return &ProcType{Name: name, Scale: 0, Revision: revision, Snapshot: s}, nil
+	return &ProcType{Name: name, Revision: revision, Snapshot: s}, nil
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
-	return &ProcType{Name: p.Name, Scale: p.Scale, Revision: p.Revision, Snapshot: Snapshot{rev, p.conn}}
+	return &ProcType{Name: p.Name, Revision: p.Revision, Snapshot: Snapshot{rev, p.conn}}
 }
 
 // FastForward advances the instance in time. It returns
@@ -52,8 +51,8 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 	return
 }
 
-func (p *ProcType) Path() (path string) {
-	return p.Revision.Path() + "/procs/" + string(p.Name)
+func (p *ProcType) Path() string {
+	return path.Join(p.Revision.Path(), PROCS_PATH, string(p.Name))
 }
 
 // ProcTypes returns an array of all registered proctypes belonging to the specified revision.
@@ -67,38 +66,9 @@ func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err 
 	ptypes = make([]*ProcType, len(names))
 
 	for i := range names {
-		vals, e := s.conn.GetMulti(path+"/"+names[i], procTypeMetaKeys, s.Rev)
-
-		if e != nil {
-			return nil, e
-		}
-
-		scale, e := strconv.Atoi(string(vals["scale"]))
-		if e != nil {
-			return nil, e
-		}
-
 		name := ProcessName(names[i])
 
-		ptypes[i] = &ProcType{Name: name, Revision: revision, Scale: scale, Snapshot: s}
-	}
-	return
-}
-
-// GetProcType fetches a ProcType from the coordinator
-func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType, err error) {
-	path := revision.Path() + "/procs/" + string(name)
-
-	f, err := Get(s, path+"/scale", new(IntCodec))
-	if err != nil {
-		return
-	}
-
-	p = &ProcType{
-		Name:     name,
-		Snapshot: s,
-		Revision: revision,
-		Scale:    f.Value.(int),
+		ptypes[i] = &ProcType{Name: name, Revision: revision, Snapshot: s}
 	}
 	return
 }

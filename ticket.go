@@ -111,7 +111,7 @@ func (t *Ticket) Done(s Snapshot, host string) (err error) {
 
 // String returns the Go-syntax representation of Ticket.
 func (t *Ticket) String() string {
-	return fmt.Sprintf("%#v", t)
+	return fmt.Sprintf("Ticket{id: %d, op: %s, app: %s, rev: %s, proc: %s}", t.Id, t.Op.String(), t.AppName, t.RevisionName, t.ProcessName)
 }
 
 func (t *Ticket) Path() string {
