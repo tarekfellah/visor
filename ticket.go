@@ -58,7 +58,7 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
 	if err == nil {
-	  t.Snapshot = t.Snapshot.FastForward(f.Rev)
+		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
 	return t, err
 }
@@ -110,7 +110,7 @@ func (t *Ticket) Done(s Snapshot, host string) (err error) {
 
 // String returns the Go-syntax representation of Ticket.
 func (t *Ticket) String() string {
-	return fmt.Sprintf("%#v", t)
+	return fmt.Sprintf("Ticket{id: %d, op: %s, app: %s, rev: %s, proc: %s}", t.Id, t.Op.String(), t.AppName, t.RevisionName, t.ProcessName)
 }
 
 func (t *Ticket) Path() string {
@@ -162,13 +162,13 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event) (t *Ticket, err error) {
 	}
 	data := decoded.([]string)
 	t = &Ticket{
-		Id: id,
-		AppName: data[0],
+		Id:           id,
+		AppName:      data[0],
 		RevisionName: data[1],
-		ProcessName: ProcessName(data[2]),
-		Op: NewOperationType(data[3]),
-		Snapshot: snapshot,
-		source: ev}
+		ProcessName:  ProcessName(data[2]),
+		Op:           NewOperationType(data[3]),
+		Snapshot:     snapshot,
+		source:       ev}
 	return t, err
 }
 
