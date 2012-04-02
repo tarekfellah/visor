@@ -17,8 +17,25 @@ type Instance struct {
 	State    State        // Current state of the instance
 }
 
+// InstanceInfo represents instance information as ids,
+// when it's impractical to use the full Instance type.
+type InstanceInfo struct {
+	Name         string
+	AppName      string
+	RevisionName string
+	ProcessName  string
+	Host         string
+	Port         int
+	State        State
+}
+
 const (
 	InsStateInitial State = 0
+	InsStateStarted       = 1
+	InsStateReady         = 2
+	InsStateFailed        = 3
+	InsStateDead          = 4
+	InsStateExited        = 5
 )
 
 // NewInstance creates and returns a new Instance object.
@@ -147,4 +164,57 @@ func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err 
 // to the given host.
 func HostInstances(s Snapshot, addr string) ([]Instance, error) {
 	return nil, nil
+}
+
+// WatchInstance is WatchEvent for instances.
+func WatchInstance(s Snapshot, listener chan *InstanceInfo) (err error) {
+	rev := s.Rev
+	for {
+		ev, err := s.conn.Wait("/apps/*/revs/*/procs/*/instances/*/registered", rev+1)
+		event := parseEvent(&ev)
+		if err != nil {
+			return err
+		}
+		if !ev.IsSet() {
+			continue
+		}
+		path := event.Path
+		ins, err := GetInstanceInfo(
+			s.FastForward(ev.Rev),
+			path["app"],
+			path["rev"],
+			path["proctype"],
+			path["instance"])
+
+		if err != nil {
+			// TODO log failure
+			continue
+		}
+		listener <- ins
+		rev = ev.Rev
+	}
+	return err
+}
+
+// GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.
+func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string) (*InstanceInfo, error) {
+	path := fmt.Sprintf("/apps/%s/revs/%s/procs/%s/instances/%s", app, rev, proc, ins)
+
+	state, _, err := s.conn.Get(path+"/state", &s.Rev)
+	host, _, err := s.conn.Get(path+"/host", &s.Rev)
+	port, _, err := s.conn.Get(path+"/port", &s.Rev)
+
+	iport, err := strconv.Atoi(string(port))
+	istate, err := strconv.Atoi(string(state))
+
+	instance := &InstanceInfo{
+		Name:         ins,
+		AppName:      app,
+		RevisionName: rev,
+		ProcessName:  proc,
+		Host:         string(host),
+		Port:         iport,
+		State:        State(istate),
+	}
+	return instance, err
 }
