@@ -27,9 +27,18 @@
 //
 package visor
 
+import (
+	"path"
+)
+
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
 
 type ProcessName string
 type Stack string
 type State int
+
+func ProcPath(app string, revision string, processName string, attributes ...string) string {
+	// ...
+	return path.Join(append([]string{APPS_PATH, app, REVS_PATH, revision, PROCS_PATH, processName}, attributes...)...)
+}

@@ -2,6 +2,7 @@ package visor
 
 import (
 	"fmt"
+	"path"
 	"time"
 )
 
@@ -13,6 +14,8 @@ type Revision struct {
 	Ref        string
 	ArchiveUrl string
 }
+
+const REVS_PATH = "revs"
 
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
@@ -80,7 +83,7 @@ func (r *Revision) UnregisterInstance(instance *Instance) error {
 
 // Path returns this.Revision's directory path in the registry.
 func (r *Revision) Path() string {
-	return r.App.Path() + "/revs/" + r.Ref
+	return path.Join(r.App.Path(), REVS_PATH, r.Ref)
 }
 
 func (r *Revision) String() string {
