@@ -32,6 +32,8 @@ func NewOperationType(opStr string) OperationType {
 		op = OpStart
 	case "stop":
 		op = OpStop
+	default:
+		op = OpInvalid
 	}
 	return op
 }
@@ -43,6 +45,8 @@ func (op OperationType) String() string {
 		o = "start"
 	case OpStop:
 		o = "stop"
+	case OpInvalid:
+		o = "<invalid>"
 	}
 	return o
 }
@@ -50,8 +54,9 @@ func (op OperationType) String() string {
 const TICKETS_PATH = "tickets"
 
 const (
-	OpStart OperationType = iota
-	OpStop
+	OpInvalid               = -1
+	OpStart   OperationType = 0
+	OpStop                  = 1
 )
 
 //                                                      procType        

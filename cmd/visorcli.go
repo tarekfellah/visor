@@ -93,15 +93,14 @@ func main() {
 					},
 				},
 				getopt.SubCommands{
-					"describe": {
-						"describe ticket",
+					"create": {
+						"create new ticket",
 						getopt.Definitions{
-							{"ticketid", "id of the ticket you would like to inspect", getopt.IsArg | getopt.Required, ""},
+							{"app", "app", getopt.IsArg | getopt.Required, ""},
+							{"revision", "revision", getopt.IsArg | getopt.Required, ""},
+							{"proctype", "proctype", getopt.IsArg | getopt.Required, ""},
+							{"operation", "operation (start|stop)", getopt.IsArg | getopt.Required, ""},
 						},
-					},
-					"list": {
-						"list current tickets",
-						getopt.Definitions{},
 					},
 				},
 			},
@@ -134,15 +133,6 @@ func main() {
 						getopt.Definitions{
 							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
 							{"revision", "revision to use", getopt.IsArg | getopt.Required, ""},
-						},
-					},
-					"scale": {
-						"scale app-revision-proc_type",
-						getopt.Definitions{
-							{"app", "name of the app", getopt.IsArg | getopt.Required, "myapp"},
-							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
-							{"proc", "proc type", getopt.IsArg | getopt.Required, "web"},
-							{"num", "scaling factor", getopt.IsArg | getopt.Required, "0"},
 						},
 					},
 					"instances": {
@@ -244,6 +234,8 @@ func main() {
 		err = Revision(subCommand, options, arguments, passThrough)
 	case "instance":
 		err = Instance(subCommand, options, arguments, passThrough)
+	case "ticket":
+		err = Ticket(subCommand, options, arguments, passThrough)
 	default:
 		fmt.Println("no fucking way did this happen!")
 	}

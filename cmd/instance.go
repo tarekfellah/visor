@@ -46,13 +46,8 @@ func InstanceCreate(appName string, revision string, procType string, ipStr stri
 
 		var rev *visor.Revision
 		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
-
-			var proc *visor.ProcType
-			if proc, err = visor.GetProcType(snapshot, rev, visor.ProcessName(procType)); err == nil {
-
-				_, err = (&visor.Instance{Snapshot: snapshot, ProcType: proc, Addr: &net.TCPAddr{IP: ip, Port: port}, State: visor.State(0)}).Register()
-
-			}
+			proc := &visor.ProcType{Snapshot: snapshot, Revision: rev, Name: visor.ProcessName(procType)}
+			_, err = (&visor.Instance{Snapshot: snapshot, ProcType: proc, Addr: &net.TCPAddr{IP: ip, Port: port}, State: visor.State(0)}).Register()
 		}
 	}
 
