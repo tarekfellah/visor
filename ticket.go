@@ -70,23 +70,24 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 }
 
 // Claim locks the Ticket to the passed host.
-func (t *Ticket) Claim(s Snapshot, host string) (err error) {
-	exists, _, err := s.conn.Exists(t.prefixPath("claimed"), &s.Rev)
+func (t *Ticket) Claim(host string) (*Ticket, error) {
+	exists, _, err := t.conn.Exists(t.prefixPath("claimed"), &t.Rev)
 	if err != nil {
-		return
+		return t, err
 	}
 	if exists {
-		return ErrTicketClaimed
+		return t, ErrTicketClaimed
 	}
 
-	_, err = s.conn.Set(t.prefixPath("claimed"), s.Rev, []byte(host))
+	rev, err := t.conn.Set(t.prefixPath("claimed"), t.Rev, []byte(host))
+	t.Snapshot = t.Snapshot.FastForward(rev)
 
-	return
+	return t, err
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
-func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.prefixPath("claimed"), &s.Rev)
+func (t *Ticket) Unclaim(host string) (err error) {
+	claimer, _, err := t.conn.Get(t.prefixPath("claimed"), &t.Rev)
 	if err != nil {
 		return
 	}
@@ -94,14 +95,14 @@ func (t *Ticket) Unclaim(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.prefixPath("claimed"), s.Rev)
+	err = t.conn.Del(t.prefixPath("claimed"), t.Rev)
 
 	return
 }
 
 // Done marks the Ticket as done/solved in the registry.
-func (t *Ticket) Done(s Snapshot, host string) (err error) {
-	claimer, _, err := s.conn.Get(t.prefixPath("claimed"), &s.Rev)
+func (t *Ticket) Done(host string) (err error) {
+	claimer, _, err := t.conn.Get(t.prefixPath("claimed"), &t.Rev)
 	if err != nil {
 		return
 	}
@@ -109,7 +110,7 @@ func (t *Ticket) Done(s Snapshot, host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = s.conn.Del(t.Path(), s.Rev)
+	err = t.conn.Del(t.Path(), t.Rev)
 
 	return
 }
