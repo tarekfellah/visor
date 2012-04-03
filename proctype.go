@@ -143,8 +143,8 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 		Snapshot: s,
 		Revision: revision,
 		Heartbeat: Heartbeat{
-			Interval: value["heartbeat-interval"].(int),
-			Treshold: value["heartbeat-treshold"].(int),
+			Interval: int(value["heartbeat-interval"].(float64)),
+			Treshold: int(value["heartbeat-treshold"].(float64)),
 		},
 	}
 	return
