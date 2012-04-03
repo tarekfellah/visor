@@ -12,6 +12,7 @@ type Event struct {
 	Type   EventType         // Type of event
 	Path   map[string]string // The parsed file path
 	Body   string            // Body of the changed file
+	Info   interface{}       // Extra information, such as InstanceInfo
 	source *doozer.Event     // Original event returned by doozer
 }
 type EventType int
@@ -30,10 +31,10 @@ const (
 var (
 	eventRegexps = map[string]*regexp.Regexp{}
 	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                                            EvAppReg,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":                               EvRevReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances/([^/]+)/registered$": EvInsReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/[^/]+/instances([^/]+)/state$":       EvInsStateChange,
+		"^/apps/([^/]+)/registered$":                                   EvAppReg,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":                      EvRevReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
+		"^/instances([^/]+)/state$":                                    EvInsStateChange,
 	}
 )
 
@@ -45,10 +46,6 @@ func init() {
 		}
 		eventRegexps[str] = re
 	}
-}
-
-func newEvent(etype EventType, emitter map[string]string, body string, src *doozer.Event) (ev *Event) {
-	return &Event{etype, emitter, body, src}
 }
 
 func (ev *Event) String() string {
@@ -82,8 +79,11 @@ func parseEvent(src *doozer.Event) *Event {
 
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch {
-			case len(match) >= 4: // Instance
-				emitter["instance"] = match[3]
+			case len(match) >= 5: // Instance
+				emitter["instance"] = match[4]
+				fallthrough
+			case len(match) >= 4: // ProcType
+				emitter["proctype"] = match[3]
 				fallthrough
 			case len(match) >= 3: // Revision
 				emitter["rev"] = match[2]
@@ -127,5 +127,5 @@ func parseEvent(src *doozer.Event) *Event {
 			break
 		}
 	}
-	return newEvent(etype, emitter, string(src.Body), src)
+	return &Event{etype, emitter, string(src.Body), nil, src}
 }
