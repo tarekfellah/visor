@@ -55,6 +55,14 @@ func (p *ProcType) Path() string {
 	return path.Join(p.Revision.Path(), PROCS_PATH, string(p.Name))
 }
 
+func (p *ProcType) InstancePath(Id string) string {
+	return path.Join(p.InstancesPath(), Id)
+}
+
+func (p *ProcType) InstancesPath() string {
+	return path.Join(p.Revision.Path(), PROCS_PATH, string(p.Name), INSTANCES_PATH)
+}
+
 // ProcTypes returns an array of all registered proctypes belonging to the specified revision.
 func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err error) {
 	path := revision.Path() + "/procs"

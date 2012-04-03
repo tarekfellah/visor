@@ -3,6 +3,7 @@ package visor
 import (
 	"fmt"
 	"net"
+	_path "path"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +38,8 @@ const (
 	InsStateDead          = 4
 	InsStateExited        = 5
 )
+
+const INSTANCES_PATH = "instances"
 
 // NewInstance creates and returns a new Instance object.
 func NewInstance(ptype *ProcType, addr string, state State, snapshot Snapshot) (ins *Instance, err error) {
@@ -80,11 +83,13 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	if err != nil {
 		return i, err
 	}
+	now := []byte(time.Now().UTC().String())
 
-	rev, err = i.conn.Set(i.Path()+"/registered", i.Rev, []byte(time.Now().UTC().String()))
+	rev, err = i.conn.Set(i.Path()+"/registered", i.Rev, now)
 	if err != nil {
 		return i, err
 	}
+	rev, err = i.conn.Set(i.ProcType.InstancePath(i.Id()), i.Rev, now)
 	instance = i.FastForward(rev)
 
 	return
@@ -92,14 +97,22 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	return i.conn.Del(i.Path(), i.Rev)
+	rev := i.Rev
+	err = i.conn.Del(i.Path(), rev)
+	if err != nil {
+		return
+	}
+	err = i.conn.Del(i.ProcType.Path()+"/instances/"+i.Id(), rev)
+	return
 }
 
 // Path returns the instance's directory path in the registry.
 func (i *Instance) Path() (path string) {
-	id := strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
+	return "/instances/" + i.Id()
+}
 
-	return i.ProcType.Path() + "/instances/" + id
+func (i *Instance) Id() string {
+	return strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
 }
 
 func (i *Instance) String() string {
@@ -129,8 +142,7 @@ func Instances(s Snapshot) (instances []*Instance, err error) {
 // ProcTypeInstances returns an array of all registered instances belonging
 // to the given ProcType.
 func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err error) {
-	path := ptype.Path() + "/instances"
-	names, err := s.conn.Getdir(path, s.Rev)
+	names, err := s.conn.Getdir(ptype.InstancesPath(), s.Rev)
 	if err != nil {
 		return
 	}
@@ -138,7 +150,8 @@ func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err 
 	instances = make([]*Instance, len(names))
 
 	for i := range names {
-		vals, e := s.conn.GetMulti(path+"/"+names[i], nil, s.Rev)
+		path := _path.Join(INSTANCES_PATH, names[i])
+		vals, e := s.conn.GetMulti(path, nil, s.Rev)
 
 		if e != nil {
 			return nil, e
@@ -193,7 +206,7 @@ func WatchInstance(s Snapshot, listener chan *Event) (err error) {
 
 // GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.
 func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string) (*InstanceInfo, error) {
-	path := fmt.Sprintf("/apps/%s/revs/%s/procs/%s/instances/%s", app, rev, proc, ins)
+	path := _path.Join(INSTANCES_PATH, ins)
 
 	state, _, err := s.conn.Get(path+"/state", &s.Rev)
 	host, _, err := s.conn.Get(path+"/host", &s.Rev)

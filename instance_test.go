@@ -3,6 +3,7 @@ package visor
 import (
 	"strconv"
 	"testing"
+	"time"
 )
 
 func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
@@ -10,7 +11,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("apps", s.Rev)
+	s.conn.Del("/", s.Rev)
 	s = s.FastForward(-1)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
@@ -71,6 +72,14 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
+	check, _, err = ins.conn.Exists(ins.ProcType.InstancePath(ins.Id()), nil)
+	if err != nil {
+		t.Error(err)
+	}
+	if !check {
+		t.Error("Instance registration failed")
+	}
+
 	_, err = ins.Register()
 	if err == nil {
 		t.Error("Instance allowed to be registered twice")
@@ -83,6 +92,7 @@ func TestInstanceUnregister(t *testing.T) {
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	err = ins.Unregister()
@@ -140,19 +150,22 @@ func TestWatchInstance(t *testing.T) {
 
 	ins.Register()
 
-	event := <-l
+	select {
+	case <-time.After(time.Second):
+		t.Error("waiting for instance event timed out.")
+	case event := <-l:
+		if event.Type != EvInsReg {
+			t.Error("expected EvInsReg event")
+		}
 
-	if event.Type != EvInsReg {
-		t.Error("expected EvInsReg event")
-	}
+		info := event.Info.(*InstanceInfo)
 
-	info := event.Info.(*InstanceInfo)
-
-	if info.AppName != ins.ProcType.Revision.App.Name ||
-		info.RevisionName != ins.ProcType.Revision.Ref ||
-		info.ProcessName != ins.ProcType.Name ||
-		info.Host != "127.0.0.1" ||
-		info.Port != ins.Addr.Port {
-		t.Errorf("unexpected values in %#v\n", info)
+		if info.AppName != ins.ProcType.Revision.App.Name ||
+			info.RevisionName != ins.ProcType.Revision.Ref ||
+			info.ProcessName != ins.ProcType.Name ||
+			info.Host != "127.0.0.1" ||
+			info.Port != ins.Addr.Port {
+			t.Errorf("unexpected values in %#v\n", info)
+		}
 	}
 }
