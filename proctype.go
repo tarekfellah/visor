@@ -9,14 +9,30 @@ import (
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
 	Snapshot
-	Name     ProcessName
-	Revision *Revision
+	Name      ProcessName
+	Revision  *Revision
+	Heartbeat Heartbeat
+}
+
+type Heartbeat struct {
+	Interval int
+	Treshold int
 }
 
 const PROCS_PATH = "procs"
 
+var (
+	HEARTBEAT_INTERVAL = 30
+	HEARTBEAT_TRESHOLD = 2
+)
+
+var DEFAULT_HEARTBEAT = Heartbeat{
+	Interval: HEARTBEAT_INTERVAL,
+	Treshold: HEARTBEAT_TRESHOLD,
+}
+
 func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
-	return &ProcType{Name: name, Revision: revision, Snapshot: s}, nil
+	return &ProcType{Name: name, Revision: revision, Snapshot: s, Heartbeat: DEFAULT_HEARTBEAT}, nil
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
@@ -39,9 +55,21 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := p.conn.SetMulti(p.Path(), map[string][]byte{
-		"registered": []byte(time.Now().UTC().String()),
-		"scale":      []byte("0")}, p.Rev)
+	if p.Heartbeat.Interval == 0 && p.Heartbeat.Treshold == 0 {
+		p.Heartbeat = DEFAULT_HEARTBEAT
+	}
+
+	attrs := &File{p.Snapshot, p.Path() + "/attrs", map[string]int{
+		"heartbeat-interval": p.Heartbeat.Interval,
+		"heartbeat-treshold": p.Heartbeat.Treshold,
+	}, new(JSONCodec)}
+
+	attrs, err = attrs.Create()
+	if err != nil {
+		return p, err
+	}
+
+	rev, err := p.conn.Set(p.Path()+"/registered", p.Rev, []byte(time.Now().UTC().String()))
 
 	if err != nil {
 		return p, err
@@ -96,6 +124,28 @@ func ProcTypes(s Snapshot) (ptypes []*ProcType, err error) {
 			return nil, e
 		}
 		ptypes = append(ptypes, revps...)
+	}
+	return
+}
+
+// GetProcType fetches a ProcType from the coordinator
+func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType, err error) {
+	path := path.Join(revision.Path(), PROCS_PATH, string(name))
+
+	f, err := Get(s, path+"/attrs", new(JSONCodec))
+	if err != nil {
+		return
+	}
+	value := f.Value.(map[string]interface{})
+
+	p = &ProcType{
+		Name:     name,
+		Snapshot: s,
+		Revision: revision,
+		Heartbeat: Heartbeat{
+			Interval: value["heartbeat-interval"].(int),
+			Treshold: value["heartbeat-treshold"].(int),
+		},
 	}
 	return
 }
