@@ -2,6 +2,7 @@ package visor
 
 import (
 	"fmt"
+	"github.com/soundcloud/doozer"
 	"strings"
 	"time"
 )
@@ -77,11 +78,17 @@ func (a *App) Unregister() error {
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars map[string]string, err error) {
 	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
-	if err != nil {
-		return
-	}
 
 	vars = map[string]string{}
+
+	if err != nil {
+		if err.(*doozer.Error).Err == doozer.ErrNoEnt {
+			return vars, nil
+		} else {
+			return
+		}
+	}
+
 	var v string
 
 	for i := range varNames {
