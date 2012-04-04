@@ -101,7 +101,6 @@ func main() {
 							{"type|t", "deploy type of the application (lxc, mount or bazapta)", getopt.Optional | getopt.ExampleIsDefault, "lxc"},
 							{"repourl|u", "url to the repository of this app", getopt.Required, "http://github.com/soundcloud/<your_project>"},
 							{"stack|s", "stack version ... should usually be HEAD", getopt.Optional | getopt.ExampleIsDefault, "HEAD"},
-							{"irc|i|", "comma separated list of irc channels where to announce new deployments", getopt.Optional, []string{"#deploys"}},
 							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
 						},
 					},
