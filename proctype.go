@@ -63,8 +63,9 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 	}
 
 	attrs := &File{p.Snapshot, p.Path() + "/attrs", map[string]int{
-		"heartbeat-interval": p.Heartbeat.Interval,
-		"heartbeat-treshold": p.Heartbeat.Treshold,
+		"heartbeat-interval":      p.Heartbeat.Interval,
+		"heartbeat-treshold":      p.Heartbeat.Treshold,
+		"heartbeat-initial-delay": p.Heartbeat.InitialDelay,
 	}, new(JSONCodec)}
 
 	attrs, err = attrs.Create()
