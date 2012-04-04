@@ -10,6 +10,40 @@ import (
 var snapshot func() (s visor.Snapshot)
 
 func main() {
+	instanceSubCommands := getopt.SubCommands{
+		"describe": {
+			"describe instance",
+			getopt.Definitions{
+				{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
+			},
+		},
+		"tail": {
+			"tail instance stdout / stderr",
+			getopt.Definitions{
+				{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
+			},
+		},
+		"kill": {
+			"kill an instance",
+			getopt.Definitions{
+				{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
+				{"signal|s", "signal to send", getopt.Optional, "SIGKILL"},
+			},
+		},
+	}
+
+	if os.Getenv("VISOR_DEBUG") != "" {
+		instanceSubCommands["create"] = getopt.Options{
+			"[DEBUG] create a new instance entry",
+			getopt.Definitions{
+				{"app", "app", getopt.IsArg | getopt.Required, ""},
+				{"revision", "revision", getopt.IsArg | getopt.Required, ""},
+				{"proctype", "proctype", getopt.IsArg | getopt.Required, ""},
+				{"addr", "tcp address in the form of <host>:<port>", getopt.IsArg | getopt.Required, "10.20.30.40:20000"},
+			},
+		}
+	}
+
 	ssco := getopt.SubSubCommandOptions{
 		getopt.Options{
 			"A cli interface to visor (see http://github.com/soundcloud/visor)",
@@ -151,37 +185,7 @@ func main() {
 						{"command", "command to execute", getopt.IsSubCommand, ""},
 					},
 				},
-				getopt.SubCommands{
-					"create": {
-						"create a new instance entry",
-						getopt.Definitions{
-							{"app", "app", getopt.IsArg | getopt.Required, ""},
-							{"revision", "revision", getopt.IsArg | getopt.Required, ""},
-							{"proctype", "proctype", getopt.IsArg | getopt.Required, ""},
-							{"ip", "host where this instance is running on", getopt.IsArg | getopt.Required, "10.20.30.40"},
-							{"iport", "instance port this app is listening on (leave empty if app is not listening on a port)", getopt.IsArg | getopt.Optional, "80"},
-						},
-					},
-					"describe": {
-						"describe instance",
-						getopt.Definitions{
-							{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
-						},
-					},
-					"tail": {
-						"tail instance stdout / stderr",
-						getopt.Definitions{
-							{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
-						},
-					},
-					"kill": {
-						"kill an instance",
-						getopt.Definitions{
-							{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
-							{"signal|s", "signal to send", getopt.Optional, "SIGKILL"},
-						},
-					},
-				},
+				instanceSubCommands,
 			},
 		},
 	}
