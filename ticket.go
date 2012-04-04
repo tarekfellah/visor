@@ -19,6 +19,7 @@ type Ticket struct {
 	ProcessName  ProcessName
 	Op           OperationType
 	Addr         net.TCPAddr
+	Status       string
 	source       *doozer.Event
 }
 
@@ -61,7 +62,7 @@ const (
 
 //                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
-	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil}
+	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: "unclaimed"}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
@@ -82,6 +83,9 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 	rev, err := t.conn.Set(t.prefixPath("claimed"), t.Rev, []byte(host))
 	t.Snapshot = t.Snapshot.FastForward(rev)
 
+	if err == nil {
+		t.Status = "claimed"
+	}
 	return t, err
 }
 
@@ -96,7 +100,9 @@ func (t *Ticket) Unclaim(host string) (err error) {
 	}
 
 	err = t.conn.Del(t.prefixPath("claimed"), t.Rev)
-
+	if err == nil {
+		t.Status = "unclaimed"
+	}
 	return
 }
 
@@ -111,7 +117,9 @@ func (t *Ticket) Done(host string) (err error) {
 	}
 
 	err = t.conn.Del(t.Path(), t.Rev)
-
+	if err == nil {
+		t.Status = "done"
+	}
 	return
 }
 
