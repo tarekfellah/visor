@@ -11,24 +11,27 @@ type ProcType struct {
 	Snapshot
 	Name      ProcessName
 	Revision  *Revision
-	Heartbeat Heartbeat
+	Heartbeat *Heartbeat
 }
 
 type Heartbeat struct {
-	Interval int
-	Treshold int
+	Interval     int
+	Treshold     int
+	InitialDelay int
 }
 
 const PROCS_PATH = "procs"
 
 var (
-	HEARTBEAT_INTERVAL = 30
-	HEARTBEAT_TRESHOLD = 2
+	HEARTBEAT_INTERVAL      = 30
+	HEARTBEAT_TRESHOLD      = 2
+	HEARTBEAT_INITIAL_DELAY = 1
 )
 
-var DEFAULT_HEARTBEAT = Heartbeat{
-	Interval: HEARTBEAT_INTERVAL,
-	Treshold: HEARTBEAT_TRESHOLD,
+var DEFAULT_HEARTBEAT = &Heartbeat{
+	Interval:     HEARTBEAT_INTERVAL,
+	Treshold:     HEARTBEAT_TRESHOLD,
+	InitialDelay: HEARTBEAT_INITIAL_DELAY,
 }
 
 func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
@@ -55,7 +58,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	if p.Heartbeat.Interval == 0 && p.Heartbeat.Treshold == 0 {
+	if p.Heartbeat == nil {
 		p.Heartbeat = DEFAULT_HEARTBEAT
 	}
 
@@ -142,9 +145,10 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 		Name:     name,
 		Snapshot: s,
 		Revision: revision,
-		Heartbeat: Heartbeat{
-			Interval: int(value["heartbeat-interval"].(float64)),
-			Treshold: int(value["heartbeat-treshold"].(float64)),
+		Heartbeat: &Heartbeat{
+			Interval:     int(value["heartbeat-interval"].(float64)),
+			Treshold:     int(value["heartbeat-treshold"].(float64)),
+			InitialDelay: int(value["heartbeat-initial-delay"].(float64)),
 		},
 	}
 	return
