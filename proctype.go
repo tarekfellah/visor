@@ -9,9 +9,10 @@ import (
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
 	Snapshot
-	Name      ProcessName
-	Revision  *Revision
-	Heartbeat *Heartbeat
+	Name        ProcessName
+	Revision    *Revision
+	Heartbeat   *Heartbeat
+	MaxRestarts int
 }
 
 type Heartbeat struct {
@@ -66,6 +67,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		"heartbeat-interval":      p.Heartbeat.Interval,
 		"heartbeat-treshold":      p.Heartbeat.Treshold,
 		"heartbeat-initial-delay": p.Heartbeat.InitialDelay,
+		"max-restarts":            p.MaxRestarts,
 	}, new(JSONCodec)}
 
 	attrs, err = attrs.Create()
@@ -143,9 +145,10 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 	value := f.Value.(map[string]interface{})
 
 	p = &ProcType{
-		Name:     name,
-		Snapshot: s,
-		Revision: revision,
+		Name:        name,
+		Snapshot:    s,
+		Revision:    revision,
+		MaxRestarts: int(value["max-restarts"].(float64)),
 		Heartbeat: &Heartbeat{
 			Interval:     int(value["heartbeat-interval"].(float64)),
 			Treshold:     int(value["heartbeat-treshold"].(float64)),
