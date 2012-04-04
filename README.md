@@ -122,9 +122,9 @@ func main() {
         hg update 
         make install
 
-  - [doozerd](https://github.com/soundcloud/doozerd) (testing)
+  - [Doozerd](https://github.com/ha/doozerd) (testing)
 
-        go get github.com/soundcloud/doozerd
+        go get github.com/ha/doozerd
 
     if this fails, do the following
 

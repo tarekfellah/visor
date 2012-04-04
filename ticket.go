@@ -33,6 +33,8 @@ func NewOperationType(opStr string) OperationType {
 		op = OpStart
 	case "stop":
 		op = OpStop
+	default:
+		op = OpInvalid
 	}
 	return op
 }
@@ -44,6 +46,8 @@ func (op OperationType) String() string {
 		o = "start"
 	case OpStop:
 		o = "stop"
+	case OpInvalid:
+		o = "<invalid>"
 	}
 	return o
 }
@@ -51,10 +55,12 @@ func (op OperationType) String() string {
 const TICKETS_PATH = "tickets"
 
 const (
-	OpStart OperationType = iota
-	OpStop
+	OpInvalid               = -1
+	OpStart   OperationType = 0
+	OpStop                  = 1
 )
 
+//                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: "unclaimed"}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
