@@ -1,11 +1,9 @@
 package main
 
 import (
-	"errors"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
 	"net"
-	"strconv"
 )
 
 func Instance(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
@@ -17,42 +15,38 @@ func Instance(subCommand string, options map[string]getopt.OptionValue, argument
 	case "kill":
 		err = InstanceKill(options, arguments, passThrough)
 	case "create":
-		if len(arguments) > 4 {
-			err = InstanceCreate(arguments[0], arguments[1], arguments[2], arguments[3], arguments[4])
-		} else {
-			err = InstanceCreate(arguments[0], arguments[1], arguments[2], arguments[3], "")
-		}
-
+		err = InstanceCreate(arguments[0], arguments[1], arguments[2], arguments[3])
 	}
 	return
 }
 
-func InstanceCreate(appName string, revision string, procType string, ipStr string, portStr string) (err error) {
-	snapshot := snapshot()
-	var app *visor.App
+func InstanceCreate(appName string, revision string, procType string, addrstr string) (err error) {
+	s := snapshot()
 
-	var ip net.IP
-	if ip = net.ParseIP(ipStr); ip == nil {
-		err = errors.New(ipStr + " is not a valid ip addres (hostnames are not allowed")
+	addr, err := net.ResolveTCPAddr("tcp", addrstr)
+	if err != nil {
 		return
 	}
 
-	var port int
-	if port, err = strconv.Atoi(portStr); err != nil {
+	app, err := visor.GetApp(s, appName)
+	if err != nil {
 		return
 	}
 
-	if app, err = visor.GetApp(snapshot, appName); err == nil {
-
-		var rev *visor.Revision
-		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
-			proc := &visor.ProcType{Snapshot: snapshot, Revision: rev, Name: visor.ProcessName(procType)}
-			_, err = (&visor.Instance{Snapshot: snapshot, ProcType: proc, Addr: &net.TCPAddr{IP: ip, Port: port}, State: visor.State(0)}).Register()
-		}
+	rev, err := visor.GetRevision(s, app, revision)
+	if err != nil {
+		return
 	}
 
+	proc, err := visor.GetProcType(s, rev, visor.ProcessName(procType))
+	if err != nil {
+		return
+	}
+
+	_, err = (&visor.Instance{Snapshot: s, ProcType: proc, Addr: addr, State: visor.InsStateInitial}).Register()
 	return
 }
+
 func InstanceDescribe(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	instanceId := arguments[0]
 
