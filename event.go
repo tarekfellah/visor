@@ -17,6 +17,26 @@ type Event struct {
 }
 type EventType int
 
+func (e EventType) String() string {
+	switch e {
+	case EvAppReg:
+		return "<app registered>"
+	case EvAppUnreg:
+		return "<app unregistered>"
+	case EvRevReg:
+		return "<revision registered>"
+	case EvRevUnreg:
+		return "<revision unregistered>"
+	case EvInsReg:
+		return "<instance registered>"
+	case EvInsUnreg:
+		return "<instance unregistered>"
+	case EvInsStateChange:
+		return "<instance state changed>"
+	}
+	return "<<unkown event>>"
+}
+
 // Event types
 const (
 	EvAppReg         EventType = iota // App register

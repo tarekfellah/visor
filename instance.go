@@ -30,6 +30,16 @@ type InstanceInfo struct {
 	State        State
 }
 
+func (i InstanceInfo) AddrString() string {
+	return i.Host + ":" + strconv.Itoa(i.Port)
+}
+func (i InstanceInfo) RevString() string {
+	return i.AppName + "-" + i.RevisionName
+}
+func (i InstanceInfo) LogString() string {
+	return fmt.Sprintf("%s (%s)", i.RevString(), i.AddrString())
+}
+
 const (
 	InsStateInitial State = 0
 	InsStateStarted       = 1

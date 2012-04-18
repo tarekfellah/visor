@@ -38,6 +38,24 @@ type ProcessName string
 type Stack string
 type State int
 
+func (s State) String() string {
+	switch s {
+	case InsStateInitial:
+		return "initial"
+	case InsStateStarted:
+		return "started"
+	case InsStateReady:
+		return "ready"
+	case InsStateFailed:
+		return "failed"
+	case InsStateDead:
+		return "dead"
+	case InsStateExited:
+		return "exited"
+	}
+	return "?"
+}
+
 func ProcPath(app string, revision string, processName string, attributes ...string) string {
 	// ...
 	return path.Join(append([]string{APPS_PATH, app, REVS_PATH, revision, PROCS_PATH, processName}, attributes...)...)
