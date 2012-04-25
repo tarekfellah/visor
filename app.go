@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"strings"
@@ -57,7 +58,7 @@ func (a *App) Register() (app *App, err error) {
 
 	a.Port, err = a.claimPort()
 	if err != nil {
-		return
+		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
 	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
