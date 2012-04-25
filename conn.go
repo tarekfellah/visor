@@ -19,7 +19,11 @@ type Conn struct {
 
 // Set calls (*doozer.Conn).Set with a prefixed path
 func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
-	return c.conn.Set(c.prefixPath(path), rev, value)
+	newrev, err = c.conn.Set(c.prefixPath(path), rev, value)
+	if err != nil && newrev == 0 {
+		_, newrev, _ = c.Stat(path, nil)
+	}
+	return
 }
 
 // Stat calls (*doozer.Conn).Stat with a prefixed path
