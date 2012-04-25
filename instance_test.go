@@ -12,6 +12,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 		panic(err)
 	}
 	s.conn.Del("/", s.Rev)
+	s.conn.Set("/next-port", -1, []byte("8000"))
 	s = s.FastForward(-1)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)

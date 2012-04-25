@@ -16,6 +16,7 @@ type App struct {
 	RepoUrl    string
 	Stack      Stack
 	DeployType string
+	Port       int
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -54,10 +55,16 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]string{
+	a.Port, err = a.claimPort()
+	if err != nil {
+		return
+	}
+
+	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
 		"repo-url":    a.RepoUrl,
 		"stack":       string(a.Stack),
 		"deploy-type": a.DeployType,
+		"port":        a.Port,
 	}, new(JSONCodec)}
 
 	f, err := attrs.Create()
@@ -189,6 +196,28 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 		apps[i] = a
+	}
+	return
+}
+
+func (a *App) claimPort() (port int, err error) {
+	snapshot := a.Snapshot
+
+	for {
+		f, err := Get(snapshot, "/next-port", new(IntCodec))
+		if err == nil {
+			port = f.Value.(int)
+			f, err = f.Update(port + 1)
+
+			if err == nil {
+				break
+			} else {
+				snapshot = f.Snapshot
+				time.Sleep(time.Second / 10)
+			}
+		} else {
+			return -1, err
+		}
 	}
 	return
 }

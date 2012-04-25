@@ -12,6 +12,7 @@ func appSetup(name string) (app *App) {
 
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("apps", r)
+	s.conn.Set("/next-port", -1, []byte("8000"))
 
 	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s}
 	app = app.FastForward(-1)
