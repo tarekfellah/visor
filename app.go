@@ -47,11 +47,6 @@ func (a *App) Register() (app *App, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = a.setPath("registered", time.Now().UTC().String())
-	if err != nil {
-		return
-	}
-
 	if a.DeployType == "" {
 		a.DeployType = DEPLOY_LXC
 	}
@@ -68,12 +63,17 @@ func (a *App) Register() (app *App, err error) {
 		"port":        a.Port,
 	}, new(JSONCodec)}
 
-	f, err := attrs.Create()
+	_, err = attrs.Create()
 	if err != nil {
 		return
 	}
 
-	app = a.FastForward(f.Rev)
+	rev, err := a.setPath("registered", time.Now().UTC().String())
+	if err != nil {
+		return
+	}
+
+	app = a.FastForward(rev)
 
 	return
 }
