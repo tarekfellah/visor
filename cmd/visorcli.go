@@ -49,13 +49,27 @@ func main() {
 			"A cli interface to visor (see http://github.com/soundcloud/visor)",
 			getopt.Definitions{
 				{"config|c|CONFIG", "config file", getopt.IsConfigFile | getopt.ExampleIsDefault, "/etc/visor.conf"},
-				{"doozerd|d|DOOZERD_HOST", "doozer server", getopt.Required, ""},
+				{"doozerd|d|DOOZERD_HOST", "doozer server", getopt.Optional | getopt.ExampleIsDefault, "127.0.0.1"},
 				{"port|p|DOOZERD_PORT", "doozer server port", getopt.Optional | getopt.ExampleIsDefault, "8046"},
 				{"root|r|VISOR_ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Optional | getopt.ExampleIsDefault, visor.DEFAULT_ROOT},
 				{"scope", "scope to operate on", getopt.IsSubCommand, ""},
 			},
 		},
 		getopt.Scopes{
+			"root": {
+				getopt.Options{
+					"Everything that has to do root and setup",
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
+				},
+				getopt.SubCommands{
+					"init": {
+						"Initialize coordinator state",
+						getopt.Definitions{},
+					},
+				},
+			},
 			"app": {
 				getopt.Options{
 					"Everything that has to do with apps",
@@ -231,6 +245,8 @@ func main() {
 
 	var err error
 	switch scope {
+	case "root":
+		err = Root(subCommand, options, arguments, passThrough)
 	case "app":
 		err = App(subCommand, options, arguments, passThrough)
 	case "revision":

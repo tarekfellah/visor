@@ -13,12 +13,17 @@ func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("/", r)
 
-	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
-	l = make(chan *Event)
+	s = s.FastForward(-1)
 
-	s.conn.Set("/next-port", -1, []byte("8000"))
+	err = Init(s)
+	if err != nil {
+		panic(err)
+	}
 
 	s = s.FastForward(-1)
+
+	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
+	l = make(chan *Event)
 
 	return
 }

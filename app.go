@@ -205,7 +205,7 @@ func (a *App) claimPort() (port int, err error) {
 	snapshot := a.Snapshot
 
 	for {
-		f, err := Get(snapshot, "/next-port", new(IntCodec))
+		f, err := Get(snapshot, START_PORT_PATH, new(IntCodec))
 		if err == nil {
 			port = f.Value.(int)
 			f, err = f.Update(port + 1)

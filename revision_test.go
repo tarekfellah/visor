@@ -15,7 +15,13 @@ func revSetup() (s Snapshot, app *App) {
 	}
 
 	s.conn.Del("/apps", -1)
-	s.conn.Set("/next-port", -1, []byte("8000"))
+
+	s = s.FastForward(-1)
+
+	err = Init(s)
+	if err != nil {
+		panic(err)
+	}
 	s = s.FastForward(-1)
 
 	return
