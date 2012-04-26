@@ -179,6 +179,7 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = Stack(value["stack"].(string))
 	app.DeployType = value["deploy-type"].(string)
+	app.Port = int(value["port"].(float64))
 
 	return
 }
