@@ -158,7 +158,7 @@ func TestTicketDoneWithWrongLock(t *testing.T) {
 	}
 }
 
-func TestTicketWatch(t *testing.T) {
+func TestTicketWatchCreate(t *testing.T) {
 	s, _ := ticketSetup()
 	l := make(chan *Ticket)
 
@@ -169,6 +169,31 @@ func TestTicketWatch(t *testing.T) {
 		t.Error(err)
 	}
 
+	expectTicket("lol", "cat", "app", 0, l, t)
+}
+
+func TestTicketWatchUnclaim(t *testing.T) {
+	s, _ := ticketSetup()
+	l := make(chan *Ticket)
+
+	ticket, err := CreateTicket("lol", "cat", "app", 0, s)
+	if err != nil {
+		t.Error(err)
+	}
+
+	go WatchTicket(ticket.Snapshot, l)
+
+	ticket, err = ticket.Claim("host")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = ticket.Unclaim("host")
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	expectTicket("lol", "cat", "app", 0, l, t)
 }
 
