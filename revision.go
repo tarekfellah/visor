@@ -3,6 +3,7 @@ package visor
 import (
 	"fmt"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type Revision struct {
 }
 
 const REVS_PATH = "revs"
+const SCALE_PATH string = "scale"
 
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
@@ -68,8 +70,27 @@ func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
 	return
 }
 
-func (r *Revision) Scale(proctype string, factor int) error {
-	return nil
+func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err error) {
+	p := path.Join(ProcPath(r.App.Name, r.Ref, proctype), SCALE_PATH)
+
+	rev, err := r.conn.Set(p, r.Rev, []byte(strconv.Itoa(factor)))
+	if err != nil {
+		return
+	}
+
+	revision = r.FastForward(rev)
+
+	for i := 0; i < factor; i++ {
+		ticket, err := CreateTicket(r.App.Name, r.Ref, ProcessName(proctype), OpStart, revision.Snapshot)
+		if err != nil {
+			return nil, err
+		}
+
+		// FIXME Too much knowledge about ticket internals, we need a better way to fastforward here
+		revision = r.FastForward(ticket.Snapshot.Rev)
+	}
+
+	return
 }
 func (r *Revision) Instances(proctype ProcessName) ([]Instance, error) {
 	return nil, nil

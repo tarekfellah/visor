@@ -5,17 +5,19 @@ import (
 )
 
 func revSetup() (s Snapshot, app *App) {
-	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DEFAULT_ADDR, "/revision-test")
 	if err != nil {
 		panic(err)
 	}
+
 	app, err = NewApp("rev-test", "git://rev.git", "references", s)
 	if err != nil {
 		panic(err)
 	}
 
-	s.conn.Del("/apps", -1)
-
+	r, _ := s.conn.Rev()
+	s.conn.Del("/apps", r)
+	s.conn.Del("/tickets", r)
 	s = s.FastForward(-1)
 
 	err = Init(s)
@@ -87,5 +89,37 @@ func TestRevisionUnregister(t *testing.T) {
 	}
 	if check {
 		t.Error("Revision still registered")
+	}
+}
+
+func TestRevisionScaleUp(t *testing.T) {
+	s, app := revSetup()
+	rev, err := NewRevision(app, "12345", app.Snapshot)
+	if err != nil {
+		t.Error(err)
+	}
+	rev, err = rev.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	rev, err = rev.Scale("web", 5)
+	if err != nil {
+		t.Error(err)
+	}
+	factor, _, err := s.conn.Get(rev.Path()+"/procs/web/scale", &rev.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(factor) != "5" {
+		t.Errorf("Scaling factor expected %s, got %s", "5", factor)
+	}
+
+	tickets, err := s.conn.Getdir(TICKETS_PATH, rev.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(tickets) != 5 {
+		t.Errorf("Expected tickets %s, got %d", "5", len(tickets))
 	}
 }

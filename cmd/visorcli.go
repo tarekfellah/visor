@@ -189,6 +189,15 @@ func main() {
 							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
 						},
 					},
+					"scale": {
+						"scales an app revisions proctype by the given factor",
+						getopt.Definitions{
+							{"app", "name of the app", getopt.IsArg | getopt.Required, "myapp"},
+							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
+							{"proctype", "proctype to scale", getopt.IsArg | getopt.Required, "web"},
+							{"factor", "scaling factor", getopt.IsArg | getopt.Required, 5},
+						},
+					},
 				},
 			},
 			"instance": {
