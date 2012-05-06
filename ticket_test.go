@@ -82,7 +82,7 @@ func TestTicketUnclaim(t *testing.T) {
 	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
-  }
+	}
 
 	ticket.Snapshot = ticket.Snapshot.FastForward(rev)
 	err = ticket.Unclaim(host)
