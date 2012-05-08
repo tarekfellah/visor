@@ -159,5 +159,9 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 }
 
 func (p *ProcType) String() string {
+	return fmt.Sprintf("ProcType<%s:%s:%s>", p.Revision.App.Name, p.Revision.Ref, p.Name)
+}
+
+func (p *ProcType) Inspect() string {
 	return fmt.Sprintf("%#v", p)
 }

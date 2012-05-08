@@ -147,6 +147,10 @@ func (a *App) prefixPath(path string) string {
 }
 
 func (a *App) String() string {
+	return fmt.Sprintf("App<%s>{stack: %s, type: %s}", a.Name, a.Stack, a.DeployType)
+}
+
+func (a *App) Inspect() string {
 	return fmt.Sprintf("%#v", a)
 }
 
