@@ -5,4 +5,4 @@ compile:
 	go build -o bin/visor ./cmd
 
 fmt:
-	find . -name "*.go" -exec gofmt -w {} \;
+	go fmt
