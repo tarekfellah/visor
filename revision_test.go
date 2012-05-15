@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"path"
 	"testing"
 )
 
@@ -102,11 +103,13 @@ func TestRevisionScaleUp(t *testing.T) {
 		t.Error(err)
 	}
 
-	rev, err = rev.Scale("web", 5)
+	proctype := "up"
+	rev, err = rev.Scale(proctype, 5)
 	if err != nil {
 		t.Error(err)
 	}
-	factor, _, err := s.conn.Get(rev.Path()+"/procs/web/scale", &rev.Rev)
+
+	factor, _, err := s.conn.Get(path.Join(ProcPath(rev.App.Name, rev.Ref, proctype), SCALE_PATH), &rev.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -120,5 +123,42 @@ func TestRevisionScaleUp(t *testing.T) {
 	}
 	if len(tickets) != 5 {
 		t.Errorf("Expected tickets %s, got %d", "5", len(tickets))
+	}
+}
+
+func TestRevisionScaleDown(t *testing.T) {
+	s, app := revSetup()
+	rev, err := NewRevision(app, "54321", app.Snapshot)
+	if err != nil {
+		t.Error(err)
+	}
+	rev, err = rev.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	proctype := "down"
+	r, err := s.conn.Set(path.Join(ProcPath(rev.App.Name, rev.Ref, proctype), SCALE_PATH), rev.Rev, []byte("5"))
+	rev = rev.FastForward(r)
+
+	rev, err = rev.Scale(proctype, 2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	factor, _, err := s.conn.Get(path.Join(ProcPath(rev.App.Name, rev.Ref, proctype), SCALE_PATH), &rev.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if string(factor) != "2" {
+		t.Errorf("Scaling factor expected %s, got %s", "2", factor)
+	}
+
+	tickets, err := s.conn.Getdir(TICKETS_PATH, rev.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(tickets) != 3 {
+		t.Errorf("Expected tickets %s, got %d", "3", len(tickets))
 	}
 }

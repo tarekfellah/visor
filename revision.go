@@ -74,6 +74,7 @@ func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
 }
 
 func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err error) {
+	op := OpStart
 	p := path.Join(ProcPath(r.App.Name, r.Ref, proctype), SCALE_PATH)
 
 	rev, err := r.conn.Set(p, r.Rev, []byte(strconv.Itoa(factor)))
@@ -83,14 +84,34 @@ func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err e
 
 	revision = r.FastForward(rev)
 
+	res, _, err := r.conn.Get(p, &r.Rev)
+	if err != nil {
+		return
+	}
+	if res != nil {
+		current, e := strconv.Atoi(string(res))
+		if err != nil {
+			return nil, e
+		}
+
+		if factor < current {
+			op = OpStop
+		}
+
+		factor = factor - current
+
+		if factor < 0 {
+			factor = -factor
+		}
+	}
+
 	for i := 0; i < factor; i++ {
-		ticket, err := CreateTicket(r.App.Name, r.Ref, ProcessName(proctype), OpStart, revision.Snapshot)
+		ticket, err := CreateTicket(r.App.Name, r.Ref, ProcessName(proctype), op, revision.Snapshot)
 		if err != nil {
 			return nil, err
 		}
 
-		// FIXME Too much knowledge about ticket internals, we need a better way to fastforward here
-		revision = r.FastForward(ticket.Snapshot.Rev)
+		revision = r.FastForward(ticket.Rev)
 	}
 
 	return
