@@ -2,16 +2,18 @@ LOCAL_GOPATH=${PWD}/local_go_path
 FPM_EXECUTABLE:=$$(dirname $$(dirname $$(gem which fpm)))/bin/fpm
 FPM_ARGS=-t deb -m 'Visor authors (see page), Daniel Bornkessel <daniel@soundcloud.com> (packaging)' --url http://github.com/soundcloud/visor -s dir
 FAKEROOT=fakeroot
+VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 RELEASE=$$(cat .release 2>/dev/null || echo "0")
-
-bump_package_release:
-		echo $$(( $(RELEASE) + 1 )) > .release
 
 compile: fmt
 	- mkdir bin
 	go build
 	go build -o bin/visor ./cmd
+
+bump_package_release:
+		echo $$(( $(RELEASE) + 1 )) > .release
+
 
 $(LOCAL_GOPATH)/src:
 	mkdir -p $(LOCAL_GOPATH)/src
@@ -24,6 +26,9 @@ $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 
 local_build:
 	- mkdir bin
+	rm -rf $(VISOR_GO_PATH)
+	mkdir -p $(VISOR_GO_PATH)
+	cp -a *.go $(VISOR_GO_PATH)
 	GOPATH=$(LOCAL_GOPATH) go build
 	GOPATH=$(LOCAL_GOPATH) go build -o bin/visor ./cmd
 
