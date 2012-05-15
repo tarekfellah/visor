@@ -4,3 +4,5 @@ example/example
 bin
 *.swp
 cmd/visor
+local_go_path
+tags
