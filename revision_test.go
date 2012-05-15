@@ -10,21 +10,20 @@ func revSetup() (s Snapshot, app *App) {
 		panic(err)
 	}
 
+	r, _ := s.conn.Rev()
+	s.conn.Del("/", r)
+	s = s.FastForward(-1)
+
+	rev, err := Init(s)
+	if err != nil {
+		panic(err)
+	}
+	s = s.FastForward(rev)
+
 	app, err = NewApp("rev-test", "git://rev.git", "references", s)
 	if err != nil {
 		panic(err)
 	}
-
-	r, _ := s.conn.Rev()
-	s.conn.Del("/apps", r)
-	s.conn.Del("/tickets", r)
-	s = s.FastForward(-1)
-
-	err = Init(s)
-	if err != nil {
-		panic(err)
-	}
-	s = s.FastForward(-1)
 
 	return
 }

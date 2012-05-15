@@ -15,12 +15,12 @@ func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
 
 	s = s.FastForward(-1)
 
-	err = Init(s)
+	rev, err := Init(s)
 	if err != nil {
 		panic(err)
 	}
 
-	s = s.FastForward(-1)
+	s = s.FastForward(rev)
 
 	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
 	l = make(chan *Event)

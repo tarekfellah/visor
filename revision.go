@@ -50,6 +50,9 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return
 	}
 	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(r.ArchiveUrl))
+	if err != nil {
+		return
+	}
 
 	revision = r.FastForward(rev)
 
