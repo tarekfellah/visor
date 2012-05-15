@@ -107,6 +107,7 @@ func TestRevisionScaleUp(t *testing.T) {
 	rev, err = rev.Scale(proctype, 5)
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	factor, _, err := s.conn.Get(path.Join(ProcPath(rev.App.Name, rev.Ref, proctype), SCALE_PATH), &rev.Rev)

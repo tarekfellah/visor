@@ -75,11 +75,32 @@ func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
 }
 
 func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err error) {
-	if factor <= 0 {
+	if factor < 0 {
 		return nil, errors.New("Scaling factor needs to be positive Integer")
 	}
-	op := OpStart
+
 	p := path.Join(ProcPath(r.App.Name, r.Ref, proctype), SCALE_PATH)
+	op := OpStart
+	tickets := factor
+
+	res, _, err := r.conn.Get(p, &r.Rev)
+	if err != nil && err != ErrKeyNotFound {
+		return
+	}
+
+	if len(res) > 0 {
+		current, e := strconv.Atoi(string(res))
+		if err != nil {
+			return nil, e
+		}
+
+		tickets = factor - current
+
+		if tickets < 0 {
+			op = OpStop
+			tickets = -tickets
+		}
+	}
 
 	rev, err := r.conn.Set(p, r.Rev, []byte(strconv.Itoa(factor)))
 	if err != nil {
@@ -88,28 +109,7 @@ func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err e
 
 	revision = r.FastForward(rev)
 
-	res, _, err := r.conn.Get(p, &r.Rev)
-	if err != nil {
-		return
-	}
-	if res != nil {
-		current, e := strconv.Atoi(string(res))
-		if err != nil {
-			return nil, e
-		}
-
-		if factor < current {
-			op = OpStop
-		}
-
-		factor = factor - current
-
-		if factor < 0 {
-			factor = -factor
-		}
-	}
-
-	for i := 0; i < factor; i++ {
+	for i := 0; i < tickets; i++ {
 		ticket, err := CreateTicket(r.App.Name, r.Ref, ProcessName(proctype), op, revision.Snapshot)
 		if err != nil {
 			return nil, err
