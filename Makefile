@@ -9,6 +9,7 @@ bump_package_release:
 		echo $$(( $(RELEASE) + 1 )) > .release
 
 compile: fmt
+	- mkdir bin
 	go build
 	go build -o bin/visor ./cmd
 
@@ -22,6 +23,7 @@ $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 	GOPATH=$(LOCAL_GOPATH) go get github.com/kesselborn/go-getopt
 
 local_build:
+	- mkdir bin
 	GOPATH=$(LOCAL_GOPATH) go build
 	GOPATH=$(LOCAL_GOPATH) go build -o bin/visor ./cmd
 
