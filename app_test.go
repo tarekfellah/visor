@@ -12,6 +12,10 @@ func appSetup(name string) (app *App) {
 
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("apps", r)
+	err = Init(s)
+	if err != nil {
+		panic(err)
+	}
 
 	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s}
 	app = app.FastForward(-1)

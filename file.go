@@ -54,10 +54,16 @@ func (f *File) Update(value interface{}) (file *File, err error) {
 	}
 
 	rev, err := f.conn.Set(f.Path, f.Rev, evalue)
-	if err != nil {
-		return f, err
+
+	if rev > 0 {
+		file = f.FastForward(rev)
+	} else {
+		file = f
 	}
-	file = f.FastForward(rev)
+
+	if err != nil {
+		return
+	}
 	file.Value = value
 
 	return

@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"strings"
@@ -16,6 +17,7 @@ type App struct {
 	RepoUrl    string
 	Stack      Stack
 	DeployType string
+	Port       int
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -45,27 +47,33 @@ func (a *App) Register() (app *App, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = a.setPath("registered", time.Now().UTC().String())
-	if err != nil {
-		return
-	}
-
 	if a.DeployType == "" {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]string{
+	a.Port, err = a.claimPort()
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
+	}
+
+	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
 		"repo-url":    a.RepoUrl,
 		"stack":       string(a.Stack),
 		"deploy-type": a.DeployType,
+		"port":        a.Port,
 	}, new(JSONCodec)}
 
-	f, err := attrs.Create()
+	_, err = attrs.Create()
 	if err != nil {
 		return
 	}
 
-	app = a.FastForward(f.Rev)
+	rev, err := a.setPath("registered", time.Now().UTC().String())
+	if err != nil {
+		return
+	}
+
+	app = a.FastForward(rev)
 
 	return
 }
@@ -97,7 +105,7 @@ func (a *App) EnvironmentVars() (vars map[string]string, err error) {
 			return
 		}
 
-		vars[varNames[i]] = v
+		vars[strings.Replace(varNames[i], "-", "_", -1)] = v
 	}
 
 	return
@@ -105,6 +113,7 @@ func (a *App) EnvironmentVars() (vars map[string]string, err error) {
 
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
+	k = strings.Replace(k, "_", "-", -1)
 	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.Rev)
 	if err != nil {
 		return
@@ -116,6 +125,7 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
+	k = strings.Replace(k, "_", "-", -1)
 	rev, err := a.setPath("env/"+k, v)
 	if err != nil {
 		return
@@ -139,6 +149,10 @@ func (a *App) prefixPath(path string) string {
 }
 
 func (a *App) String() string {
+	return fmt.Sprintf("App<%s>{stack: %s, type: %s}", a.Name, a.Stack, a.DeployType)
+}
+
+func (a *App) Inspect() string {
 	return fmt.Sprintf("%#v", a)
 }
 
@@ -171,6 +185,7 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = Stack(value["stack"].(string))
 	app.DeployType = value["deploy-type"].(string)
+	app.Port = int(value["port"].(float64))
 
 	return
 }
@@ -189,6 +204,28 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 		apps[i] = a
+	}
+	return
+}
+
+func (a *App) claimPort() (port int, err error) {
+	snapshot := a.Snapshot
+
+	for {
+		f, err := Get(snapshot, START_PORT_PATH, new(IntCodec))
+		if err == nil {
+			port = f.Value.(int)
+			f, err = f.Update(port + 1)
+
+			if err == nil {
+				break
+			} else {
+				snapshot = f.Snapshot
+				time.Sleep(time.Second / 10)
+			}
+		} else {
+			return -1, err
+		}
 	}
 	return
 }

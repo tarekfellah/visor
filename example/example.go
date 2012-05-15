@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"visor"
+	"github.com/soundcloud/visor"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 	for {
 		select {
 		case e := <-channel:
-			fmt.Println(e)
+			fmt.Println(e.Type)
 		}
 	}
 }

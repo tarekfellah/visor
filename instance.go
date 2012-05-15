@@ -30,6 +30,16 @@ type InstanceInfo struct {
 	State        State
 }
 
+func (i InstanceInfo) AddrString() string {
+	return i.Host + ":" + strconv.Itoa(i.Port)
+}
+func (i InstanceInfo) RevString() string {
+	return i.AppName + "-" + i.RevisionName
+}
+func (i InstanceInfo) LogString() string {
+	return fmt.Sprintf("%s (%s)", i.RevString(), i.AddrString())
+}
+
 const (
 	InsStateInitial State = 0
 	InsStateStarted       = 1
@@ -98,11 +108,12 @@ func (i *Instance) Register() (instance *Instance, err error) {
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
 	rev := i.Rev
-	err = i.conn.Del(i.Path(), rev)
+
+	err = i.conn.Del(i.ProcType.InstancePath(i.Id()), rev)
 	if err != nil {
 		return
 	}
-	err = i.conn.Del(i.ProcType.Path()+"/instances/"+i.Id(), rev)
+	err = i.conn.Del(i.Path(), rev)
 	return
 }
 
@@ -177,31 +188,6 @@ func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err 
 // to the given host.
 func HostInstances(s Snapshot, addr string) ([]Instance, error) {
 	return nil, nil
-}
-
-// WatchInstance is WatchEvent for instances.
-func WatchInstance(s Snapshot, listener chan *Event) (err error) {
-	events := make(chan *Event, 1)
-	go WatchEvent(s, events)
-
-	for {
-		event := <-events
-		path := event.Path
-		instance, err := GetInstanceInfo(
-			s.FastForward(event.source.Rev),
-			path["app"],
-			path["rev"],
-			path["proctype"],
-			path["instance"])
-
-		if err != nil {
-			// TODO: Log
-			continue
-		}
-		event.Info = instance
-		listener <- event
-	}
-	return err
 }
 
 // GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.

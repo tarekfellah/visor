@@ -12,6 +12,14 @@ func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
 	}
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("/", r)
+
+	s = s.FastForward(-1)
+
+	err = Init(s)
+	if err != nil {
+		panic(err)
+	}
+
 	s = s.FastForward(-1)
 
 	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
@@ -38,6 +46,7 @@ func TestEventAppUnregistered(t *testing.T) {
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
+		return
 	}
 
 	s = s.FastForward(app.Rev)

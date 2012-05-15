@@ -3,7 +3,6 @@ package visor
 import (
 	"strconv"
 	"testing"
-	"time"
 )
 
 func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
@@ -12,6 +11,14 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 		panic(err)
 	}
 	s.conn.Del("/", s.Rev)
+
+	s = s.FastForward(-1)
+
+	err = Init(s)
+	if err != nil {
+		panic(err)
+	}
+
 	s = s.FastForward(-1)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
@@ -138,34 +145,6 @@ func TestInstances(t *testing.T) {
 			if instances[i].Addr.String() != compAddr {
 				t.Errorf("expected %s got %s", compAddr, instances[i].Addr.String())
 			}
-		}
-	}
-}
-
-func TestWatchInstance(t *testing.T) {
-	ins := instanceSetup("127.0.0.1:1337", "cow")
-	l := make(chan *Event)
-
-	go WatchInstance(ins.Snapshot, l)
-
-	ins.Register()
-
-	select {
-	case <-time.After(time.Second):
-		t.Error("waiting for instance event timed out.")
-	case event := <-l:
-		if event.Type != EvInsReg {
-			t.Error("expected EvInsReg event")
-		}
-
-		info := event.Info.(*InstanceInfo)
-
-		if info.AppName != ins.ProcType.Revision.App.Name ||
-			info.RevisionName != ins.ProcType.Revision.Ref ||
-			info.ProcessName != ins.ProcType.Name ||
-			info.Host != "127.0.0.1" ||
-			info.Port != ins.Addr.Port {
-			t.Errorf("unexpected values in %#v\n", info)
 		}
 	}
 }

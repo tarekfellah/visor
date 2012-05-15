@@ -29,14 +29,50 @@ package visor
 
 import (
 	"path"
+	"strconv"
 )
 
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
+const START_PORT int = 8000
+const START_PORT_PATH string = "/next-port"
 
 type ProcessName string
 type Stack string
 type State int
+
+func (s State) String() string {
+	switch s {
+	case InsStateInitial:
+		return "initial"
+	case InsStateStarted:
+		return "started"
+	case InsStateReady:
+		return "ready"
+	case InsStateFailed:
+		return "failed"
+	case InsStateDead:
+		return "dead"
+	case InsStateExited:
+		return "exited"
+	}
+	return "?"
+}
+
+func Init(s Snapshot) (err error) {
+	exists, _, err := s.Conn().Exists(START_PORT_PATH, &s.Rev)
+	if err != nil {
+		return
+	}
+
+	if !exists {
+		_, err = s.Conn().Set(START_PORT_PATH, s.Rev, []byte(strconv.Itoa(START_PORT)))
+		if err != nil {
+			return err
+		}
+	}
+	return
+}
 
 func ProcPath(app string, revision string, processName string, attributes ...string) string {
 	// ...
