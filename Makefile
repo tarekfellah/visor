@@ -1,10 +1,13 @@
-compile: fmt
-	- mkdir bin
+compile: update_version fmt
+	test -e bin || mkdir bin
 	go build
 	go build -o bin/visor ./cmd
 
 fmt:
 	go fmt ./...
+
+update_version:
+	sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" cmd/visorcli.go
 
 clean:
 	git clean -xdf
@@ -16,7 +19,7 @@ VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 unexport GIT_DIR
 
-build: fmt $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt package bump_package_release
+build: update_version fmt $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt package bump_package_release
 	echo ".git" > .pkgignore
 	find . -mindepth 1 -maxdepth 1 | grep -v "\.deb" | sed 's/\.\///g' >> .pkgignore
 
@@ -30,7 +33,7 @@ $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 	GOPATH=$(LOCAL_GOPATH) go get github.com/kesselborn/go-getopt
 
 local_build:
-	- mkdir bin
+	test -e bin || mkdir bin
 	rm -rf $(VISOR_GO_PATH)
 	mkdir -p $(VISOR_GO_PATH)
 	cp -a *.go $(VISOR_GO_PATH)

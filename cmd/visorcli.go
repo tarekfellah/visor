@@ -9,6 +9,8 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
+const VERSION_STRING = "v0.0.1"
+
 func main() {
 	instanceSubCommands := getopt.SubCommands{
 		"describe": {
@@ -52,6 +54,7 @@ func main() {
 				{"doozerd|d|DOOZERD_HOST", "doozer server", getopt.Optional | getopt.ExampleIsDefault, "127.0.0.1"},
 				{"port|p|DOOZERD_PORT", "doozer server port", getopt.Optional | getopt.ExampleIsDefault, "8046"},
 				{"root|r|VISOR_ROOT", "namespacing for visor: all entries to the coordinator will be namespaced to this dir", getopt.Optional | getopt.ExampleIsDefault, visor.DEFAULT_ROOT},
+				{"version|v", "print version of the current visor", getopt.Optional | getopt.Flag, false},
 				{"scope", "scope to operate on", getopt.IsSubCommand, ""},
 			},
 		},
@@ -215,6 +218,8 @@ func main() {
 			fmt.Print(ssco.Usage())
 		case wantsHelp && help.String == "help":
 			fmt.Print(ssco.Help())
+		case options["version"].Bool == true:
+			fmt.Println(VERSION_STRING)
 		default:
 			fmt.Printf("\n**** Error: %s\n\n%s", e.Error(), ssco.Help())
 			if e.ErrorCode != getopt.MissingArgument {
@@ -256,6 +261,7 @@ func main() {
 	case "ticket":
 		err = Ticket(subCommand, options, arguments, passThrough)
 	default:
+
 		fmt.Println("no fucking way did this happen!")
 	}
 
