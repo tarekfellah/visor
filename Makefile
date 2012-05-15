@@ -6,6 +6,8 @@ VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 RELEASE=$$(cat .release 2>/dev/null || echo "0")
 
+unexport GIT_DIR
+
 compile: fmt
 	- mkdir bin
 	go build
