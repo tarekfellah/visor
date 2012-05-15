@@ -1,6 +1,7 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"strconv"
@@ -74,6 +75,9 @@ func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
 }
 
 func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err error) {
+	if factor <= 0 {
+		return nil, errors.New("Scaling factor needs to be positive Integer")
+	}
 	op := OpStart
 	p := path.Join(ProcPath(r.App.Name, r.Ref, proctype), SCALE_PATH)
 

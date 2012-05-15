@@ -141,6 +141,11 @@ func TestRevisionScaleDown(t *testing.T) {
 	r, err := s.conn.Set(path.Join(ProcPath(rev.App.Name, rev.Ref, proctype), SCALE_PATH), rev.Rev, []byte("5"))
 	rev = rev.FastForward(r)
 
+	_, err = rev.Scale(proctype, -1)
+	if err == nil {
+		t.Error("Should return an error on a non-positive scaling factor")
+	}
+
 	rev, err = rev.Scale(proctype, 2)
 	if err != nil {
 		t.Error(err)
