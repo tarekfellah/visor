@@ -122,6 +122,13 @@ func (i *Instance) Unregister() (err error) {
 	return
 }
 
+// UpdateState updates the instance's state file in
+// the coordinator to the given value.
+func (i *Instance) UpdateState(s State) (err error) {
+	// TODO: Implement
+	return
+}
+
 // Path returns the instance's directory path in the registry.
 func (i *Instance) Path() (path string) {
 	return "/instances/" + i.Id()
