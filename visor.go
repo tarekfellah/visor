@@ -59,22 +59,23 @@ func (s State) String() string {
 	return "?"
 }
 
-func Init(s Snapshot) (err error) {
+func Init(s Snapshot) (rev int64, err error) {
 	exists, _, err := s.Conn().Exists(START_PORT_PATH, &s.Rev)
 	if err != nil {
 		return
 	}
 
 	if !exists {
-		_, err = s.Conn().Set(START_PORT_PATH, s.Rev, []byte(strconv.Itoa(START_PORT)))
+		rev, err = s.Conn().Set(START_PORT_PATH, s.Rev, []byte(strconv.Itoa(START_PORT)))
 		if err != nil {
-			return err
+			return
 		}
+
+		return rev, err
 	}
-	return
+	return s.conn.Rev()
 }
 
 func ProcPath(app string, revision string, processName string, attributes ...string) string {
-	// ...
 	return path.Join(append([]string{APPS_PATH, app, REVS_PATH, revision, PROCS_PATH, processName}, attributes...)...)
 }

@@ -14,12 +14,12 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 
 	s = s.FastForward(-1)
 
-	err = Init(s)
+	r, err := Init(s)
 	if err != nil {
 		panic(err)
 	}
 
-	s = s.FastForward(-1)
+	s = s.FastForward(r)
 
 	app, err := NewApp("ins-test", "git://ins.git", "insane", s)
 	if err != nil {

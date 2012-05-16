@@ -9,7 +9,7 @@ func Root(subCommand string, options map[string]getopt.OptionValue, arguments []
 
 	switch subCommand {
 	case "init":
-		err = visor.Init(snapshot())
+		_, err = visor.Init(snapshot())
 	}
 
 	return
