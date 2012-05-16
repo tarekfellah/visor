@@ -136,6 +136,10 @@ func (r *Revision) Path() string {
 }
 
 func (r *Revision) String() string {
+	return fmt.Sprintf("Revision<%s:%s>", r.App.Name, r.Ref)
+}
+
+func (r *Revision) Inspect() string {
 	return fmt.Sprintf("%#v", r)
 }
 

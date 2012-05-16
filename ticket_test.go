@@ -26,7 +26,7 @@ func ticketSetup() (s Snapshot, hostname string) {
 func TestTicketCreateTicket(t *testing.T) {
 	s, _ := ticketSetup()
 
-	ticket, err := CreateTicket("lol", "cat", "app", 0, s)
+	ticket, err := CreateTicket("lol", "cat", "app", OpStart, s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -46,7 +46,7 @@ func TestTicketClaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
 	op := "claim abcd123 test start"
-	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", s.Rev, []byte(op))
 	if err != nil {
@@ -77,7 +77,7 @@ func TestTicketClaim(t *testing.T) {
 func TestTicketUnclaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
-	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", s.Rev, []byte(host))
 	if err != nil {
@@ -102,7 +102,7 @@ func TestTicketUnclaim(t *testing.T) {
 func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claimed"
-	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	rev, err := s.conn.Set(p, s.Rev, []byte(host))
 	if err != nil {
@@ -119,7 +119,7 @@ func TestTicketUnclaimWithWrongLock(t *testing.T) {
 func TestTicketDone(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	rev, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
 	if err != nil {
@@ -144,7 +144,7 @@ func TestTicketDone(t *testing.T) {
 func TestTicketDoneWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: 0, Snapshot: s}
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	_, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
 	if err != nil {
@@ -158,18 +158,43 @@ func TestTicketDoneWithWrongLock(t *testing.T) {
 	}
 }
 
-func TestTicketWatch(t *testing.T) {
+func TestTicketWatchCreate(t *testing.T) {
 	s, _ := ticketSetup()
 	l := make(chan *Ticket)
 
 	go WatchTicket(s, l)
 
-	_, err := CreateTicket("lol", "cat", "app", 0, s)
+	_, err := CreateTicket("lol", "cat", "app", OpStart, s)
 	if err != nil {
 		t.Error(err)
 	}
 
-	expectTicket("lol", "cat", "app", 0, l, t)
+	expectTicket("lol", "cat", "app", OpStart, l, t)
+}
+
+func TestTicketWatchUnclaim(t *testing.T) {
+	s, _ := ticketSetup()
+	l := make(chan *Ticket)
+
+	ticket, err := CreateTicket("lol", "cat", "app", OpStart, s)
+	if err != nil {
+		t.Error(err)
+	}
+
+	go WatchTicket(ticket.Snapshot, l)
+
+	ticket, err = ticket.Claim("host")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = ticket.Unclaim("host")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	expectTicket("lol", "cat", "app", OpStart, l, t)
 }
 
 func expectTicket(appName, revName, pName string, op OperationType, l chan *Ticket, t *testing.T) {
