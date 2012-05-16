@@ -34,9 +34,7 @@ $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 
 local_build: $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt 
 	test -e bin || mkdir bin
-	rm -rf $(VISOR_GO_PATH)
-	mkdir -p $(VISOR_GO_PATH)
-	cp -a *.go $(VISOR_GO_PATH)
+	test -e $(VISOR_GO_PATH) || { mkdir -p $$(dirname $(VISOR_GO_PATH)); ln -sf $${PWD} $(VISOR_GO_PATH); }
 	GOPATH=$(LOCAL_GOPATH) go build
 	GOPATH=$(LOCAL_GOPATH) go build -o bin/visor ./cmd
 
