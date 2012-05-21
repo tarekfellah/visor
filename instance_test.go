@@ -121,6 +121,38 @@ func TestInstanceUnregister(t *testing.T) {
 	}
 }
 
+func TestInstanceUpdateState(t *testing.T) {
+	ins := instanceSetup("localhost:54321", "stateChangeWorker")
+
+	ins, err := ins.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	newIns, err := ins.UpdateState(InsStateStarted)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if newIns.State != InsStateStarted {
+		t.Error("Instance state wasn't updated")
+	}
+
+	if newIns.Rev <= ins.Rev {
+		t.Error("Instance wasn't fast forwarded")
+	}
+
+	val, _, err := newIns.conn.Get(newIns.Path()+"/state", &newIns.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+
+	state, err := strconv.Atoi(string(val))
+	if err != nil || state != int(InsStateStarted) {
+		t.Error("Instance state wasn't persisted in the coordinator")
+	}
+}
+
 func TestInstances(t *testing.T) {
 	ins := instanceSetup("127.0.0.1:1337", "clock")
 	host := "127.0.0.1:"

@@ -124,8 +124,14 @@ func (i *Instance) Unregister() (err error) {
 
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
-func (i *Instance) UpdateState(s State) (err error) {
-	// TODO: Implement
+func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
+	newrev, err := i.conn.Set(i.Path()+"/state", i.Rev, []byte(strconv.Itoa(int(s))))
+	if err != nil {
+		return
+	}
+	ins = i.FastForward(newrev)
+	ins.State = s
+
 	return
 }
 
