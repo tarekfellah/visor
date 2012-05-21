@@ -102,7 +102,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 	s, app, l := eventSetup("regmouse")
 	rev, _ := NewRevision(app, "stable", s)
 	pty, _ := NewProcType(rev, "web", s)
-	ins, _ := NewInstance(pty, "127.0.0.1:8080", 0, s)
+	ins, _ := NewInstance(pty, "127.0.0.1:8080", InsStateInitial, s)
 
 	go WatchEvent(s, l)
 
@@ -117,7 +117,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregmouse")
 	rev, _ := NewRevision(app, "stable", s)
 	pty, _ := NewProcType(rev, "web", s)
-	ins, _ := NewInstance(pty, "127.0.0.1:8080", 0, s)
+	ins, _ := NewInstance(pty, "127.0.0.1:8080", InsStateInitial, s)
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)

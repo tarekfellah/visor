@@ -46,12 +46,12 @@ func (i InstanceInfo) LogString() string {
 }
 
 const (
-	InsStateInitial State = 0
-	InsStateStarted       = 1
-	InsStateReady         = 2
-	InsStateFailed        = 3
-	InsStateDead          = 4
-	InsStateExited        = 5
+	InsStateInitial State = "initial"
+	InsStateStarted       = "started"
+	InsStateReady         = "ready"
+	InsStateFailed        = "failed"
+	InsStateDead          = "dead"
+	InsStateExited        = "exited"
 )
 
 const INSTANCES_PATH = "instances"
@@ -94,7 +94,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
 		"host":  []byte(i.Addr.IP.String()),
 		"port":  []byte(strconv.Itoa(i.Addr.Port)),
-		"state": []byte(strconv.Itoa(int(i.State)))}, i.Rev)
+		"state": []byte(i.State)}, i.Rev)
 	if err != nil {
 		return i, err
 	}
@@ -124,8 +124,14 @@ func (i *Instance) Unregister() (err error) {
 
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
-func (i *Instance) UpdateState(s State) (err error) {
-	// TODO: Implement
+func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
+	newrev, err := i.conn.Set(i.Path()+"/state", i.Rev, []byte(s))
+	if err != nil {
+		return
+	}
+	ins = i.FastForward(newrev)
+	ins.State = s
+
 	return
 }
 
@@ -180,14 +186,10 @@ func ProcTypeInstances(s Snapshot, ptype *ProcType) (instances []*Instance, err 
 			return nil, e
 		}
 
-		state, e := strconv.Atoi(string(vals["state"]))
-		if e != nil {
-			return nil, e
-		}
-
 		addr := string(vals["host"]) + ":" + string(vals["port"])
+		state := State(vals["state"])
 
-		instances[i], err = NewInstance(ptype, addr, State(state), s)
+		instances[i], err = NewInstance(ptype, addr, state, s)
 		if err != nil {
 			return
 		}
@@ -211,7 +213,6 @@ func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string
 	port, _, err := s.conn.Get(path+"/port", &s.Rev)
 
 	iport, err := strconv.Atoi(string(port))
-	istate, err := strconv.Atoi(string(state))
 
 	instance := &InstanceInfo{
 		Name:         ins,
@@ -220,7 +221,7 @@ func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string
 		ProcessName:  ProcessName(proc),
 		Host:         string(host),
 		Port:         iport,
-		State:        State(istate),
+		State:        State(state),
 	}
 	return instance, err
 }

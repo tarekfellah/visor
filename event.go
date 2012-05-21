@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"regexp"
-	"strconv"
 )
 
 // An Event represents a change to a file in the registry.
@@ -194,11 +193,7 @@ func parseEvent(src *doozer.Event) *Event {
 					break
 				}
 
-				i, err := strconv.Atoi(string(src.Body))
-				if err != nil {
-					panic(err)
-				}
-				if State(i) != InsStateInitial {
+				if State(src.Body) != InsStateInitial {
 					etype = ev
 				}
 			}
