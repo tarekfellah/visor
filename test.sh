@@ -49,6 +49,6 @@ $visor revision scale baz 2fe0376 proc2 5
 
 $visor app register -t bazapta -u http://github.com/foo/kaboom kaboom
 
-$visor revision register kaboom 4039763 -u bazooka@foo.bar.baz:/srv/files/kaboom_4039763.img
-$visor revision register kaboom 0acdc3c -u bazooka@foo.bar.baz:/srv/files/kaboom_0acdc3c.img
-$visor revision register kaboom 31cdec5 -u bazooka@foo.bar.baz:/srv/files/kaboom_31cdec5.img
+$visor revision register kaboom 4039763 -u bazooka@foo.bar.baz:/srv/files/kaboom_4039763.img -t bang,pow
+$visor revision register kaboom 0acdc3c -u bazooka@foo.bar.baz:/srv/files/kaboom_0acdc3c.img -t bang,pow
+$visor revision register kaboom 31cdec5 -u bazooka@foo.bar.baz:/srv/files/kaboom_31cdec5.img -t bang,pow
