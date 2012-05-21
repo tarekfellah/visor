@@ -39,7 +39,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	ins, err = NewInstance(pty, addr, 0, s)
+	ins, err = NewInstance(pty, addr, InsStateInitial, s)
 	if err != nil {
 		panic(err)
 	}
@@ -147,8 +147,7 @@ func TestInstanceUpdateState(t *testing.T) {
 		t.Error(err)
 	}
 
-	state, err := strconv.Atoi(string(val))
-	if err != nil || state != int(InsStateStarted) {
+	if State(val) != InsStateStarted {
 		t.Error("Instance state wasn't persisted in the coordinator")
 	}
 }
@@ -159,7 +158,7 @@ func TestInstances(t *testing.T) {
 	port := 1000
 
 	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(ins.ProcType, host+strconv.Itoa(port+i), 0, ins.Snapshot)
+		ins, err := NewInstance(ins.ProcType, host+strconv.Itoa(port+i), InsStateInitial, ins.Snapshot)
 		if err != nil {
 			t.Error(err)
 		}

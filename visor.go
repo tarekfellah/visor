@@ -44,25 +44,7 @@ const START_PORT_PATH string = "/next-port"
 
 type ProcessName string
 type Stack string
-type State int
-
-func (s State) String() string {
-	switch s {
-	case InsStateInitial:
-		return "initial"
-	case InsStateStarted:
-		return "started"
-	case InsStateReady:
-		return "ready"
-	case InsStateFailed:
-		return "failed"
-	case InsStateDead:
-		return "dead"
-	case InsStateExited:
-		return "exited"
-	}
-	return "?"
-}
+type State string
 
 func Init(s Snapshot) (rev int64, err error) {
 	exists, _, err := s.Conn().Exists(START_PORT_PATH, &s.Rev)
