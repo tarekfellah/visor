@@ -7,7 +7,6 @@ package visor
 
 import (
 	"github.com/soundcloud/doozer"
-	"net"
 )
 
 // Snapshot represents a specific point in time
@@ -28,11 +27,6 @@ type Snapshotable interface {
 // Dial calls doozer.Dial and returns a Snapshot of the coordinator
 // at the latest revision.
 func Dial(addr string, root string) (s Snapshot, err error) {
-	tcpaddr, err := net.ResolveTCPAddr("tcp", addr)
-	if err != nil {
-		return
-	}
-
 	dconn, err := doozer.Dial(addr)
 	if err != nil {
 		return
@@ -43,7 +37,24 @@ func Dial(addr string, root string) (s Snapshot, err error) {
 		return
 	}
 
-	s = Snapshot{rev, &Conn{tcpaddr, root, dconn}}
+	s = Snapshot{rev, &Conn{addr, root, dconn}}
+	return
+}
+
+// DialUri calls doozer.DialUri and returns a Snapshot of the coordinator cluster
+// at the latest revision.
+func DialUri(uri string, root string) (s Snapshot, err error) {
+	dconn, err := doozer.DialUri(uri, "")
+	if err != nil {
+		return
+	}
+
+	rev, err := dconn.Rev()
+	if err != nil {
+		return
+	}
+
+	s = Snapshot{rev, &Conn{uri, root, dconn}}
 	return
 }
 

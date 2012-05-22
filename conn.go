@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
-	"net"
 	"strings"
 )
 
@@ -17,7 +16,7 @@ import (
 // providing some additional and sometimes
 // higher-level methods.
 type Conn struct {
-	Addr *net.TCPAddr
+	Addr string
 	Root string
 	conn *doozer.Conn
 }
