@@ -37,6 +37,7 @@ import (
 	"strconv"
 )
 
+const DEFAULT_URI string = "doozer:?ca=localhost:8046"
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
 const START_PORT int = 8000
