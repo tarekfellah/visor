@@ -136,11 +136,17 @@ func main() {
 
 #### Installation
 
-From the root of the project run:
+Mac Os X:
 
-```
-go install
-```
+    brew install https://raw.github.com/soundcloud/visor/master/visor.rb
+
+Debian in our internal network:
+
+    apt-get install visor
+
+Compile yourself:
+
+ * install [golang](http://golang.org) and `make install`
 
 ### Testing
 

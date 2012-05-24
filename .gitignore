@@ -6,3 +6,5 @@ bin
 cmd/visor
 .go_path
 tags
+cmd/visorcli.go-e
+visor.rb-e
