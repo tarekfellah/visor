@@ -14,6 +14,7 @@ fmt:
 
 update_version:
 	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" cmd/visorcli.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" cmd/visorcli.go
+	grep ".*version '$$(cat VERSION)'" visor.rb || sed -i -e "s/.*version '[\.0-9]*'$$/  version '$$(cat VERSION)'/" visor.rb
 
 clean:
 	git clean -xdf
