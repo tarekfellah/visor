@@ -1,20 +1,26 @@
-compile: update_version fmt
-	test -e bin || mkdir bin
+bin/visor: bin fmt update_version
 	go build
 	go build -o bin/visor ./cmd
+
+bin:
+	mkdir -p bin
+
+install: bin/visor
+	mkdir -p $${DISTDIR-/usr/local}/bin
+	cp bin/visor $${DISTDIR-/usr/local}/bin
 
 fmt:
 	go fmt ./...
 
 update_version:
-	sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" cmd/visorcli.go
+	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" cmd/visorcli.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" cmd/visorcli.go
 
 clean:
 	git clean -xdf
 
 ########### local build:
 
-LOCAL_GOPATH=${PWD}/local_go_path
+LOCAL_GOPATH=${PWD}/.go_path
 VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 unexport GIT_DIR
@@ -32,7 +38,7 @@ $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src
 $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 	GOPATH=$(LOCAL_GOPATH) go get github.com/kesselborn/go-getopt
 
-local_build: $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt 
+local_build: $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt
 	test -e bin || mkdir bin
 	test -e $(VISOR_GO_PATH) || { mkdir -p $$(dirname $(VISOR_GO_PATH)); ln -sf $${PWD} $(VISOR_GO_PATH); }
 	GOPATH=$(LOCAL_GOPATH) go build
