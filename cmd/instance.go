@@ -13,6 +13,8 @@ import (
 
 func Instance(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	switch subCommand {
+	case "exists":
+		err = InstanceExists(options, arguments, passThrough)
 	case "describe":
 		err = InstanceDescribe(options, arguments, passThrough)
 	case "tail":
@@ -49,6 +51,15 @@ func InstanceCreate(appName string, revision string, procType string, addrstr st
 	}
 
 	_, err = (&visor.Instance{Snapshot: s, ProcType: proc, Addr: addr, State: visor.InsStateInitial}).Register()
+	return
+}
+
+func InstanceExists(options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
+	instanceId := arguments[0]
+
+	print("\ninstance_exists\n")
+	print("\n\tinstance id           : " + instanceId)
+	print("\n")
 	return
 }
 

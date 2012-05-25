@@ -9,6 +9,7 @@ import (
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"os"
 	"strconv"
 )
 
@@ -17,6 +18,8 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	switch subCommand {
 	case "list":
 		err = AppList()
+	case "exists":
+		err = AppExists(arguments[0])
 	case "describe":
 		err = AppDescribe(arguments[0])
 	case "setenv":
@@ -57,6 +60,14 @@ func AppList() (err error) {
 		}
 		fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
 		fmt.Println()
+	}
+
+	return
+}
+
+func AppExists(name string) (err error) {
+	if _, err = visor.GetApp(snapshot(), name); err != nil {
+		os.Exit(-1)
 	}
 
 	return

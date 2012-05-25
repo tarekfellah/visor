@@ -14,10 +14,16 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.0"
+const VERSION_STRING = "v0.1.1"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
+		"exists": {
+			"returns 0 if instance exists something != 0 otherwise",
+			getopt.Definitions{
+				{"instanceid", "id of the instance of interest", getopt.IsArg | getopt.Required, ""},
+			},
+		},
 		"describe": {
 			"describe instance",
 			getopt.Definitions{
@@ -86,6 +92,12 @@ func main() {
 					},
 				},
 				getopt.SubCommands{
+					"exists": {
+						"returns 0 if app exists something != 0 otherwise",
+						getopt.Definitions{
+							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
+						},
+					},
 					"list": {
 						"list available applications",
 						getopt.Definitions{},
@@ -167,6 +179,13 @@ func main() {
 					},
 				},
 				getopt.SubCommands{
+					"exists": {
+						"returns 0 if revision exists something != 0 otherwise",
+						getopt.Definitions{
+							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
+							{"revision", "revision to use", getopt.IsArg | getopt.Required, "HEAD"},
+						},
+					},
 					"describe": {
 						"describe revision of an app",
 						getopt.Definitions{

@@ -12,11 +12,14 @@ import (
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"os"
 	"strconv"
 )
 
 func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	switch subCommand {
+	case "exists":
+		err = RevisionExists(arguments[0], arguments[1])
 	case "describe":
 		err = RevisionDescribe(arguments[0], arguments[1])
 	case "unregister":
@@ -48,6 +51,17 @@ func RevisionRegister(appName string, revision string, artifactUrl string, procT
 		}
 	}
 
+	return
+}
+
+func RevisionExists(appName string, revision string) (err error) {
+	snapshot := snapshot()
+
+	if app, err := visor.GetApp(snapshot, appName); err == nil {
+		if _, err = visor.GetRevision(snapshot, app, revision); err != nil {
+			os.Exit(-1)
+		}
+	}
 	return
 }
 
