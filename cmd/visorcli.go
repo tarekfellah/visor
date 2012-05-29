@@ -190,7 +190,7 @@ func main() {
 						"describe revision of an app",
 						getopt.Definitions{
 							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
-							{"revision", "revision to use", getopt.IsArg | getopt.Optional | getopt.ExampleIsDefault, "HEAD"},
+							{"revision", "revision to use", getopt.IsArg | getopt.Required | getopt.ExampleIsDefault, "HEAD"},
 						},
 					},
 					"register": {
