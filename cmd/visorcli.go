@@ -194,6 +194,8 @@ func main() {
 						getopt.Definitions{
 							{"app", "name of the app", getopt.IsArg | getopt.Required, ""},
 							{"revision", "revision to use", getopt.IsArg | getopt.Required, "HEAD"},
+							{"artifacturl|u", "only output the artifact url", getopt.Flag | getopt.Optional, false},
+							{"proctypes|t", "only output the proctypes", getopt.Flag | getopt.Optional, false},
 						},
 					},
 					"register": {

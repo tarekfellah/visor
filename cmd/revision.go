@@ -21,7 +21,7 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 	case "exists":
 		err = RevisionExists(arguments[0], arguments[1])
 	case "describe":
-		err = RevisionDescribe(arguments[0], arguments[1])
+		err = RevisionDescribe(arguments[0], arguments[1], options)
 	case "unregister":
 		err = RevisionUnregister(arguments[0], arguments[1])
 	case "register":
@@ -65,7 +65,7 @@ func RevisionExists(appName string, revision string) (err error) {
 	return
 }
 
-func RevisionDescribe(appName string, revision string) (err error) {
+func RevisionDescribe(appName string, revision string, options map[string]getopt.OptionValue) (err error) {
 	snapshot := snapshot()
 	var app *visor.App
 	fmtStr := "%-15.15s: %s\n"
@@ -73,12 +73,19 @@ func RevisionDescribe(appName string, revision string) (err error) {
 	if app, err = visor.GetApp(snapshot, appName); err == nil {
 		var rev *visor.Revision
 		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
-			fmt.Println()
-			fmt.Printf(fmtStr, "App", appName)
-			fmt.Printf(fmtStr, "Revision", rev.Ref)
-			fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
-			fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
-			fmt.Println()
+			if onlyArtifactUrl, exists := options["artifacturl"]; exists == true && onlyArtifactUrl.Bool == true {
+				fmt.Print(rev.ArchiveUrl)
+			} else if onlyProctypes, exists := options["proctypes"]; exists == true && onlyProctypes.Bool == true {
+				fmt.Print(procTypeList(snapshot, rev))
+			} else {
+				fmt.Print(app.RepoUrl)
+				fmt.Println()
+				fmt.Printf(fmtStr, "App", appName)
+				fmt.Printf(fmtStr, "Revision", rev.Ref)
+				fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
+				fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
+				fmt.Println()
+			}
 		}
 	}
 	return
