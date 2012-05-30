@@ -79,7 +79,11 @@ func AppDescribe(name string, options map[string]getopt.OptionValue) (err error)
 	app, err := visor.GetApp(snapshot(), name)
 
 	if err == nil {
-		if onlyUrl, exists := options["repourl"]; exists == true && onlyUrl.Bool == true {
+		if onlyStack, exists := options["stack"]; exists == true && onlyStack.Bool == true {
+			fmt.Print(app.Stack)
+		} else if onlyType, exists := options["type"]; exists == true && onlyType.Bool == true {
+			fmt.Print(app.DeployType)
+		} else if onlyUrl, exists := options["repourl"]; exists == true && onlyUrl.Bool == true {
 			fmt.Print(app.RepoUrl)
 		} else {
 			fmt.Println()

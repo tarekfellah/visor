@@ -14,7 +14,7 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.2"
+const VERSION_STRING = "v0.1.3"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
@@ -107,6 +107,8 @@ func main() {
 						getopt.Definitions{
 							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
 							{"repourl|u", "only output the repository url", getopt.Flag | getopt.Optional, false},
+							{"stack|s", "only output the stack version this app is bound to", getopt.Flag | getopt.Optional, false},
+							{"type|t", "only output the type of this app", getopt.Flag | getopt.Optional, false},
 						},
 					},
 					"setenv": {
