@@ -21,7 +21,7 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	case "exists":
 		err = AppExists(arguments[0])
 	case "describe":
-		err = AppDescribe(arguments[0])
+		err = AppDescribe(arguments[0], options)
 	case "setenv":
 		value := ""
 		if len(arguments) > 2 {
@@ -73,18 +73,22 @@ func AppExists(name string) (err error) {
 	return
 }
 
-func AppDescribe(name string) (err error) {
+func AppDescribe(name string, options map[string]getopt.OptionValue) (err error) {
 	fmtStr := "%-15.15s: %s\n"
 
 	app, err := visor.GetApp(snapshot(), name)
 
 	if err == nil {
-		fmt.Println()
-		fmt.Printf(fmtStr, "Name", app.Name)
-		fmt.Printf(fmtStr, "Repo-Url", app.RepoUrl)
-		fmt.Printf(fmtStr, "Stack", app.Stack)
-		fmt.Printf(fmtStr, "Deploy-Type", app.DeployType)
-		fmt.Println()
+		if onlyUrl, exists := options["repourl"]; exists == true && onlyUrl.Bool == true {
+			fmt.Print(app.RepoUrl)
+		} else {
+			fmt.Println()
+			fmt.Printf(fmtStr, "Name", app.Name)
+			fmt.Printf(fmtStr, "Repo-Url", app.RepoUrl)
+			fmt.Printf(fmtStr, "Stack", app.Stack)
+			fmt.Printf(fmtStr, "Deploy-Type", app.DeployType)
+			fmt.Println()
+		}
 	}
 
 	return
