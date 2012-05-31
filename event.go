@@ -32,6 +32,10 @@ func (e EventType) String() string {
 		return "<revision registered>"
 	case EvRevUnreg:
 		return "<revision unregistered>"
+	case EvProcReg:
+		return "<proctype registered>"
+	case EvProcUnreg:
+		return "<proctype unregistered>"
 	case EvInsReg:
 		return "<instance registered>"
 	case EvInsUnreg:
@@ -48,6 +52,8 @@ const (
 	EvAppUnreg                        // App unregister
 	EvRevReg                          // Revision register
 	EvRevUnreg                        // Revision unregister
+	EvProcReg                         // ProcType register
+	EvProcUnreg                       // ProcType unregister
 	EvInsReg                          // Instance register
 	EvInsUnreg                        // Instance unregister
 	EvInsStateChange                  // Instance state change
@@ -58,6 +64,7 @@ var (
 	eventPaths   = map[string]EventType{
 		"^/apps/([^/]+)/registered$":                                   EvAppReg,
 		"^/apps/([^/]+)/revs/([^/]+)/registered$":                      EvRevReg,
+		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/registered$":        EvProcReg,
 		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
 		"^/instances([^/]+)/state$":                                    EvInsStateChange,
 	}
@@ -181,6 +188,12 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = ev
 				} else if src.IsDel() {
 					etype = EvRevUnreg
+				}
+			case EvProcReg:
+				if src.IsSet() {
+					etype = ev
+				} else if src.IsDel() {
+					etype = EvProcUnreg
 				}
 			case EvInsReg:
 				if src.IsSet() {

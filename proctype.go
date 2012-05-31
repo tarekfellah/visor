@@ -85,9 +85,14 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 	if err != nil {
 		return p, err
 	}
-	p = p.FastForward(rev)
+	ptype = p.FastForward(rev)
 
 	return
+}
+
+// Unregister unregisters a proctype from the registry.
+func (p *ProcType) Unregister() (err error) {
+	return p.conn.Del(p.Path(), p.Rev)
 }
 
 func (p *ProcType) Path() string {

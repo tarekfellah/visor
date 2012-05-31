@@ -98,6 +98,40 @@ func TestEventRevUnregistered(t *testing.T) {
 
 	expectEvent(EvRevUnreg, "unregdog", l, t)
 }
+func TestEventProcTypeRegistered(t *testing.T) {
+	s, app, l := eventSetup("regstar")
+	rev, _ := NewRevision(app, "bang", s)
+	pty, _ := NewProcType(rev, "all", s)
+
+	go WatchEvent(s, l)
+
+	_, err := pty.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvProcReg, "regstar", l, t)
+}
+func TestEventProcTypeUnregistered(t *testing.T) {
+	s, app, l := eventSetup("unregstar")
+	rev, _ := NewRevision(app, "band", s)
+	pty, _ := NewProcType(rev, "all", s)
+	pty, err := pty.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(pty.Rev)
+
+	go WatchEvent(s, l)
+
+	err = pty.Unregister()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvProcUnreg, "unregstar", l, t)
+}
 func TestEventInstanceRegistered(t *testing.T) {
 	s, app, l := eventSetup("regmouse")
 	rev, _ := NewRevision(app, "stable", s)
@@ -141,13 +175,14 @@ func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
 	for {
 		select {
 		case event := <-l:
-			if event.Path["app"] == appname {
-				if event.Type == etype {
-					return
-				} else if event.Type >= 0 {
-					t.Errorf("received incorrect event type: expected %d got %d", etype, event.Type)
-					return
+			if event.Type == etype {
+				if event.Path["app"] != appname {
+					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Path["app"])
 				}
+				return
+			} else if event.Type >= 0 {
+				t.Errorf("received incorrect event type: expected %d got %d", etype, event.Type)
+				return
 			}
 		case <-time.After(time.Second):
 			t.Errorf("expected event type %d got timeout", etype)
