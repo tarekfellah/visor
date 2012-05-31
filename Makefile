@@ -58,7 +58,7 @@ RELEASE=$$(cat .release 2>/dev/null || echo "0")
 package: local_build
 	- mkdir -p $(FAKEROOT)/usr/bin
 	cp bin/visor $(FAKEROOT)/usr/bin
-	rm *.deb
+	-rm *.deb
 
 	$(FPM_EXECUTABLE) -n "visor" \
 		-C $(FAKEROOT) \
