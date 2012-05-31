@@ -12,13 +12,16 @@ import (
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"os"
 	"strconv"
 )
 
 func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
 	switch subCommand {
+	case "exists":
+		err = RevisionExists(arguments[0], arguments[1])
 	case "describe":
-		err = RevisionDescribe(arguments[0], arguments[1])
+		err = RevisionDescribe(arguments[0], arguments[1], options)
 	case "unregister":
 		err = RevisionUnregister(arguments[0], arguments[1])
 	case "register":
@@ -51,7 +54,18 @@ func RevisionRegister(appName string, revision string, artifactUrl string, procT
 	return
 }
 
-func RevisionDescribe(appName string, revision string) (err error) {
+func RevisionExists(appName string, revision string) (err error) {
+	snapshot := snapshot()
+
+	if app, err := visor.GetApp(snapshot, appName); err == nil {
+		if _, err = visor.GetRevision(snapshot, app, revision); err != nil {
+			os.Exit(-1)
+		}
+	}
+	return
+}
+
+func RevisionDescribe(appName string, revision string, options map[string]getopt.OptionValue) (err error) {
 	snapshot := snapshot()
 	var app *visor.App
 	fmtStr := "%-15.15s: %s\n"
@@ -59,12 +73,19 @@ func RevisionDescribe(appName string, revision string) (err error) {
 	if app, err = visor.GetApp(snapshot, appName); err == nil {
 		var rev *visor.Revision
 		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
-			fmt.Println()
-			fmt.Printf(fmtStr, "App", appName)
-			fmt.Printf(fmtStr, "Revision", rev.Ref)
-			fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
-			fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
-			fmt.Println()
+			if onlyArtifactUrl, exists := options["artifacturl"]; exists == true && onlyArtifactUrl.Bool == true {
+				fmt.Print(rev.ArchiveUrl)
+			} else if onlyProctypes, exists := options["proctypes"]; exists == true && onlyProctypes.Bool == true {
+				fmt.Print(procTypeList(snapshot, rev))
+			} else {
+				fmt.Print(app.RepoUrl)
+				fmt.Println()
+				fmt.Printf(fmtStr, "App", appName)
+				fmt.Printf(fmtStr, "Revision", rev.Ref)
+				fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
+				fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
+				fmt.Println()
+			}
 		}
 	}
 	return

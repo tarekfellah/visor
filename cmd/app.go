@@ -9,6 +9,7 @@ import (
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
+	"os"
 	"strconv"
 )
 
@@ -17,8 +18,10 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 	switch subCommand {
 	case "list":
 		err = AppList()
+	case "exists":
+		err = AppExists(arguments[0])
 	case "describe":
-		err = AppDescribe(arguments[0])
+		err = AppDescribe(arguments[0], options)
 	case "setenv":
 		value := ""
 		if len(arguments) > 2 {
@@ -62,18 +65,34 @@ func AppList() (err error) {
 	return
 }
 
-func AppDescribe(name string) (err error) {
+func AppExists(name string) (err error) {
+	if _, err = visor.GetApp(snapshot(), name); err != nil {
+		os.Exit(-1)
+	}
+
+	return
+}
+
+func AppDescribe(name string, options map[string]getopt.OptionValue) (err error) {
 	fmtStr := "%-15.15s: %s\n"
 
 	app, err := visor.GetApp(snapshot(), name)
 
 	if err == nil {
-		fmt.Println()
-		fmt.Printf(fmtStr, "Name", app.Name)
-		fmt.Printf(fmtStr, "Repo-Url", app.RepoUrl)
-		fmt.Printf(fmtStr, "Stack", app.Stack)
-		fmt.Printf(fmtStr, "Deploy-Type", app.DeployType)
-		fmt.Println()
+		if onlyStack, exists := options["stack"]; exists == true && onlyStack.Bool == true {
+			fmt.Print(app.Stack)
+		} else if onlyType, exists := options["type"]; exists == true && onlyType.Bool == true {
+			fmt.Print(app.DeployType)
+		} else if onlyUrl, exists := options["repourl"]; exists == true && onlyUrl.Bool == true {
+			fmt.Print(app.RepoUrl)
+		} else {
+			fmt.Println()
+			fmt.Printf(fmtStr, "Name", app.Name)
+			fmt.Printf(fmtStr, "Repo-Url", app.RepoUrl)
+			fmt.Printf(fmtStr, "Stack", app.Stack)
+			fmt.Printf(fmtStr, "Deploy-Type", app.DeployType)
+			fmt.Println()
+		}
 	}
 
 	return
@@ -161,9 +180,9 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 }
 
 func AppRevisions(appName string) (err error) {
-	entryFmtStr := "| %-3.3s | %-20.20s | %-15.15s | %-50.50s | %-40.40s |\n"
-	rulerFmtStr := "+-%-3.3s-+-%-20.20s-+-%-15.15s-+-%-50.50s-+-%-40.40s-+\n"
-	ruler := "--------------------------------------------------"
+	entryFmtStr := "| %-3.3s | %-10.10s | %-10.10s | %-100.100s | %-40.40s |\n"
+	rulerFmtStr := "+-%-3.3s-+-%-10.10s-+-%-10.10s-+-%-100.100s-+-%-40.40s-+\n"
+	ruler := "-----------------------------------------------------------------------------------------------------------"
 
 	var app *visor.App
 	snapshot := snapshot()
