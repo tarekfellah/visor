@@ -180,9 +180,9 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 }
 
 func AppRevisions(appName string) (err error) {
-	entryFmtStr := "| %-3.3s | %-20.20s | %-15.15s | %-50.50s | %-40.40s |\n"
-	rulerFmtStr := "+-%-3.3s-+-%-20.20s-+-%-15.15s-+-%-50.50s-+-%-40.40s-+\n"
-	ruler := "--------------------------------------------------"
+	entryFmtStr := "| %-3.3s | %-10.10s | %-10.10s | %-100.100s | %-40.40s |\n"
+	rulerFmtStr := "+-%-3.3s-+-%-10.10s-+-%-10.10s-+-%-100.100s-+-%-40.40s-+\n"
+	ruler := "-----------------------------------------------------------------------------------------------------------"
 
 	var app *visor.App
 	snapshot := snapshot()
