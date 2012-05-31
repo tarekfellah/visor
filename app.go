@@ -198,6 +198,7 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.Stack = Stack(value["stack"].(string))
 	app.DeployType = value["deploy-type"].(string)
 	app.Port = int(value["port"].(float64))
+	app.ServiceProc = value["service-proc"].(string)
 
 	return
 }
