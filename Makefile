@@ -33,7 +33,10 @@ build: update_version fmt package bump_package_release
 $(LOCAL_GOPATH)/src:
 	mkdir -p $(LOCAL_GOPATH)/src
 
-$(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src
+$(LOCAL_GOPATH)/src/github.com/kr/pretty: $(LOCAL_GOPATH)/src
+	GOPATH=$(LOCAL_GOPATH) go get github.com/kr/pretty
+
+$(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src $(LOCAL_GOPATH)/src/github.com/kr/pretty
 	GOPATH=$(LOCAL_GOPATH) go get github.com/soundcloud/doozer
 
 $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
