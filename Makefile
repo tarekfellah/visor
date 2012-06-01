@@ -25,6 +25,8 @@ LOCAL_GOPATH=${PWD}/.go_path
 VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 unexport GIT_DIR
+unexport GOROOT
+unexport GOBIN
 
 build: update_version fmt package bump_package_release
 	echo ".git" > .pkgignore
