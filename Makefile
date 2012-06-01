@@ -25,6 +25,8 @@ LOCAL_GOPATH=${PWD}/.go_path
 VISOR_GO_PATH=$(LOCAL_GOPATH)/src/github.com/soundcloud/visor
 
 unexport GIT_DIR
+unexport GOROOT
+unexport GOBIN
 
 build: update_version fmt package bump_package_release
 	echo ".git" > .pkgignore
@@ -36,7 +38,10 @@ $(LOCAL_GOPATH)/src:
 $(LOCAL_GOPATH)/src/github.com/kr/pretty: $(LOCAL_GOPATH)/src
 	GOPATH=$(LOCAL_GOPATH) go get github.com/kr/pretty
 
-$(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src $(LOCAL_GOPATH)/src/github.com/kr/pretty
+$(LOCAL_GOPATH)/src/code.google.com/p/goprotobuf/proto: $(LOCAL_GOPATH)/src
+	GOPATH=$(LOCAL_GOPATH) go get code.google.com/p/goprotobuf/proto
+
+$(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src $(LOCAL_GOPATH)/src/github.com/kr/pretty $(LOCAL_GOPATH)/src/code.google.com/p/goprotobuf/proto
 	GOPATH=$(LOCAL_GOPATH) go get github.com/soundcloud/doozer
 
 $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
