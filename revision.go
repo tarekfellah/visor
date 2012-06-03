@@ -89,7 +89,7 @@ func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err e
 	tickets := factor
 
 	res, _, err := r.conn.Get(p, &r.Rev)
-	if err != nil && err != ErrKeyNotFound {
+	if err != nil {
 		return
 	}
 

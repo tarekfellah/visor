@@ -160,10 +160,6 @@ func TestSetAndDelEnvironmentVar(t *testing.T) {
 		t.Errorf("EnvironmentVar wasn't deleted: %#v", v)
 		return
 	}
-
-	if err != ErrKeyNotFound {
-		t.Error(err)
-	}
 }
 
 func TestEnvironmentVars(t *testing.T) {
