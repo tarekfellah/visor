@@ -116,12 +116,27 @@ func TestEventRevUnregistered(t *testing.T) {
 }
 func TestEventProcTypeRegistered(t *testing.T) {
 	s, app, l := eventSetup("regstar")
+
+	app, err := app.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(app.Rev)
+
 	rev, _ := NewRevision(app, "bang", s)
+	rev, err = rev.FastForward(s.Rev).Register()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	s = s.FastForward(rev.Rev)
+
 	pty, _ := NewProcType(rev, "all", s)
 
 	go WatchEvent(s, l)
 
-	_, err := pty.Register()
+	_, err = pty.Register()
 	if err != nil {
 		t.Error(err)
 	}

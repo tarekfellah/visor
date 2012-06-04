@@ -149,6 +149,26 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			fmt.Printf("error getting revision: %s\n", err)
 			return
 		}
+	case EvProcReg:
+		var app *App
+		var rev *Revision
+
+		path := ev.Path
+		app, err = GetApp(s, path["app"])
+		if err != nil {
+			fmt.Printf("error getting app for proctype: %s\n", err)
+			return
+		}
+		rev, err = GetRevision(s, app, path["rev"])
+		if err != nil {
+			fmt.Printf("error getting revision for proctype: %s\n", err)
+			return
+		}
+
+		info, err = GetProcType(s, rev, ProcessName(path["proctype"]))
+		if err != nil {
+			fmt.Printf("error getting proctype: %s\n", err)
+		}
 	case EvInsReg:
 		path := ev.Path
 		info, err = GetInstanceInfo(
