@@ -17,11 +17,14 @@ const APPS_PATH = "apps"
 const DEPLOY_LXC = "lxc"
 const SERVICE_PROC_DEFAULT = "web"
 
+type Env map[string]string
+
 type App struct {
 	Snapshot
 	Name        string
 	RepoUrl     string
 	Stack       Stack
+	Env         Env
 	DeployType  string
 	Port        int
 	ServiceProc ProcessName
@@ -29,12 +32,12 @@ type App struct {
 
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot}
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot, Env: Env{}}
 	return
 }
 
 func (a *App) createSnapshot(rev int64) (app Snapshotable) {
-	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}}
+	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}, Env: a.Env}
 	return
 }
 
@@ -96,10 +99,10 @@ func (a *App) Unregister() error {
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
-func (a *App) EnvironmentVars() (vars map[string]string, err error) {
+func (a *App) EnvironmentVars() (vars Env, err error) {
 	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
 
-	vars = map[string]string{}
+	vars = Env{}
 
 	if err != nil {
 		if err.(*doozer.Error).Err == doozer.ErrNoEnt {

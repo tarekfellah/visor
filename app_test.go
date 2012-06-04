@@ -22,7 +22,7 @@ func appSetup(name string) (app *App) {
 		panic(err)
 	}
 
-	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s}
+	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s, Env: Env{}}
 	app = app.FastForward(rev)
 
 	return
@@ -55,7 +55,6 @@ func TestAppRegistration(t *testing.T) {
 		t.Error("App registration failed")
 		return
 	}
-
 	_, err = app.Register()
 	if err == nil {
 		t.Error("App allowed to be registered twice")
@@ -63,6 +62,30 @@ func TestAppRegistration(t *testing.T) {
 	_, err = app2.Register()
 	if err == nil {
 		t.Error("App allowed to be registered twice")
+	}
+}
+
+func TestEnvPersistenceOnRegister(t *testing.T) {
+	app := appSetup("envyapp")
+
+	app.Env["VAR1"] = "VAL1"
+	app.Env["VAR2"] = "VAL2"
+
+	app, err := app.Register()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	env, err := app.EnvironmentVars()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for key, val := range app.Env {
+		if env[key] != val {
+			t.Errorf("%s should be '%s', got '%s'", key, val, env[key])
+		}
 	}
 }
 
