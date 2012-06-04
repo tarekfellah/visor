@@ -150,6 +150,9 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 		t.Error(err)
 		return
 	}
+	if app.Env["meow"] != "w00t" {
+		t.Error("app.Env should be updated")
+	}
 
 	value, err := app.GetEnvironmentVar("meow")
 	if err != nil {
