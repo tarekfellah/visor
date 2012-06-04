@@ -51,11 +51,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = r.conn.Set(r.Path()+"/registered", r.Rev, []byte(time.Now().UTC().String()))
+	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(r.ArchiveUrl))
 	if err != nil {
 		return
 	}
-	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(r.ArchiveUrl))
+	rev, err = r.conn.Set(r.Path()+"/registered", r.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return
 	}
@@ -88,8 +88,8 @@ func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err e
 	op := OpStart
 	tickets := factor
 
-	res, _, err := r.conn.Get(p, &r.Rev)
-	if err != nil {
+	res, frev, err := r.conn.Get(p, &r.Rev)
+	if err != nil && frev != 0 {
 		return
 	}
 

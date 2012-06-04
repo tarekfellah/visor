@@ -131,7 +131,22 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		info, err = GetApp(s, path["app"])
 
 		if err != nil {
-			fmt.Printf("error getting app: %s", err)
+			fmt.Printf("error getting app: %s\n", err)
+			return
+		}
+	case EvRevReg:
+		var app *App
+
+		path := ev.Path
+		app, err = GetApp(s, path["app"])
+		if err != nil {
+			fmt.Printf("error getting app for revision: %s\n", err)
+			return
+		}
+
+		info, err = GetRevision(s, app, path["rev"])
+		if err != nil {
+			fmt.Printf("error getting revision: %s\n", err)
 			return
 		}
 	case EvInsReg:
@@ -144,7 +159,7 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			path["instance"])
 
 		if err != nil {
-			fmt.Printf("error getting instance info: %s", err)
+			fmt.Printf("error getting instance info: %s\n", err)
 			return
 		}
 	}
