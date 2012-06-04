@@ -83,6 +83,16 @@ func (a *App) Register() (app *App, err error) {
 		return
 	}
 
+	for k, v := range a.Env {
+		_, err := a.SetEnvironmentVar(k, v)
+		if err != nil {
+			break
+		}
+	}
+	if err != nil {
+		return
+	}
+
 	rev, err := a.setPath("registered", time.Now().UTC().String())
 	if err != nil {
 		return
@@ -140,6 +150,9 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
+	if _, present := a.Env[k]; !present {
+		a.Env[k] = v
+	}
 	k = strings.Replace(k, "_", "-", -1)
 	rev, err := a.setPath("env/"+k, v)
 	if err != nil {
