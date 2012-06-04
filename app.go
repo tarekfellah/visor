@@ -84,13 +84,10 @@ func (a *App) Register() (app *App, err error) {
 	}
 
 	for k, v := range a.Env {
-		_, err := a.SetEnvironmentVar(k, v)
+		_, err = a.SetEnvironmentVar(k, v)
 		if err != nil {
-			break
+			return
 		}
-	}
-	if err != nil {
-		return
 	}
 
 	rev, err := a.setPath("registered", time.Now().UTC().String())
