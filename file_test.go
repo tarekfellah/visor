@@ -108,7 +108,7 @@ func TestDel(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	exists, _, err := f.conn.Exists(path, nil)
+	exists, _, err := f.conn.Exists(path)
 	if !exists {
 		t.Error("path wasn't set properly")
 		return
@@ -121,7 +121,7 @@ func TestDel(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err = f.conn.Exists(path, nil)
+	exists, _, err = f.conn.Exists(path)
 	if err != nil {
 		t.Error(err)
 	}

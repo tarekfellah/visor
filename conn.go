@@ -27,7 +27,7 @@ func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 	newrev, err = c.conn.Set(path, rev, value)
 	if err != nil {
 		if newrev == 0 {
-			_, newrev, _ = c.Stat(path, nil)
+			_, newrev, _ = c.Stat(path)
 		}
 		err = errors.New(fmt.Sprintf("error setting file '%s' to '%s': %s", path, string(value), err.Error()))
 	}
@@ -35,13 +35,13 @@ func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 }
 
 // Stat calls (*doozer.Conn).Stat with a prefixed path
-func (c *Conn) Stat(path string, rev *int64) (len int, pathrev int64, err error) {
-	return c.conn.Stat(c.prefixPath(path), rev)
+func (c *Conn) Stat(path string) (len int, pathrev int64, err error) {
+	return c.conn.Stat(c.prefixPath(path), nil)
 }
 
-// Exists returns true or false depending on if the path exists at the specified revision.
-func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err error) {
-	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
+// Exists returns true or false depending on if the path exists
+func (c *Conn) Exists(path string) (exists bool, pathrev int64, err error) {
+	_, pathrev, err = c.conn.Stat(c.prefixPath(path), nil)
 	if err != nil {
 		return
 	}
@@ -57,7 +57,7 @@ func (c *Conn) Exists(path string, rev *int64) (exists bool, pathrev int64, err 
 // Create is a wrapper around (*Conn).Set which returns an error if the file already exists.
 func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
 	path = c.prefixPath(path)
-	exists, newrev, err := c.Exists(path, nil)
+	exists, newrev, err := c.Exists(path)
 	if err != nil {
 		return
 	}

@@ -42,7 +42,7 @@ func TestExists(t *testing.T) {
 	path := "exists-test"
 	conn := connSetup(path)
 
-	exists, _, err := conn.Exists(path, nil)
+	exists, _, err := conn.Exists(path)
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,7 +55,7 @@ func TestExists(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err = conn.Exists(path+"/key", nil)
+	exists, _, err = conn.Exists(path + "/key")
 	if err != nil {
 		t.Error(err)
 	}
@@ -63,7 +63,7 @@ func TestExists(t *testing.T) {
 		t.Error("path doesn't exist")
 	}
 
-	exists, _, err = conn.Exists(path, nil)
+	exists, _, err = conn.Exists(path)
 	if err != nil {
 		t.Error(err)
 	}

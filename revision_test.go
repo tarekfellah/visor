@@ -41,7 +41,7 @@ func TestRevisionRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Path(), nil)
+	check, _, err := s.conn.Exists(rev.Path())
 	if err != nil {
 		t.Error(err)
 		return
@@ -57,7 +57,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = s.conn.Exists(rev.Path(), nil)
+	check, _, err = s.conn.Exists(rev.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -88,7 +88,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Path(), &s.Rev)
+	check, _, err := s.conn.Exists(rev.Path())
 	if err != nil {
 		t.Error(err)
 	}

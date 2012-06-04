@@ -77,7 +77,7 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 
 // Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
-	exists, _, err := t.conn.Exists(t.prefixPath("claimed"), &t.Rev)
+	exists, _, err := t.conn.Exists(t.prefixPath("claimed"))
 	if err != nil {
 		return t, err
 	}

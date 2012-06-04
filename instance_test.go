@@ -63,7 +63,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 func TestInstanceRegister(t *testing.T) {
 	ins := instanceSetup("localhost:12345", "web")
 
-	check, _, err := ins.conn.Exists(ins.Path(), &ins.Rev)
+	check, _, err := ins.conn.Exists(ins.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -76,7 +76,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err = ins.conn.Exists(ins.Path(), nil)
+	check, _, err = ins.conn.Exists(ins.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -84,7 +84,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	check, _, err = ins.conn.Exists(ins.ProcType.InstancePath(ins.Id()), nil)
+	check, _, err = ins.conn.Exists(ins.ProcType.InstancePath(ins.Id()))
 	if err != nil {
 		t.Error(err)
 	}
@@ -112,7 +112,7 @@ func TestInstanceUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := ins.conn.Exists(ins.Path(), nil)
+	check, _, err := ins.conn.Exists(ins.Path())
 	if err != nil {
 		t.Error(err)
 	}

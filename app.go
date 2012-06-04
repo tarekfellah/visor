@@ -46,7 +46,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 
 // Register adds the App to the global process state.
 func (a *App) Register() (app *App, err error) {
-	exists, _, err := a.conn.Exists(a.Path(), &a.Rev)
+	exists, _, err := a.conn.Exists(a.Path())
 	if err != nil {
 		return
 	}

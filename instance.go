@@ -80,7 +80,7 @@ func (i *Instance) createSnapshot(rev int64) Snapshotable {
 
 // Register registers an instance with the registry.
 func (i *Instance) Register() (instance *Instance, err error) {
-	exists, _, err := i.conn.Exists(i.Path(), &i.Rev)
+	exists, _, err := i.conn.Exists(i.Path())
 	if err != nil {
 		return
 	}

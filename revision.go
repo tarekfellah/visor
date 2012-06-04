@@ -43,7 +43,7 @@ func (r *Revision) FastForward(rev int64) *Revision {
 
 // Register registers a new Revision with the registry.
 func (r *Revision) Register() (revision *Revision, err error) {
-	exists, _, err := r.conn.Exists(r.Path(), &r.Rev)
+	exists, _, err := r.conn.Exists(r.Path())
 	if err != nil {
 		return
 	}

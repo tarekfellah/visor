@@ -56,7 +56,7 @@ func (p *ProcType) FastForward(rev int64) *ProcType {
 
 // Register registers a proctype with the registry.
 func (p *ProcType) Register() (ptype *ProcType, err error) {
-	exists, _, err := p.conn.Exists(p.Path(), &p.Rev)
+	exists, _, err := p.conn.Exists(p.Path())
 	if err != nil {
 		return
 	}

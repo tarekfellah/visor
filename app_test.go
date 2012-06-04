@@ -31,7 +31,7 @@ func appSetup(name string) (app *App) {
 func TestAppRegistration(t *testing.T) {
 	app := appSetup("lolcatapp")
 
-	check, _, err := app.conn.Exists(app.Path(), nil)
+	check, _, err := app.conn.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 		return
@@ -41,12 +41,12 @@ func TestAppRegistration(t *testing.T) {
 		return
 	}
 
-	app, err = app.Register()
+	app2, err := app.Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	check, _, err = app.conn.Exists(app.Path(), &app.Rev)
+	check, _, err = app2.conn.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 		return
@@ -57,6 +57,10 @@ func TestAppRegistration(t *testing.T) {
 	}
 
 	_, err = app.Register()
+	if err == nil {
+		t.Error("App allowed to be registered twice")
+	}
+	_, err = app2.Register()
 	if err == nil {
 		t.Error("App allowed to be registered twice")
 	}
@@ -77,7 +81,7 @@ func TestAppUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := app.conn.Exists(app.Path(), nil)
+	check, _, err := app.conn.Exists(app.Path())
 	if err != nil {
 		t.Error(err)
 	}
@@ -104,12 +108,6 @@ func TestAppUnregistrationFailure(t *testing.T) {
 	err = app2.Unregister()
 	if err != nil {
 		t.Error(err)
-		return
-	}
-
-	_, err = app2.Register()
-	if err == nil {
-		t.Error("App should already be registered at current rev")
 		return
 	}
 

@@ -95,7 +95,7 @@ func TestTicketUnclaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err := s.conn.Exists("tickets/"+strconv.FormatInt(id, 10)+"/claimed", nil)
+	exists, _, err := s.conn.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claimed")
 	if err != nil {
 		t.Error(err)
 	}
@@ -137,7 +137,7 @@ func TestTicketDone(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err := s.conn.Exists(p, nil)
+	exists, _, err := s.conn.Exists(p)
 	if err != nil {
 		t.Error(err)
 	}
