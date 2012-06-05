@@ -96,7 +96,7 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (t *Ticket) Unclaim(host string) (err error) {
-	claimer, _, err := t.conn.Get(t.prefixPath("claimed"), &t.Rev)
+	claimer, rev, err := t.conn.Get(t.prefixPath("claimed"), nil)
 	if err != nil {
 		return
 	}
@@ -104,7 +104,7 @@ func (t *Ticket) Unclaim(host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = t.conn.Del(t.prefixPath("claimed"), t.Rev)
+	err = t.conn.Del(t.prefixPath("claimed"), rev)
 	if err == nil {
 		t.Status = "unclaimed"
 	}
@@ -113,7 +113,7 @@ func (t *Ticket) Unclaim(host string) (err error) {
 
 // Done marks the Ticket as done/solved in the registry.
 func (t *Ticket) Done(host string) (err error) {
-	claimer, _, err := t.conn.Get(t.prefixPath("claimed"), &t.Rev)
+	claimer, rev, err := t.conn.Get(t.prefixPath("claimed"), nil)
 	if err != nil {
 		return
 	}
@@ -121,7 +121,7 @@ func (t *Ticket) Done(host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = t.conn.Del(t.Path(), t.Rev)
+	err = t.conn.Del(t.Path(), rev)
 	if err == nil {
 		t.Status = "done"
 	}

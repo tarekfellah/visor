@@ -17,11 +17,14 @@ const APPS_PATH = "apps"
 const DEPLOY_LXC = "lxc"
 const SERVICE_PROC_DEFAULT = "web"
 
+type Env map[string]string
+
 type App struct {
 	Snapshot
 	Name        string
 	RepoUrl     string
 	Stack       Stack
+	Env         Env
 	DeployType  string
 	Port        int
 	ServiceProc ProcessName
@@ -29,12 +32,12 @@ type App struct {
 
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot}
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot, Env: Env{}}
 	return
 }
 
 func (a *App) createSnapshot(rev int64) (app Snapshotable) {
-	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}}
+	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}, Env: a.Env}
 	return
 }
 
@@ -48,7 +51,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 func (a *App) Register() (app *App, err error) {
 	exists, _, err := a.conn.Exists(a.Path())
 	if err != nil {
-		return
+		return nil, fmt.Errorf("application '%s' is already registered", a.Name)
 	}
 	if exists {
 		return nil, ErrKeyConflict
@@ -80,6 +83,13 @@ func (a *App) Register() (app *App, err error) {
 		return
 	}
 
+	for k, v := range a.Env {
+		_, err = a.SetEnvironmentVar(k, v)
+		if err != nil {
+			return
+		}
+	}
+
 	rev, err := a.setPath("registered", time.Now().UTC().String())
 	if err != nil {
 		return
@@ -96,10 +106,10 @@ func (a *App) Unregister() error {
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
-func (a *App) EnvironmentVars() (vars map[string]string, err error) {
+func (a *App) EnvironmentVars() (vars Env, err error) {
 	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
 
-	vars = map[string]string{}
+	vars = Env{}
 
 	if err != nil {
 		if err.(*doozer.Error).Err == doozer.ErrNoEnt {
@@ -137,10 +147,12 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
-	k = strings.Replace(k, "_", "-", -1)
-	rev, err := a.setPath("env/"+k, v)
+	rev, err := a.setPath("env/"+strings.Replace(k, "_", "-", -1), v)
 	if err != nil {
 		return
+	}
+	if _, present := a.Env[k]; !present {
+		a.Env[k] = v
 	}
 	app = a.FastForward(rev)
 	return
@@ -225,7 +237,7 @@ func (a *App) claimPort() (port int, err error) {
 	snapshot := a.Snapshot
 
 	for {
-		f, err := Get(snapshot, START_PORT_PATH, new(IntCodec))
+		f, err := GetLatest(snapshot, START_PORT_PATH, new(IntCodec))
 		if err == nil {
 			port = f.Value.(int)
 			f, err = f.Update(port + 1)

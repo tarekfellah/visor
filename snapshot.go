@@ -112,3 +112,20 @@ func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
 
 	return
 }
+
+// GetLatest returns the latest value for the given path
+func GetLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
+	evalue, rev, err := s.conn.Get(path, nil)
+	if err != nil {
+		return
+	}
+
+	value, err := codec.Decode(evalue)
+	if err != nil {
+		return
+	}
+
+	file = &File{Path: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
+
+	return
+}
