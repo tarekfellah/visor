@@ -147,13 +147,12 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
-	if _, present := a.Env[k]; !present {
-		a.Env[k] = v
-	}
-	k = strings.Replace(k, "_", "-", -1)
-	rev, err := a.setPath("env/"+k, v)
+	rev, err := a.setPath("env/"+strings.Replace(k, "_", "-", -1), v)
 	if err != nil {
 		return
+	}
+	if _, present := a.Env[k]; !present {
+		a.Env[k] = v
 	}
 	app = a.FastForward(rev)
 	return
