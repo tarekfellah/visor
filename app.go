@@ -48,7 +48,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 func (a *App) Register() (app *App, err error) {
 	exists, _, err := a.conn.Exists(a.Path())
 	if err != nil {
-		return
+		return nil, fmt.Errorf("application '%s' is already registered", a.Name)
 	}
 	if exists {
 		return nil, ErrKeyConflict
