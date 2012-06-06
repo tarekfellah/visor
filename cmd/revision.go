@@ -25,7 +25,7 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 	case "unregister":
 		err = RevisionUnregister(arguments[0], arguments[1])
 	case "register":
-		err = RevisionRegister(arguments[0], arguments[1], options["artifacturl"].String, options["proctypes"].StrArray)
+		err = RevisionRegister(arguments[0], arguments[1], options["artifacturl"].String)
 	case "instances":
 		err = RevisionInstances(arguments[0], arguments[1])
 	case "scale":
@@ -34,20 +34,21 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 	return
 }
 
-func RevisionRegister(appName string, revision string, artifactUrl string, procTypes []string) (err error) {
+func RevisionRegister(appName string, revision string, artifactUrl string) (err error) {
 	snapshot := snapshot()
 	var app *visor.App
 
 	if app, err = visor.GetApp(snapshot, appName); err == nil {
-		var rev *visor.Revision
-		if rev, err = (&visor.Revision{App: app, Ref: revision, Snapshot: snapshot, ArchiveUrl: artifactUrl}).Register(); err == nil {
-			for _, pt := range procTypes {
-				_, err = (&visor.ProcType{Name: visor.ProcessName(pt), Revision: rev, Snapshot: snapshot}).Register()
-			}
-		} else {
-			if err == visor.ErrKeyConflict {
-				err = errors.New("Revision '" + revision + "' for app '" + appName + "' already registered!")
-			}
+		rev := &visor.Revision{
+			App:        app,
+			Ref:        revision,
+			Snapshot:   snapshot,
+			ArchiveUrl: artifactUrl,
+		}
+
+		_, err = rev.Register()
+		if err == visor.ErrKeyConflict {
+			err = errors.New("Revision '" + revision + "' for app '" + appName + "' already registered!")
 		}
 	}
 
@@ -75,15 +76,12 @@ func RevisionDescribe(appName string, revision string, options map[string]getopt
 		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
 			if onlyArtifactUrl, exists := options["artifacturl"]; exists == true && onlyArtifactUrl.Bool == true {
 				fmt.Print(rev.ArchiveUrl)
-			} else if onlyProctypes, exists := options["proctypes"]; exists == true && onlyProctypes.Bool == true {
-				fmt.Print(procTypeList(snapshot, rev))
 			} else {
 				fmt.Print(app.RepoUrl)
 				fmt.Println()
 				fmt.Printf(fmtStr, "App", appName)
 				fmt.Printf(fmtStr, "Revision", rev.Ref)
 				fmt.Printf(fmtStr, "Artifact-Url", rev.ArchiveUrl)
-				fmt.Printf(fmtStr, "Proctypes", procTypeList(snapshot, rev))
 				fmt.Println()
 			}
 		}

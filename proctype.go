@@ -15,7 +15,7 @@ import (
 type ProcType struct {
 	Snapshot
 	Name        ProcessName
-	Revision    *Revision
+	App         *App
 	Heartbeat   *Heartbeat
 	MaxRestarts int
 }
@@ -40,12 +40,12 @@ var DEFAULT_HEARTBEAT = &Heartbeat{
 	InitialDelay: HEARTBEAT_INITIAL_DELAY,
 }
 
-func NewProcType(revision *Revision, name ProcessName, s Snapshot) *ProcType {
-	return &ProcType{Name: name, Revision: revision, Snapshot: s, Heartbeat: DEFAULT_HEARTBEAT}
+func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
+	return &ProcType{Name: name, App: app, Snapshot: s, Heartbeat: DEFAULT_HEARTBEAT}
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
-	return &ProcType{Name: p.Name, Revision: p.Revision, Snapshot: Snapshot{rev, p.conn}}
+	return &ProcType{Name: p.Name, App: p.App, Snapshot: Snapshot{rev, p.conn}}
 }
 
 // FastForward advances the instance in time. It returns
@@ -96,7 +96,7 @@ func (p *ProcType) Unregister() (err error) {
 }
 
 func (p *ProcType) Path() string {
-	return path.Join(p.Revision.Path(), PROCS_PATH, string(p.Name))
+	return path.Join(p.App.Path(), PROCS_PATH, string(p.Name))
 }
 
 func (p *ProcType) InstancePath(Id string) string {
@@ -104,49 +104,12 @@ func (p *ProcType) InstancePath(Id string) string {
 }
 
 func (p *ProcType) InstancesPath() string {
-	return path.Join(p.Revision.Path(), PROCS_PATH, string(p.Name), INSTANCES_PATH)
-}
-
-// ProcTypes returns an array of all registered proctypes belonging to the specified revision.
-func RevisionProcTypes(s Snapshot, revision *Revision) (ptypes []*ProcType, err error) {
-	path := revision.Path() + "/procs"
-	names, err := s.conn.Getdir(path, s.Rev)
-	if err != nil {
-		return
-	}
-
-	ptypes = make([]*ProcType, len(names))
-
-	for i := range names {
-		name := ProcessName(names[i])
-
-		ptypes[i] = &ProcType{Name: name, Revision: revision, Snapshot: s}
-	}
-	return
-}
-
-// ProcTypes returns an array of all registered proctypes.
-func ProcTypes(s Snapshot) (ptypes []*ProcType, err error) {
-	revs, err := Revisions(s)
-	if err != nil {
-		return
-	}
-
-	ptypes = []*ProcType{}
-
-	for i := range revs {
-		revps, e := RevisionProcTypes(s, revs[i])
-		if e != nil {
-			return nil, e
-		}
-		ptypes = append(ptypes, revps...)
-	}
-	return
+	return path.Join(p.Path(), INSTANCES_PATH)
 }
 
 // GetProcType fetches a ProcType from the coordinator
-func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType, err error) {
-	path := path.Join(revision.Path(), PROCS_PATH, string(name))
+func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
+	path := path.Join(app.Path(), PROCS_PATH, string(name))
 
 	f, err := Get(s, path+"/attrs", new(JSONCodec))
 	if err != nil {
@@ -157,7 +120,7 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 	p = &ProcType{
 		Name:        name,
 		Snapshot:    s,
-		Revision:    revision,
+		App:         app,
 		MaxRestarts: int(value["max-restarts"].(float64)),
 		Heartbeat: &Heartbeat{
 			Interval:     int(value["heartbeat-interval"].(float64)),
@@ -169,7 +132,7 @@ func GetProcType(s Snapshot, revision *Revision, name ProcessName) (p *ProcType,
 }
 
 func (p *ProcType) String() string {
-	return fmt.Sprintf("ProcType<%s:%s:%s>", p.Revision.App.Name, p.Revision.Ref, p.Name)
+	return fmt.Sprintf("ProcType<%s:%s>", p.App.Name, p.Name)
 }
 
 func (p *ProcType) Inspect() string {

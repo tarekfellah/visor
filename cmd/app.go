@@ -180,8 +180,8 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 }
 
 func AppRevisions(appName string) (err error) {
-	entryFmtStr := "| %-3.3s | %-10.10s | %-10.10s | %-100.100s | %-40.40s |\n"
-	rulerFmtStr := "+-%-3.3s-+-%-10.10s-+-%-10.10s-+-%-100.100s-+-%-40.40s-+\n"
+	entryFmtStr := "| %-3.3s | %-10.10s | %-10.10s | %-100.100s |\n"
+	rulerFmtStr := "+-%-3.3s-+-%-10.10s-+-%-10.10s-+-%-100.100s-+\n"
 	ruler := "-----------------------------------------------------------------------------------------------------------"
 
 	var app *visor.App
@@ -196,7 +196,7 @@ func AppRevisions(appName string) (err error) {
 			fmt.Printf(entryFmtStr, "No.", "App", "Revision", "Archive-Url", "Proctypes")
 			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
 			for i, rev := range revs {
-				fmt.Printf(entryFmtStr, strconv.Itoa(i), appName, rev.Ref, rev.ArchiveUrl, procTypeList(snapshot, rev))
+				fmt.Printf(entryFmtStr, strconv.Itoa(i), appName, rev.Ref, rev.ArchiveUrl)
 			}
 			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
 		}

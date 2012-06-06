@@ -155,6 +155,23 @@ func main() {
 					},
 				},
 			},
+			"proctype": {
+				getopt.Options{
+					"Work with proctypes",
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
+				},
+				getopt.SubCommands{
+					"register": {
+						"registers a new proctype",
+						getopt.Definitions{
+							{"app", "app", getopt.IsArg | getopt.Required, ""},
+							{"name", "name", getopt.IsArg | getopt.Required, ""},
+						},
+					},
+				},
+			},
 			"ticket": {
 				getopt.Options{
 					"Show and list tickets",
@@ -292,6 +309,8 @@ func main() {
 		err = Root(subCommand, options, arguments, passThrough)
 	case "app":
 		err = App(subCommand, options, arguments, passThrough)
+	case "proctype":
+		err = ProcType(subCommand, options, arguments, passThrough)
 	case "revision":
 		err = Revision(subCommand, options, arguments, passThrough)
 	case "instance":
