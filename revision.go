@@ -6,10 +6,8 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"path"
-	"strconv"
 	"time"
 )
 
@@ -23,7 +21,6 @@ type Revision struct {
 }
 
 const REVS_PATH = "revs"
-const SCALE_PATH string = "scale"
 
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
@@ -76,53 +73,6 @@ func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
 		return
 	}
 	revision = r.FastForward(rev)
-	return
-}
-
-func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err error) {
-	if factor < 0 {
-		return nil, errors.New("Scaling factor needs to be positive Integer")
-	}
-
-	p := path.Join(ProcPath(r.App.Name, r.Ref, proctype), SCALE_PATH)
-	op := OpStart
-	tickets := factor
-
-	res, frev, err := r.conn.Get(p, &r.Rev)
-	if err != nil && frev != 0 {
-		return
-	}
-
-	if len(res) > 0 {
-		current, e := strconv.Atoi(string(res))
-		if err != nil {
-			return nil, e
-		}
-
-		tickets = factor - current
-
-		if tickets < 0 {
-			op = OpStop
-			tickets = -tickets
-		}
-	}
-
-	rev, err := r.conn.Set(p, r.Rev, []byte(strconv.Itoa(factor)))
-	if err != nil {
-		return
-	}
-
-	revision = r.FastForward(rev)
-
-	for i := 0; i < tickets; i++ {
-		ticket, err := CreateTicket(r.App.Name, r.Ref, ProcessName(proctype), op, revision.Snapshot)
-		if err != nil {
-			return nil, err
-		}
-
-		revision = r.FastForward(ticket.Rev)
-	}
-
 	return
 }
 

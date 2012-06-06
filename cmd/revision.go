@@ -13,7 +13,6 @@ import (
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
 	"os"
-	"strconv"
 )
 
 func Revision(subCommand string, options map[string]getopt.OptionValue, arguments []string, passThrough []string) (err error) {
@@ -28,8 +27,6 @@ func Revision(subCommand string, options map[string]getopt.OptionValue, argument
 		err = RevisionRegister(arguments[0], arguments[1], options["artifacturl"].String)
 	case "instances":
 		err = RevisionInstances(arguments[0], arguments[1])
-	case "scale":
-		err = RevisionScale(arguments[0], arguments[1], arguments[2], arguments[3])
 	}
 	return
 }
@@ -46,7 +43,7 @@ func RevisionRegister(appName string, revision string, artifactUrl string) (err 
 			ArchiveUrl: artifactUrl,
 		}
 
-		_, err = rev.Register()
+		rev, err = rev.Register()
 		if err == visor.ErrKeyConflict {
 			err = errors.New("Revision '" + revision + "' for app '" + appName + "' already registered!")
 		}
@@ -110,20 +107,5 @@ func RevisionInstances(appName string, revision string) (err error) {
 	print("\n\tapp                  : " + appName)
 	print("\n\trevision             : " + revision)
 	print("\n")
-	return
-}
-
-func RevisionScale(appName string, revision string, proctype string, factor string) (err error) {
-	snapshot := snapshot()
-	var app *visor.App
-	scale, _ := strconv.Atoi(factor)
-
-	if app, err = visor.GetApp(snapshot, appName); err == nil {
-		var rev *visor.Revision
-		if rev, err = visor.GetRevision(snapshot, app, revision); err == nil {
-			_, err = rev.Scale(proctype, scale)
-		}
-	}
-
 	return
 }

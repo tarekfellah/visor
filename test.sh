@@ -47,8 +47,8 @@ $visor ticket create baz 2fe0376 proc1 start
 $visor ticket create baz 2fe0376 proc1 start
 $visor ticket create baz 2fe0376 proc1 start
 
-$visor revision scale baz 2fe0376 proc2 10
-$visor revision scale baz 2fe0376 proc2 5
+$visor root scale baz 2fe0376 proc2 10
+$visor root scale baz 2fe0376 proc2 5
 
 #####################################################################################################
 
