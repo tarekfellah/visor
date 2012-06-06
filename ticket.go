@@ -6,7 +6,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"net"
@@ -69,6 +68,10 @@ const (
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: "unclaimed"}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
+	if err != nil {
+		return
+	}
+	f, err = CreateFile(s, t.prefixPath("status"), t.Status, new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
@@ -104,10 +107,11 @@ func (t *Ticket) Unclaim(host string) (err error) {
 		return ErrUnauthorized
 	}
 
-	err = t.conn.Del(t.prefixPath("claimed"), rev)
+	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte("unclaimed"))
 	if err == nil {
 		t.Status = "unclaimed"
 	}
+	// TODO: Return new snapshot
 	return
 }
 
@@ -157,74 +161,38 @@ func HostTickets(addr string) ([]Ticket, error) {
 func WatchTicket(s Snapshot, listener chan *Ticket) (err error) {
 	rev := s.Rev
 
-	go WatchTicketUnclaim(s, listener)
-
 	for {
-		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "op"), rev+1)
+		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "status"), rev+1)
 		if err != nil {
 			return err
 		}
 		rev = ev.Rev
 
-		if !ev.IsSet() {
+		if !ev.IsSet() || string(ev.Body) != "unclaimed" {
 			continue
 		}
+
 		ticket, err := parseTicket(s.FastForward(rev), &ev, ev.Body)
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 		listener <- ticket
 	}
 	return err
-}
-
-func WatchTicketUnclaim(s Snapshot, listener chan *Ticket) (err error) {
-	rev := s.Rev
-	for {
-		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "claimed"), rev+1)
-		if err != nil {
-			return err
-		}
-		rev = ev.Rev
-
-		if ev.IsSet() {
-			continue
-		}
-		ticket, err := parseTicket(s.FastForward(rev), &ev, nil)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-		listener <- ticket
-	}
-	return err
-
 }
 
 func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, err error) {
 	idStr := strings.Split(ev.Path, "/")[2]
 	id, err := strconv.ParseInt(idStr, 0, 64)
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("ticket id %s can't be parsed as an int64", idStr))
+		return nil, fmt.Errorf("ticket id %s can't be parsed as an int64", idStr)
 	}
 
-	var decoded interface{}
-	var codec = new(ListCodec)
-
-	if body == nil {
-		f, err := Get(snapshot, path.Join(TICKETS_PATH, idStr, "op"), codec)
-		if err != nil {
-			return t, err
-		}
-		decoded = f.Value
-	} else {
-		decoded, err = codec.Decode(body)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("invalid ticket body: %s", body))
-		}
+	f, err := Get(snapshot, path.Join(TICKETS_PATH, idStr, "op"), new(ListCodec))
+	if err != nil {
+		return t, err
 	}
-	data := decoded.([]string)
+	data := f.Value.([]string)
 
 	t = &Ticket{
 		Id:           id,
