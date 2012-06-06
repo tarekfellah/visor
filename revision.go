@@ -125,15 +125,6 @@ func (r *Revision) Scale(proctype string, factor int) (revision *Revision, err e
 
 	return
 }
-func (r *Revision) Instances(proctype ProcessName) ([]Instance, error) {
-	return nil, nil
-}
-func (r *Revision) RegisterInstance(proctype ProcessName, address string) (*Instance, error) {
-	return nil, nil
-}
-func (r *Revision) UnregisterInstance(instance *Instance) error {
-	return nil
-}
 
 // Path returns this.Revision's directory path in the registry.
 func (r *Revision) Path() string {
