@@ -35,10 +35,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	pty, err := NewProcType(rev, pType, s)
-	if err != nil {
-		panic(err)
-	}
+	pty := NewProcType(rev, pType, s)
 	ins, err = NewInstance(pty, addr, InsStateInitial, s)
 	if err != nil {
 		panic(err)

@@ -132,7 +132,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 	}
 	s = s.FastForward(rev.Rev)
 
-	pty, _ := NewProcType(rev, "all", s)
+	pty := NewProcType(rev, "all", s)
 
 	go WatchEvent(s, l)
 
@@ -146,7 +146,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 func TestEventProcTypeUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregstar")
 	rev, _ := NewRevision(app, "band", s)
-	pty, _ := NewProcType(rev, "all", s)
+	pty := NewProcType(rev, "all", s)
 	pty, err := pty.Register()
 	if err != nil {
 		t.Error(err)
@@ -166,7 +166,7 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 func TestEventInstanceRegistered(t *testing.T) {
 	s, app, l := eventSetup("regmouse")
 	rev, _ := NewRevision(app, "stable", s)
-	pty, _ := NewProcType(rev, "web", s)
+	pty := NewProcType(rev, "web", s)
 	ins, _ := NewInstance(pty, "127.0.0.1:8080", InsStateInitial, s)
 
 	go WatchEvent(s, l)
@@ -181,7 +181,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregmouse")
 	rev, _ := NewRevision(app, "stable", s)
-	pty, _ := NewProcType(rev, "web", s)
+	pty := NewProcType(rev, "web", s)
 	ins, _ := NewInstance(pty, "127.0.0.1:8080", InsStateInitial, s)
 	ins, err := ins.Register()
 	if err != nil {

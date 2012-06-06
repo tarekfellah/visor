@@ -40,8 +40,8 @@ var DEFAULT_HEARTBEAT = &Heartbeat{
 	InitialDelay: HEARTBEAT_INITIAL_DELAY,
 }
 
-func NewProcType(revision *Revision, name ProcessName, s Snapshot) (*ProcType, error) {
-	return &ProcType{Name: name, Revision: revision, Snapshot: s, Heartbeat: DEFAULT_HEARTBEAT}, nil
+func NewProcType(revision *Revision, name ProcessName, s Snapshot) *ProcType {
+	return &ProcType{Name: name, Revision: revision, Snapshot: s, Heartbeat: DEFAULT_HEARTBEAT}
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
