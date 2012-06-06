@@ -133,6 +133,11 @@ func (t *Ticket) String() string {
 	return fmt.Sprintf("Ticket{id: %d, op: %s, app: %s, rev: %s, proc: %s}", t.Id, t.Op.String(), t.AppName, t.RevisionName, t.ProcessName)
 }
 
+// IdString returns a string of the format "TICKET[$ticket-id]"
+func (t *Ticket) IdString() string {
+	return fmt.Sprintf("TICKET[%d]", t.Id)
+}
+
 func (t *Ticket) Path() string {
 	return path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 }
