@@ -81,7 +81,7 @@ func (i *Instance) FastForward(rev int64) *Instance {
 }
 
 func (i *Instance) createSnapshot(rev int64) Snapshotable {
-	return &Instance{Addr: i.Addr, State: i.State, ProcType: i.ProcType, Snapshot: Snapshot{rev, i.conn}}
+	return &Instance{Addr: i.Addr, State: i.State, ProcType: i.ProcType, Revision: i.Revision, Snapshot: Snapshot{rev, i.conn}}
 }
 
 // Register registers an instance with the registry.

@@ -47,7 +47,7 @@ func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
-	return &ProcType{Name: p.Name, App: p.App, Snapshot: Snapshot{rev, p.conn}}
+	return &ProcType{Name: p.Name, App: p.App, MaxRestarts: p.MaxRestarts, Heartbeat: p.Heartbeat, Snapshot: Snapshot{rev, p.conn}}
 }
 
 // FastForward advances the instance in time. It returns
