@@ -6,7 +6,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"strings"
@@ -21,13 +20,11 @@ type Env map[string]string
 
 type App struct {
 	Snapshot
-	Name        string
-	RepoUrl     string
-	Stack       Stack
-	Env         Env
-	DeployType  string
-	Port        int
-	ServiceProc ProcessName
+	Name       string
+	RepoUrl    string
+	Stack      Stack
+	Env        Env
+	DeployType string
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -61,21 +58,10 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	if a.ServiceProc == "" {
-		a.ServiceProc = SERVICE_PROC_DEFAULT
-	}
-
-	a.Port, err = a.claimPort()
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
-	}
-
 	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
-		"repo-url":     a.RepoUrl,
-		"stack":        string(a.Stack),
-		"deploy-type":  a.DeployType,
-		"port":         a.Port,
-		"service-proc": a.ServiceProc,
+		"repo-url":    a.RepoUrl,
+		"stack":       string(a.Stack),
+		"deploy-type": a.DeployType,
 	}, new(JSONCodec)}
 
 	_, err = attrs.Create()
@@ -209,8 +195,6 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = Stack(value["stack"].(string))
 	app.DeployType = value["deploy-type"].(string)
-	app.Port = int(value["port"].(float64))
-	app.ServiceProc = ProcessName(value["service-proc"].(string))
 
 	return
 }
@@ -229,28 +213,6 @@ func Apps(s Snapshot) (apps []*App, err error) {
 			return nil, e
 		}
 		apps[i] = a
-	}
-	return
-}
-
-func (a *App) claimPort() (port int, err error) {
-	snapshot := a.Snapshot
-
-	for {
-		f, err := GetLatest(snapshot, START_PORT_PATH, new(IntCodec))
-		if err == nil {
-			port = f.Value.(int)
-			f, err = f.Update(port + 1)
-
-			if err == nil {
-				break
-			} else {
-				snapshot = f.Snapshot
-				time.Sleep(time.Second / 10)
-			}
-		} else {
-			return -1, err
-		}
 	}
 	return
 }

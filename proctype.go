@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"errors"
 	"fmt"
 	"path"
 	"time"
@@ -18,6 +19,7 @@ type ProcType struct {
 	App         *App
 	Heartbeat   *Heartbeat
 	MaxRestarts int
+	Port        int
 }
 
 type Heartbeat struct {
@@ -45,7 +47,7 @@ func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
-	return &ProcType{Name: p.Name, App: p.App, MaxRestarts: p.MaxRestarts, Heartbeat: p.Heartbeat, Snapshot: Snapshot{rev, p.conn}}
+	return &ProcType{Name: p.Name, App: p.App, Port: p.Port, MaxRestarts: p.MaxRestarts, Heartbeat: p.Heartbeat, Snapshot: Snapshot{rev, p.conn}}
 }
 
 // FastForward advances the instance in time. It returns
@@ -64,6 +66,11 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, ErrKeyConflict
 	}
 
+	p.Port, err = ClaimNextPort(p.Snapshot)
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
+	}
+
 	if p.Heartbeat == nil {
 		p.Heartbeat = DEFAULT_HEARTBEAT
 	}
@@ -73,6 +80,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		"heartbeat-treshold":      p.Heartbeat.Treshold,
 		"heartbeat-initial-delay": p.Heartbeat.InitialDelay,
 		"max-restarts":            p.MaxRestarts,
+		"port":                    p.Port,
 	}, new(JSONCodec)}
 
 	attrs, err = attrs.Create()
@@ -121,6 +129,7 @@ func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error
 		Name:        name,
 		Snapshot:    s,
 		App:         app,
+		Port:        int(value["port"].(float64)),
 		MaxRestarts: int(value["max-restarts"].(float64)),
 		Heartbeat: &Heartbeat{
 			Interval:     int(value["heartbeat-interval"].(float64)),
