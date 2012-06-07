@@ -29,7 +29,9 @@ func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err er
 }
 
 func (r *Revision) createSnapshot(rev int64) Snapshotable {
-	return &Revision{App: r.App, Ref: r.Ref, Snapshot: Snapshot{rev, r.conn}}
+	tmp := *r
+	tmp.Snapshot = Snapshot{rev, r.conn}
+	return &tmp
 }
 
 // FastForward advances the revision in time. It returns

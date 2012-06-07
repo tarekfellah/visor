@@ -33,9 +33,10 @@ func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *A
 	return
 }
 
-func (a *App) createSnapshot(rev int64) (app Snapshotable) {
-	app = &App{Name: a.Name, RepoUrl: a.RepoUrl, Stack: a.Stack, Snapshot: Snapshot{rev, a.conn}, Env: a.Env}
-	return
+func (a *App) createSnapshot(rev int64) Snapshotable {
+	tmp := *a
+	tmp.Snapshot = Snapshot{rev, a.conn}
+	return &tmp
 }
 
 // FastForward advances the application in time. It returns

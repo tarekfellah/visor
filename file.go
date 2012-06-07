@@ -24,7 +24,9 @@ func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) 
 }
 
 func (f *File) createSnapshot(rev int64) (file Snapshotable) {
-	file = &File{Path: f.Path, Value: f.Value, Codec: f.Codec, Snapshot: Snapshot{rev, f.conn}}
+	tmp := *f
+	tmp.Snapshot = Snapshot{rev, f.conn}
+	return &tmp
 	return
 }
 
