@@ -20,11 +20,11 @@ type Env map[string]string
 
 type App struct {
 	Snapshot
-	Name        string
-	RepoUrl     string
-	Stack       Stack
-	Env         Env
-	DeployType  string
+	Name       string
+	RepoUrl    string
+	Stack      Stack
+	Env        Env
+	DeployType string
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -59,9 +59,9 @@ func (a *App) Register() (app *App, err error) {
 	}
 
 	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
-		"repo-url":     a.RepoUrl,
-		"stack":        string(a.Stack),
-		"deploy-type":  a.DeployType,
+		"repo-url":    a.RepoUrl,
+		"stack":       string(a.Stack),
+		"deploy-type": a.DeployType,
 	}, new(JSONCodec)}
 
 	_, err = attrs.Create()
