@@ -25,7 +25,6 @@ type App struct {
 	Stack       Stack
 	Env         Env
 	DeployType  string
-	ServiceProc ProcessName
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -59,15 +58,10 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	if a.ServiceProc == "" {
-		a.ServiceProc = SERVICE_PROC_DEFAULT
-	}
-
 	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
 		"repo-url":     a.RepoUrl,
 		"stack":        string(a.Stack),
 		"deploy-type":  a.DeployType,
-		"service-proc": a.ServiceProc,
 	}, new(JSONCodec)}
 
 	_, err = attrs.Create()
@@ -201,7 +195,6 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = Stack(value["stack"].(string))
 	app.DeployType = value["deploy-type"].(string)
-	app.ServiceProc = ProcessName(value["service-proc"].(string))
 
 	return
 }
