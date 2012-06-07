@@ -33,6 +33,7 @@
 package visor
 
 import (
+	"errors"
 	"path"
 	"strconv"
 )
@@ -40,6 +41,7 @@ import (
 const DEFAULT_URI string = "doozer:?ca=localhost:8046"
 const DEFAULT_ADDR string = "localhost:8046"
 const DEFAULT_ROOT string = "/visor"
+const SCALE_PATH string = "scale"
 const START_PORT int = 8000
 const START_PORT_PATH string = "/next-port"
 
@@ -64,6 +66,54 @@ func Init(s Snapshot) (rev int64, err error) {
 	return s.conn.Rev()
 }
 
-func ProcPath(app string, revision string, processName string, attributes ...string) string {
-	return path.Join(append([]string{APPS_PATH, app, REVS_PATH, revision, PROCS_PATH, processName}, attributes...)...)
+func Scale(app string, revision string, processName string, factor int, s Snapshot) (err error) {
+	if factor < 0 {
+		return errors.New("scaling factor needs to be a positive integer")
+	}
+
+	p := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
+	op := OpStart
+	tickets := factor
+
+	res, frev, err := s.conn.Get(p, nil)
+	if err != nil && frev != 0 {
+		return
+	}
+
+	// Check response isn't empty
+	if len(res) > 0 {
+		var current int
+
+		current, err = strconv.Atoi(string(res))
+		if err != nil {
+			return
+		}
+
+		tickets = factor - current
+
+		if tickets < 0 {
+			op = OpStop
+			tickets = -tickets
+		}
+	}
+
+	rev, err := s.conn.Set(p, s.Rev, []byte(strconv.Itoa(factor)))
+	if err != nil {
+		return
+	}
+
+	s = s.FastForward(rev)
+
+	for i := 0; i < tickets; i++ {
+		var ticket *Ticket
+
+		ticket, err = CreateTicket(app, revision, ProcessName(processName), op, s)
+		if err != nil {
+			return
+		}
+
+		s = s.FastForward(ticket.Rev)
+	}
+
+	return
 }

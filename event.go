@@ -62,11 +62,11 @@ const (
 var (
 	eventRegexps = map[string]*regexp.Regexp{}
 	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                                   EvAppReg,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":                      EvRevReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/registered$":        EvProcReg,
-		"^/apps/([^/]+)/revs/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
-		"^/instances([^/]+)/state$":                                    EvInsStateChange,
+		"^/apps/([^/]+)/registered$":                      EvAppReg,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
+		"^/apps/([^/]+)/procs/([^/]+)/registered$":        EvProcReg,
+		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
+		"^/instances([^/]+)/state$":                       EvInsStateChange,
 	}
 )
 
@@ -151,7 +151,6 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		}
 	case EvProcReg:
 		var app *App
-		var rev *Revision
 
 		path := ev.Path
 		app, err = GetApp(s, path["app"])
@@ -159,13 +158,8 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			fmt.Printf("error getting app for proctype: %s\n", err)
 			return
 		}
-		rev, err = GetRevision(s, app, path["rev"])
-		if err != nil {
-			fmt.Printf("error getting revision for proctype: %s\n", err)
-			return
-		}
 
-		info, err = GetProcType(s, rev, ProcessName(path["proctype"]))
+		info, err = GetProcType(s, app, ProcessName(path["proctype"]))
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
@@ -197,40 +191,38 @@ func parseEvent(src *doozer.Event) *Event {
 		re := eventRegexps[str]
 
 		if match := re.FindStringSubmatch(path); match != nil {
-			switch {
-			case len(match) >= 5: // Instance
-				emitter["instance"] = match[4]
-				fallthrough
-			case len(match) >= 4: // ProcType
-				emitter["proctype"] = match[3]
-				fallthrough
-			case len(match) >= 3: // Revision
-				emitter["rev"] = match[2]
-				fallthrough
-			case len(match) >= 2: // Application
-				emitter["app"] = match[1]
-			}
-
 			switch ev {
 			case EvAppReg:
+				emitter["app"] = match[1]
+
 				if src.IsSet() {
 					etype = ev
 				} else if src.IsDel() {
 					etype = EvAppUnreg
 				}
 			case EvRevReg:
+				emitter["app"] = match[1]
+				emitter["rev"] = match[2]
+
 				if src.IsSet() {
 					etype = ev
 				} else if src.IsDel() {
 					etype = EvRevUnreg
 				}
 			case EvProcReg:
+				emitter["app"] = match[1]
+				emitter["proctype"] = match[2]
+
 				if src.IsSet() {
 					etype = ev
 				} else if src.IsDel() {
 					etype = EvProcUnreg
 				}
 			case EvInsReg:
+				emitter["app"] = match[1]
+				emitter["proctype"] = match[2]
+				emitter["instance"] = match[3]
+
 				if src.IsSet() {
 					etype = ev
 				} else if src.IsDel() {

@@ -82,6 +82,10 @@ func main() {
 						"Initialize coordinator state",
 						getopt.Definitions{},
 					},
+					"scale": {
+						"Scales services",
+						getopt.Definitions{},
+					},
 				},
 			},
 			"app": {
@@ -155,6 +159,23 @@ func main() {
 					},
 				},
 			},
+			"proctype": {
+				getopt.Options{
+					"Work with proctypes",
+					getopt.Definitions{
+						{"command", "command to execute", getopt.IsSubCommand, ""},
+					},
+				},
+				getopt.SubCommands{
+					"register": {
+						"registers a new proctype",
+						getopt.Definitions{
+							{"app", "app", getopt.IsArg | getopt.Required, ""},
+							{"name", "name", getopt.IsArg | getopt.Required, ""},
+						},
+					},
+				},
+			},
 			"ticket": {
 				getopt.Options{
 					"Show and list tickets",
@@ -221,15 +242,6 @@ func main() {
 							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
 						},
 					},
-					"scale": {
-						"scales an app revisions proctype by the given factor",
-						getopt.Definitions{
-							{"app", "name of the app", getopt.IsArg | getopt.Required, "myapp"},
-							{"revision", "revision to use", getopt.IsArg | getopt.Required, "34f3457"},
-							{"proctype", "proctype to scale", getopt.IsArg | getopt.Required, "web"},
-							{"factor", "scaling factor", getopt.IsArg | getopt.Required, 5},
-						},
-					},
 				},
 			},
 			"instance": {
@@ -292,6 +304,8 @@ func main() {
 		err = Root(subCommand, options, arguments, passThrough)
 	case "app":
 		err = App(subCommand, options, arguments, passThrough)
+	case "proctype":
+		err = ProcType(subCommand, options, arguments, passThrough)
 	case "revision":
 		err = Revision(subCommand, options, arguments, passThrough)
 	case "instance":

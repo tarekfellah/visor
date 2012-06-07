@@ -45,12 +45,12 @@ func InstanceCreate(appName string, revision string, procType string, addrstr st
 		return
 	}
 
-	proc, err := visor.GetProcType(s, rev, visor.ProcessName(procType))
+	proc, err := visor.GetProcType(s, app, visor.ProcessName(procType))
 	if err != nil {
 		return
 	}
 
-	_, err = (&visor.Instance{Snapshot: s, ProcType: proc, Addr: addr, State: visor.InsStateInitial}).Register()
+	_, err = (&visor.Instance{Snapshot: s, Revision: rev, ProcType: proc, Addr: addr, State: visor.InsStateInitial}).Register()
 	return
 }
 

@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func proctypeSetup(ref string) (s Snapshot, rev *Revision) {
+func proctypeSetup(ref string) (s Snapshot, app *App) {
 	s, err := Dial(DEFAULT_ADDR, "/proctype-test")
 	if err != nil {
 		panic(err)
@@ -25,19 +25,18 @@ func proctypeSetup(ref string) (s Snapshot, rev *Revision) {
 	}
 	s = s.FastForward(r)
 
-	app, err := NewApp("rev-test", "git://rev.git", "references", s)
+	app, err = NewApp("rev-test", "git://rev.git", "references", s)
 	if err != nil {
 		panic(err)
 	}
 	s = s.FastForward(app.Rev)
-	rev, err = NewRevision(app, ref, s)
 
 	return
 }
 
 func TestProcTypeRegister(t *testing.T) {
-	s, rev := proctypeSetup("reg123")
-	pty := NewProcType(rev, "whoop", s)
+	s, app := proctypeSetup("reg123")
+	pty := NewProcType(app, "whoop", s)
 
 	pty, err := pty.Register()
 	if err != nil {
@@ -54,8 +53,8 @@ func TestProcTypeRegister(t *testing.T) {
 }
 
 func TestProcTypeUnregister(t *testing.T) {
-	s, rev := proctypeSetup("unreg123")
-	pty := NewProcType(rev, "whoop", s)
+	s, app := proctypeSetup("unreg123")
+	pty := NewProcType(app, "whoop", s)
 
 	pty, err := pty.Register()
 	if err != nil {

@@ -6,7 +6,6 @@
 package visor
 
 import (
-	"strconv"
 	"testing"
 )
 
@@ -35,8 +34,8 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	if err != nil {
 		panic(err)
 	}
-	pty := NewProcType(rev, pType, s)
-	ins, err = NewInstance(pty, addr, InsStateInitial, s)
+	pty := NewProcType(app, pType, s)
+	ins, err = NewInstance(pty, rev, addr, InsStateInitial, s)
 	if err != nil {
 		panic(err)
 	}
@@ -146,38 +145,5 @@ func TestInstanceUpdateState(t *testing.T) {
 
 	if State(val) != InsStateStarted {
 		t.Error("Instance state wasn't persisted in the coordinator")
-	}
-}
-
-func TestInstances(t *testing.T) {
-	ins := instanceSetup("127.0.0.1:1337", "clock")
-	host := "127.0.0.1:"
-	port := 1000
-
-	for i := 0; i < 3; i++ {
-		ins, err := NewInstance(ins.ProcType, host+strconv.Itoa(port+i), InsStateInitial, ins.Snapshot)
-		if err != nil {
-			t.Error(err)
-		}
-		_, err = ins.Register()
-		if err != nil {
-			t.Error(err)
-		}
-	}
-
-	ins = ins.FastForward(-1)
-	instances, err := Instances(ins.Snapshot)
-	if err != nil {
-		t.Error(err)
-	}
-	if len(instances) != 3 {
-		t.Errorf("expected length %d returned length %d", 3, len(instances))
-	} else {
-		for i := range instances {
-			compAddr := host + strconv.Itoa(port+i)
-			if instances[i].Addr.String() != compAddr {
-				t.Errorf("expected %s got %s", compAddr, instances[i].Addr.String())
-			}
-		}
 	}
 }
