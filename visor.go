@@ -36,6 +36,7 @@ import (
 	"errors"
 	"path"
 	"strconv"
+	"time"
 )
 
 const DEFAULT_URI string = "doozer:?ca=localhost:8046"
@@ -64,6 +65,27 @@ func Init(s Snapshot) (rev int64, err error) {
 		return rev, err
 	}
 	return s.conn.Rev()
+}
+
+func ClaimNextPort(s Snapshot) (port int, err error) {
+	for {
+		f, err := GetLatest(s, START_PORT_PATH, new(IntCodec))
+		if err == nil {
+			port = f.Value.(int)
+
+			f, err = f.Update(port + 1)
+			if err == nil {
+				break
+			} else {
+				s = f.Snapshot
+				time.Sleep(time.Second / 10)
+			}
+		} else {
+			return -1, err
+		}
+	}
+
+	return
 }
 
 func Scale(app string, revision string, processName string, factor int, s Snapshot) (err error) {
