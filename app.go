@@ -8,6 +8,7 @@ package visor
 import (
 	"fmt"
 	"github.com/soundcloud/doozer"
+	"path"
 	"strings"
 	"time"
 )
@@ -155,8 +156,32 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 	return
 }
 
-func (a *App) prefixPath(path string) string {
-	return strings.Join([]string{a.Path(), path}, "/")
+// GetProcTypes returns all registered ProcTypes for the App
+func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
+	p := path.Join(a.Path(), PROCS_PATH)
+
+	exists, _, err := a.conn.Exists(p)
+	if err != nil || !exists {
+		return
+	}
+
+	pNames, err := a.conn.Getdir(p, a.Snapshot.FastForward(-1).Rev)
+	if err != nil {
+		return
+	}
+
+	for _, processName := range pNames {
+		var pty *ProcType
+
+		pty, err = GetProcType(a.Snapshot, a, ProcessName(processName))
+		if err != nil {
+			return
+		}
+
+		ptys = append(ptys, pty)
+	}
+
+	return
 }
 
 func (a *App) String() string {
@@ -169,7 +194,11 @@ func (a *App) Inspect() string {
 
 // Path returns the path for the App in the global process state.
 func (a *App) Path() (p string) {
-	return strings.Join([]string{APPS_PATH, a.Name}, "/")
+	return path.Join(APPS_PATH, a.Name)
+}
+
+func (a *App) prefixPath(p string) string {
+	return path.Join(a.Path(), p)
 }
 
 func (a *App) setPath(k string, v string) (rev int64, err error) {
