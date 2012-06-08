@@ -202,18 +202,26 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 
 // Apps returns the list of all registered Apps.
 func Apps(s Snapshot) (apps []*App, err error) {
-	names, err := s.conn.Getdir(APPS_PATH, s.Rev)
+	exists, _, err := s.conn.Exists(APPS_PATH)
+	if err != nil || !exists {
+		return
+	}
+
+	names, err := s.conn.Getdir(APPS_PATH, s.FastForward(-1).Rev)
 	if err != nil {
 		return
 	}
-	apps = make([]*App, len(names))
 
 	for i := range names {
-		a, e := GetApp(s, names[i])
+		var app *App
+
+		app, err = GetApp(s, names[i])
 		if err != nil {
-			return nil, e
+			return
 		}
-		apps[i] = a
+
+		apps = append(apps, app)
 	}
+
 	return
 }
