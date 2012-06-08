@@ -159,24 +159,30 @@ func (i *Instance) String() string {
 }
 
 // GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.
-func GetInstanceInfo(s Snapshot, app string, rev string, proc string, ins string) (*InstanceInfo, error) {
-	p := path.Join(INSTANCES_PATH, ins)
+func GetInstanceInfo(s Snapshot, insName string) (ins *InstanceInfo, err error) {
+	keys := []string{"app", "host", "port", "proctype", "revision", "state"}
+	p := path.Join(INSTANCES_PATH, insName)
 
-	state, _, err := s.conn.Get(p+"/state", &s.Rev)
-	host, _, err := s.conn.Get(p+"/host", &s.Rev)
-	port, _, err := s.conn.Get(p+"/port", &s.Rev)
-
-	iport, err := strconv.Atoi(string(port))
-
-	instance := &InstanceInfo{
-		Name:         ins,
-		AppName:      app,
-		RevisionName: rev,
-		ProcessName:  ProcessName(proc),
-		ServiceName:  app + "-" + proc,
-		Host:         string(host),
-		Port:         iport,
-		State:        State(state),
+	vals, err := s.conn.GetMulti(p, keys, s.FastForward(-1).Rev)
+	if err != nil {
+		return
 	}
-	return instance, err
+
+	port, err := strconv.Atoi(string(vals["port"]))
+	if err != nil {
+		return
+	}
+
+	ins = &InstanceInfo{
+		Name:         insName,
+		AppName:      string(vals["app"]),
+		Host:         string(vals["host"]),
+		Port:         port,
+		ProcessName:  ProcessName(vals["proctype"]),
+		RevisionName: string(vals["revision"]),
+		ServiceName:  string(vals["app"]) + "-" + string(vals["proctype"]),
+		State:        State(string(vals["state"])),
+	}
+
+	return
 }
