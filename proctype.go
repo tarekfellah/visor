@@ -117,6 +117,31 @@ func (p *ProcType) InstancesPath() string {
 	return path.Join(p.Path(), INSTANCES_PATH)
 }
 
+func (p *ProcType) GetInstanceInfos() (ins []*InstanceInfo, err error) {
+	exists, _, err := p.conn.Exists(p.InstancesPath())
+	if err != nil || !exists {
+		return
+	}
+
+	insNames, err := p.conn.Getdir(p.InstancesPath(), p.Snapshot.FastForward(-1).Rev)
+	if err != nil {
+		return
+	}
+
+	for _, insName := range insNames {
+		var i *InstanceInfo
+
+		i, err = GetInstanceInfo(p.Snapshot, insName)
+		if err != nil {
+			return
+		}
+
+		ins = append(ins, i)
+	}
+
+	return
+}
+
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
 	path := path.Join(app.Path(), PROCS_PATH, string(name))
