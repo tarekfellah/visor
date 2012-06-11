@@ -5,7 +5,7 @@ bin/visor: bin fmt update_version
 bin:
 	mkdir -p bin
 
-install: bin/visor
+install: local_build
 	mkdir -p $${DISTDIR-/usr/local}/bin
 	cp bin/visor $${DISTDIR-/usr/local}/bin
 

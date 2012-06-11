@@ -14,7 +14,7 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.5"
+const VERSION_STRING = "v0.1.6"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
@@ -131,7 +131,7 @@ func main() {
 						},
 					},
 					"unregister": {
-						"unregister / delete a new application, and all it's revisions and stop all running instances",
+						"unregister / delete a new application, and all its revisions and stop all running instances",
 						getopt.Definitions{
 							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
 						},
