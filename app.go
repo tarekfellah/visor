@@ -29,8 +29,9 @@ type App struct {
 }
 
 // NewApp returns a new App given a name, repository url and stack.
-func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App, err error) {
+func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot, Env: Env{}}
+
 	return
 }
 
