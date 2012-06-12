@@ -58,7 +58,7 @@ type Instance struct {
 }
 
 // NewInstance creates and returns a new Instance object.
-func NewInstance(pty *ProcType, rev *Revision, addr string, state State, snapshot Snapshot) (ins *Instance, err error) {
+func NewInstance(pty *ProcType, rev *Revision, addr string, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
@@ -68,7 +68,7 @@ func NewInstance(pty *ProcType, rev *Revision, addr string, state State, snapsho
 		Addr:     tcpAddr,
 		ProcType: pty,
 		Revision: rev,
-		State:    state,
+		State:    InsStateInitial,
 		Snapshot: snapshot}
 
 	return
@@ -92,9 +92,6 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 	if exists {
 		return nil, ErrKeyConflict
-	}
-	if i.State != InsStateInitial {
-		return nil, ErrInvalidState
 	}
 
 	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{

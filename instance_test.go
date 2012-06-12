@@ -26,13 +26,11 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	s = s.FastForward(r)
 
 	app := NewApp("ins-test", "git://ins.git", "insane", s)
-	rev, err := NewRevision(app, "7abcde6", s)
+	rev := NewRevision(app, "7abcde6", s)
 	rev.ArchiveUrl = "archive"
-	if err != nil {
-		panic(err)
-	}
+
 	pty := NewProcType(app, pType, s)
-	ins, err = NewInstance(pty, rev, addr, InsStateInitial, s)
+	ins, err = NewInstance(pty, rev, addr, s)
 	if err != nil {
 		panic(err)
 	}

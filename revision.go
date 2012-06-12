@@ -23,8 +23,9 @@ type Revision struct {
 const REVS_PATH = "revs"
 
 // NewRevision returns a new instance of Revision.
-func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision, err error) {
+func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref, Snapshot: snapshot}
+
 	return
 }
 

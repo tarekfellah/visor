@@ -32,10 +32,7 @@ func revSetup() (s Snapshot, app *App) {
 
 func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
-	rev, err := NewRevision(app, "stable", app.Snapshot)
-	if err != nil {
-		t.Error(err)
-	}
+	rev := NewRevision(app, "stable", app.Snapshot)
 
 	check, _, err := s.conn.Exists(rev.Path())
 	if err != nil {
@@ -69,12 +66,9 @@ func TestRevisionRegister(t *testing.T) {
 
 func TestRevisionUnregister(t *testing.T) {
 	s, app := revSetup()
-	rev, err := NewRevision(app, "master", app.Snapshot)
-	if err != nil {
-		t.Error(err)
-	}
+	rev := NewRevision(app, "master", app.Snapshot)
 
-	rev, err = rev.Register()
+	rev, err := rev.Register()
 	if err != nil {
 		t.Error(err)
 	}

@@ -75,7 +75,7 @@ func TestEventRevRegistered(t *testing.T) {
 
 	s = s.FastForward(app.Rev)
 
-	rev, _ := NewRevision(app, "stable", s)
+	rev := NewRevision(app, "stable", s)
 	rev = rev.FastForward(s.Rev)
 
 	go WatchEvent(s, l)
@@ -97,7 +97,7 @@ func TestEventRevUnregistered(t *testing.T) {
 
 	s = s.FastForward(app.Rev)
 
-	rev, _ := NewRevision(app, "stable", s)
+	rev := NewRevision(app, "stable", s)
 	rev, err = rev.FastForward(s.Rev).Register()
 	if err != nil {
 		t.Error(err)
@@ -124,7 +124,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 
 	s = s.FastForward(app.Rev)
 
-	rev, _ := NewRevision(app, "bang", s)
+	rev := NewRevision(app, "bang", s)
 	rev, err = rev.FastForward(s.Rev).Register()
 	if err != nil {
 		t.Error(err)
@@ -164,9 +164,9 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 }
 func TestEventInstanceRegistered(t *testing.T) {
 	s, app, l := eventSetup("regmouse")
-	rev, _ := NewRevision(app, "stable", s)
+	rev := NewRevision(app, "stable", s)
 	pty := NewProcType(app, "web", s)
-	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", InsStateInitial, s)
+	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", s)
 
 	go WatchEvent(s, l)
 
@@ -179,9 +179,9 @@ func TestEventInstanceRegistered(t *testing.T) {
 }
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregmouse")
-	rev, _ := NewRevision(app, "stable", s)
+	rev := NewRevision(app, "stable", s)
 	pty := NewProcType(app, "web", s)
-	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", InsStateInitial, s)
+	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", s)
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
