@@ -215,11 +215,8 @@ func TestApps(t *testing.T) {
 	names := []string{"cat", "dog", "lol"}
 
 	for i := range names {
-		a, err := NewApp(names[i], "zebra", "joke", app.Snapshot)
-		if err != nil {
-			t.Error(err)
-		}
-		_, err = a.Register()
+		a := NewApp(names[i], "zebra", "joke", app.Snapshot)
+		_, err := a.Register()
 		if err != nil {
 			t.Error(err)
 		}

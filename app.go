@@ -211,10 +211,7 @@ func (a *App) delPath(k string) error {
 
 // GetApp fetches an app with the given name.
 func GetApp(s Snapshot, name string) (app *App, err error) {
-	app, err = NewApp(name, "", "", s)
-	if err != nil {
-		return nil, err
-	}
+	app = NewApp(name, "", "", s)
 
 	f, err := Get(s, app.Path()+"/attrs", new(JSONCodec))
 	if err != nil {

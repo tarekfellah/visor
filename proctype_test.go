@@ -25,10 +25,8 @@ func proctypeSetup(ref string) (s Snapshot, app *App) {
 	}
 	s = s.FastForward(r)
 
-	app, err = NewApp("rev-test", "git://rev.git", "references", s)
-	if err != nil {
-		panic(err)
-	}
+	app = NewApp("rev-test", "git://rev.git", "references", s)
+
 	s = s.FastForward(app.Rev)
 
 	return

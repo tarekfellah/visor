@@ -25,10 +25,7 @@ func revSetup() (s Snapshot, app *App) {
 	}
 	s = s.FastForward(rev)
 
-	app, err = NewApp("rev-test", "git://rev.git", "references", s)
-	if err != nil {
-		panic(err)
-	}
+	app = NewApp("rev-test", "git://rev.git", "references", s)
 
 	return
 }
