@@ -14,7 +14,7 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.6"
+const VERSION_STRING = "v0.1.7"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
@@ -84,7 +84,12 @@ func main() {
 					},
 					"scale": {
 						"Scales services",
-						getopt.Definitions{},
+						getopt.Definitions{
+							{"app", "app", getopt.IsArg | getopt.Required, ""},
+							{"revision", "revision", getopt.IsArg | getopt.Required, ""},
+							{"proctype", "proctype", getopt.IsArg | getopt.Required, ""},
+							{"scale", "scale you want to scale", getopt.IsArg | getopt.Required, 1},
+						},
 					},
 				},
 			},
