@@ -6,6 +6,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	getopt "github.com/kesselborn/go-getopt"
 	"github.com/soundcloud/visor"
@@ -36,6 +37,8 @@ func App(subCommand string, options map[string]getopt.OptionValue, arguments []s
 		err = AppUnRegister(arguments[0])
 	case "env":
 		err = AppEnv(arguments[0])
+	case "instances":
+		err = AppProcInstances(arguments[0], arguments[1])
 	case "revisions":
 		err = AppRevisions(arguments[0])
 	}
@@ -174,6 +177,55 @@ func AppRegister(name string, deployType string, repoUrl string, stack string) (
 
 	if err != nil {
 		print(err.Error())
+	}
+
+	return
+}
+
+func AppProcInstances(appName string, procTypeName string) (err error) {
+	//                  "Id",       "App", "Revision",   "Host",   "Port",  "State")
+	entryFmtStr := "| %-22.22s | %-10.10s | %-10.10s | %-17.17s | %-7.7s | %-10.10s |\n"
+	rulerFmtStr := "+-%-22.22s-+-%-10.10s-+-%-10.10s-+-%-17.17s-+-%-7.7s-+-%-10.10s-+\n"
+	ruler := "-----------------------------------------------------------------------------------------------------------"
+
+	snapshot := snapshot()
+
+	app, err := visor.GetApp(snapshot, appName)
+	if err != nil {
+		return
+	}
+
+	procTypes, err := app.GetProcTypes()
+	if err != nil {
+		return
+	}
+
+	foundProcType := false
+	for _, pt := range procTypes {
+		if pt.Name == visor.ProcessName(procTypeName) {
+			foundProcType = true
+
+			instancesInfos, err := pt.GetInstanceInfos()
+			if err != nil {
+				return err
+			}
+
+			fmt.Println()
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler, ruler)
+			fmt.Printf(entryFmtStr, "Id", "App", "Revision", "Host", "Port", "State")
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler, ruler)
+			for _, instance := range instancesInfos {
+				fmt.Printf(entryFmtStr, instance.Name, instance.AppName, instance.RevisionName, instance.Host, strconv.Itoa(instance.Port), instance.State)
+			}
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler, ruler)
+			fmt.Println()
+
+			break
+		}
+	}
+
+	if foundProcType == false {
+		err = errors.New("Proc type " + procTypeName + " does not exist for app " + appName)
 	}
 
 	return

@@ -14,7 +14,7 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.8"
+const VERSION_STRING = "v0.1.9"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
@@ -160,6 +160,13 @@ func main() {
 						"show available revisions of an app",
 						getopt.Definitions{
 							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
+						},
+					},
+					"instances": {
+						"show running instances of an app proc type",
+						getopt.Definitions{
+							{"name", "name of the new app", getopt.IsArg | getopt.Required, ""},
+							{"proctype", "proc type", getopt.IsArg | getopt.Required, ""},
 						},
 					},
 				},
