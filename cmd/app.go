@@ -192,13 +192,13 @@ func AppRevisions(appName string) (err error) {
 
 		if revs, err = visor.AppRevisions(snapshot, app); err == nil {
 			fmt.Println()
-			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
-			fmt.Printf(entryFmtStr, "No.", "App", "Revision", "Archive-Url", "Proctypes")
-			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler)
+			fmt.Printf(entryFmtStr, "No.", "App", "Revision", "Archive-Url")
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler)
 			for i, rev := range revs {
 				fmt.Printf(entryFmtStr, strconv.Itoa(i), appName, rev.Ref, rev.ArchiveUrl)
 			}
-			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler, ruler)
+			fmt.Printf(rulerFmtStr, ruler, ruler, ruler, ruler)
 		}
 	}
 
