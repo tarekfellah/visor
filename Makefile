@@ -6,8 +6,8 @@ bin:
 	mkdir -p bin
 
 install: local_build
-	mkdir -p $${DISTDIR-/usr/local}/bin
-	cp bin/visor $${DISTDIR-/usr/local}/bin
+	mkdir -p $${DESTDIR-/usr/local}/bin
+	cp bin/visor $${DESTDIR-/usr/local}/bin
 
 fmt:
 	go fmt ./...
@@ -28,7 +28,7 @@ unexport GIT_DIR
 unexport GOROOT
 unexport GOBIN
 
-build: update_version fmt package bump_package_release
+build: fmt package bump_package_release
 	echo ".git" > .pkgignore
 	find . -mindepth 1 -maxdepth 1 | grep -v "\.deb" | sed 's/\.\///g' >> .pkgignore
 
@@ -47,7 +47,7 @@ $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src $(LOCAL_GO
 $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
 	GOPATH=$(LOCAL_GOPATH) go get github.com/kesselborn/go-getopt
 
-local_build: $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt
+local_build: update_version $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt
 	test -e bin || mkdir bin
 	test -e $(VISOR_GO_PATH) || { mkdir -p $$(dirname $(VISOR_GO_PATH)); ln -sf $${PWD} $(VISOR_GO_PATH); }
 	GOPATH=$(LOCAL_GOPATH) go build
