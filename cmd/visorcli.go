@@ -14,7 +14,7 @@ import (
 
 var snapshot func() (s visor.Snapshot)
 
-const VERSION_STRING = "v0.1.7"
+const VERSION_STRING = "v0.1.8"
 
 func main() {
 	instanceSubCommands := getopt.SubCommands{
