@@ -140,6 +140,10 @@ Mac Os X:
 
     brew install https://raw.github.com/soundcloud/visor/master/visor.rb
 
+or
+
+    brew upgrade https://raw.github.com/soundcloud/visor/master/visor.rb
+
 Debian in our internal network:
 
     apt-get install visor
