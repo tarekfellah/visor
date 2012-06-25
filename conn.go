@@ -76,7 +76,11 @@ func (c *Conn) Rev() (int64, error) {
 func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
 	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
 	if filerev == 0 {
-		err = fmt.Errorf("path \"%s\" not found at %d", path, *rev)
+		if rev == nil {
+			err = fmt.Errorf("path \"%s\" not found at latest revision", path)
+		} else {
+			err = fmt.Errorf("path \"%s\" not found at %d", path, *rev)
+		}
 	}
 	return
 }
