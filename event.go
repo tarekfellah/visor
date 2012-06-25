@@ -171,6 +171,14 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			fmt.Printf("error getting instance info: %s\n", err)
 			return
 		}
+	case EvInsStateChange:
+		path := ev.Path
+		info, err = GetInstanceInfo(s, path["instance"])
+
+		if err != nil {
+			fmt.Printf("error getting instance info: %s\n", err)
+			return
+		}
 	}
 
 	return
@@ -224,6 +232,8 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvInsUnreg
 				}
 			case EvInsStateChange:
+				emitter["instance"] = match[1]
+
 				if src.IsDel() {
 					break
 				}

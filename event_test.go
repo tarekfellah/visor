@@ -204,9 +204,16 @@ func TestEventInstanceStateChange(t *testing.T) {
 	pty := NewProcType(app, "web-state", s)
 	ins, _ := NewInstance(pty, rev, "127.0.0.1:8081", s)
 
+	ins, err := ins.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(ins.Rev)
+
 	go WatchEvent(s, l)
 
-	_, err := ins.UpdateState(InsStateReady)
+	_, err = ins.UpdateState(InsStateReady)
 	if err != nil {
 		t.Error(err)
 	}
