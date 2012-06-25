@@ -66,7 +66,7 @@ var (
 		"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
 		"^/apps/([^/]+)/procs/([^/]+)/registered$":        EvProcReg,
 		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
-		"^/instances([^/]+)/state$":                       EvInsStateChange,
+		"^/instances/([^/]+)/state$":                      EvInsStateChange,
 	}
 )
 

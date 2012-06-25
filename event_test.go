@@ -197,8 +197,21 @@ func TestEventInstanceUnregistered(t *testing.T) {
 
 	expectEvent(EvInsUnreg, "unregmouse", l, t)
 }
+
 func TestEventInstanceStateChange(t *testing.T) {
-	// TODO: Waiting on instance state API
+	s, app, l := eventSetup("statemouse")
+	rev := NewRevision(app, "stable-state", s)
+	pty := NewProcType(app, "web-state", s)
+	ins, _ := NewInstance(pty, rev, "127.0.0.1:8081", s)
+
+	go WatchEvent(s, l)
+
+	_, err := ins.UpdateState(InsStateReady)
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvInsStateChange, "", l, t)
 }
 
 func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
