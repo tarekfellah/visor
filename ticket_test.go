@@ -50,20 +50,24 @@ func TestTicketCreateTicket(t *testing.T) {
 func TestTicketClaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
-	op := "claim abcd123 test start"
-	ticket := &Ticket{Id: id, AppName: "claim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
-	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/op", s.Rev, []byte(op))
+	ticket, err := CreateTicket("claim", "abcd123", "test", OpStart, s)
 	if err != nil {
 		t.Error(err)
 	}
-	s = s.FastForward(rev)
 
 	ticket, err = ticket.Claim(host)
 	if err != nil {
 		t.Error(err)
 	}
-	//s = s.FastForward(s.Rev + 1)
+
+	status, _, err := ticket.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/status", &ticket.Rev)
+	if err != nil {
+		t.Error(err)
+	}
+	if TicketStatus(status) != TicketStatusClaimed {
+		t.Error("Ticket not claimed")
+	}
 
 	body, _, err := ticket.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/claimed", &ticket.Rev)
 	if err != nil {

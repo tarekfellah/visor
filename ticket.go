@@ -23,12 +23,13 @@ type Ticket struct {
 	ProcessName  ProcessName
 	Op           OperationType
 	Addr         net.TCPAddr
-	Status       string
+	Status       TicketStatus
 	source       *doozer.Event
 }
 
 // OperationType identifies different operations.
 type OperationType int
+type TicketStatus string
 
 func NewOperationType(opStr string) OperationType {
 	var op OperationType
@@ -64,14 +65,19 @@ const (
 	OpStop                  = 1
 )
 
+const (
+	TicketStatusClaimed   TicketStatus = "claimed"
+	TicketStatusUnClaimed TicketStatus = "unclaimed"
+)
+
 //                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
-	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: "unclaimed"}
+	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: TicketStatusUnClaimed}
 	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
 	if err != nil {
 		return
 	}
-	f, err = CreateFile(s, t.prefixPath("status"), t.Status, new(StringCodec))
+	f, err = CreateFile(s, t.prefixPath("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
@@ -80,20 +86,25 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 
 // Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
-	exists, _, err := t.conn.Exists(t.prefixPath("claimed"))
+	status, _, err := t.conn.Get(t.prefixPath("status"), &t.Rev)
 	if err != nil {
 		return t, err
 	}
-	if exists {
+	if TicketStatus(status) == TicketStatusClaimed {
 		return t, ErrTicketClaimed
 	}
 
-	rev, err := t.conn.Set(t.prefixPath("claimed"), t.Rev, []byte(host))
-	t.Snapshot = t.Snapshot.FastForward(rev)
-
-	if err == nil {
-		t.Status = "claimed"
+	rev, err := t.conn.Set(t.prefixPath("status"), t.Rev, []byte(TicketStatusClaimed))
+	if err != nil {
+		return nil, err
 	}
+
+	rev, err = t.conn.Set(t.prefixPath("claimed"), t.Rev, []byte(host))
+	t.Snapshot = t.Snapshot.FastForward(rev)
+	if err == nil {
+		t.Status = TicketStatusClaimed
+	}
+
 	return t, err
 }
 
