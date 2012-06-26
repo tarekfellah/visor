@@ -26,7 +26,7 @@ type Command struct {
 }
 
 func (c *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
+	fmt.Fprintf(os.Stderr, "Usage: %s\n\n", c.UsageLine)
 	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(c.Long))
 	os.Exit(2)
 }
@@ -97,5 +97,5 @@ Globals:
 
 Commands:
 {{range .}}
-  {{.Name | printf "%-11s"}} {{.Short}}{{end}}
+  {{.Name | printf "%-15s"}} {{.Short}}{{end}}
 `

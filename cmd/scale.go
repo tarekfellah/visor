@@ -16,7 +16,7 @@ import (
 var cmdScale = &Command{
 	Name:      "scale",
 	Short:     "scale proctypes",
-	UsageLine: "scale [app] [proctype] [rev] [factor]",
+	UsageLine: "scale <app> <proctype> <rev> <factor>",
 	Long: `
 Scale scales a proctype at a specific revision to the set factor.
   `,
