@@ -216,6 +216,10 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 	return t, err
 }
 
+func (t *Ticket) Fields() string {
+	return fmt.Sprintf("%d %s %s %s %s", t.Id, t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String())
+}
+
 func (t *Ticket) toArray() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
 }
