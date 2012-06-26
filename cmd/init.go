@@ -25,13 +25,7 @@ func init() {
 }
 
 func runInit(cmd *Command, args []string) {
-	s, err := visor.DialUri(Uri, Root)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error connection %s\n", err.Error())
-		os.Exit(2)
-	}
-
-	_, err = visor.Init(s)
+	_, err := visor.Init(cmdInit.Snapshot)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing %s\n", err.Error())
 		os.Exit(2)

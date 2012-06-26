@@ -31,19 +31,13 @@ func runScale(cmd *Command, args []string) {
 		cmd.Flag.Usage()
 	}
 
-	s, err := visor.DialUri(Uri, Root)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error connection %s\n", err.Error())
-		os.Exit(2)
-	}
-
 	f, err := strconv.Atoi(string(args[3]))
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Error 'factor' needs to an integer\n")
 		os.Exit(2)
 	}
 
-	err = visor.Scale(args[0], args[1], args[2], f, s)
+	err = visor.Scale(args[0], args[1], args[2], f, cmdScale.Snapshot)
 	if err != nil {
 		log.Fatal(err)
 	}

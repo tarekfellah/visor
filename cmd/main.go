@@ -22,6 +22,7 @@ type Command struct {
 	Name      string
 	UsageLine string
 	Short     string
+	Snapshot  visor.Snapshot
 }
 
 func (c *Command) Usage() {
@@ -55,6 +56,13 @@ func main() {
 
 	for _, cmd := range commands {
 		if cmd.Name == args[0] && cmd.Run != nil {
+			s, err := visor.DialUri(Uri, Root)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error connection %s\n", err.Error())
+				os.Exit(2)
+			}
+
+			cmd.Snapshot = s
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			cmd.Flag.Parse(args[1:])
 			cmd.Run(cmd, cmd.Flag.Args())
