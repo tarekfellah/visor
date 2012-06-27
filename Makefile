@@ -44,10 +44,7 @@ $(LOCAL_GOPATH)/src/code.google.com/p/goprotobuf/proto: $(LOCAL_GOPATH)/src
 $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer: $(LOCAL_GOPATH)/src $(LOCAL_GOPATH)/src/github.com/kr/pretty $(LOCAL_GOPATH)/src/code.google.com/p/goprotobuf/proto
 	GOPATH=$(LOCAL_GOPATH) go get github.com/soundcloud/doozer
 
-$(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt: $(LOCAL_GOPATH)/src
-	GOPATH=$(LOCAL_GOPATH) go get github.com/kesselborn/go-getopt
-
-local_build: update_version $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer $(LOCAL_GOPATH)/src/github.com/kesselborn/go-getopt
+local_build: update_version $(LOCAL_GOPATH)/src/github.com/soundcloud/doozer
 	test -e bin || mkdir bin
 	test -e $(VISOR_GO_PATH) || { mkdir -p $$(dirname $(VISOR_GO_PATH)); ln -sf $${PWD} $(VISOR_GO_PATH); }
 	GOPATH=$(LOCAL_GOPATH) go build
