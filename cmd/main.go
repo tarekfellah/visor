@@ -97,17 +97,12 @@ func usage() {
 	os.Exit(2)
 }
 
-var usageTmpl = `Visor is a tool to manage the bazooka app registry.
-
-Usage:
-
-  visor [globals] command [arguments]
+var usageTmpl = `Usage: visor [globals] command [arguments]
 
 Globals:
   -root Doozerd tree prefix
   -uri  Doozerd cluster URI
 
-Commands:
-{{range .}}
+Commands:{{range .}}
   {{.Name | printf "%-15s"}} {{.Short}}{{end}}
 `
