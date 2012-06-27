@@ -15,6 +15,8 @@ import (
 	"text/template"
 )
 
+const VERSION_STRING = "v0.2.0"
+
 type Command struct {
 	Run       func(cmd *Command, args []string)
 	Flag      flag.FlagSet

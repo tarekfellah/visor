@@ -6,7 +6,7 @@ class Visor < Formula
   #md5 'd01e901a9bd781d0104990b2ece77bf0'
   depends_on 'go'
   depends_on 'Mercurial'
-  version '0.1.9'
+  version '0.2.0'
   skip_clean 'bin'
 
 
