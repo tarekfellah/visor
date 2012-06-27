@@ -40,7 +40,19 @@ func init() {
 }
 
 var commands = []*Command{
+	cmdAppDescribe,
+	cmdAppEnvDel,
+	cmdAppEnvGet,
+	cmdAppEnvSet,
+	cmdAppRegister,
+	cmdAppUnregister,
 	cmdInit,
+	cmdProcRegister,
+	cmdProcUnregister,
+	cmdRevDescribe,
+	cmdRevExists,
+	cmdRevRegister,
+	cmdRevUnregister,
 	cmdScale,
 }
 
