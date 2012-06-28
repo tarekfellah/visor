@@ -55,7 +55,7 @@ func runAppInstances(cmd *Command, args []string) {
     }
 
     for _, i := range ins {
-      fmt.Fprintf(os.Stdout, "%s %s %s %s %d %s\n", i.ProcessName, i.RevisionName, i.State, i.Host, i.Port, i.Name)
+      fmt.Fprintf(os.Stdout, "%s %s %s %s %s %s %d %s\n", i.Name, i.ServiceName, i.AppName, i.ProcessName, i.RevisionName, i.Host, i.Port, i.State)
     }
   }
 }
