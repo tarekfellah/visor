@@ -11,30 +11,41 @@ import (
 	"os"
 )
 
-var cmdAppInstances = &Command{
-	Name:      "app-instances",
-	Short:     "app-instances for app",
-	UsageLine: "app-instances <name> [proc]",
+var cmdAppServices = &Command{
+	Name:      "app-services",
+	Short:     "app-services for app",
+	UsageLine: "app-services <name>",
 	Long: `
-App-instances returns instances and there state for an application.
+App-services returns services and meta information for an application.
   `,
 }
 
 func init() {
-	cmdAppInstances.Run = runAppInstances
+	cmdAppServices.Run = runAppServices
 }
 
-func runAppInstances(cmd *Command, args []string) {
+func runAppServices(cmd *Command, args []string) {
 	if len(args) < 1 {
 		cmd.Flag.Usage()
 	}
 
-	s := cmdAppInstances.Snapshot
+	s := cmdAppServices.Snapshot
 
 	app, err := visor.GetApp(s, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
 		os.Exit(2)
+	}
+
+	proxies, err := app.Conn().Getdir("/proxies", app.Snapshot.Rev)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error fetching proxy addresses %s\n", err.Error())
+		os.Exit(2)
+	}
+
+	proxy := ""
+	if len(proxies) > 0 {
+		proxy = proxies[0]
 	}
 
 	ptys, err := app.GetProcTypes()
@@ -44,18 +55,12 @@ func runAppInstances(cmd *Command, args []string) {
 	}
 
 	for _, pty := range ptys {
-		if len(args) > 1 && string(pty.Name) != args[0] {
-			continue
-		}
-
-		ins, err := pty.GetInstanceInfos()
+		ins, err := pty.GetInstanceNames()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching instances for %s %s\n", pty.Name, err.Error())
 			os.Exit(2)
 		}
 
-		for _, i := range ins {
-			fmt.Fprintf(os.Stdout, "%s %s %s %s %s %s %d %s\n", i.Name, i.ServiceName, i.AppName, i.ProcessName, i.RevisionName, i.Host, i.Port, i.State)
-		}
+		fmt.Fprintf(os.Stdout, "%s-%s %s %d %d\n", pty.App.Name, pty.Name, proxy, pty.Port, len(ins))
 	}
 }

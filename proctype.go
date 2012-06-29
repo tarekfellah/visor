@@ -117,13 +117,22 @@ func (p *ProcType) InstancesPath() string {
 	return path.Join(p.Path(), INSTANCES_PATH)
 }
 
-func (p *ProcType) GetInstanceInfos() (ins []*InstanceInfo, err error) {
+func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 	exists, _, err := p.conn.Exists(p.InstancesPath())
 	if err != nil || !exists {
 		return
 	}
 
-	insNames, err := p.conn.Getdir(p.InstancesPath(), p.Snapshot.FastForward(-1).Rev)
+	ins, err = p.conn.Getdir(p.InstancesPath(), p.Snapshot.FastForward(-1).Rev)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func (p *ProcType) GetInstanceInfos() (ins []*InstanceInfo, err error) {
+	insNames, err := p.GetInstanceNames()
 	if err != nil {
 		return
 	}
