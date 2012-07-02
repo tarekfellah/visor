@@ -72,12 +72,25 @@ const (
 
 //                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
-	t = &Ticket{Id: s.Rev, AppName: appName, RevisionName: revName, ProcessName: pName, Op: op, Snapshot: s, source: nil, Status: TicketStatusUnClaimed}
-	f, err := CreateFile(s, t.prefixPath("op"), t.toArray(), new(ListCodec))
-	if err != nil {
-		return
+	t = &Ticket{
+		Id:           s.Rev,
+		AppName:      appName,
+		RevisionName: revName,
+		ProcessName:  pName,
+		Op:           op,
+		Snapshot:     s,
+		source:       nil,
+		Status:       TicketStatusUnClaimed,
 	}
-	f, err = CreateFile(s, t.prefixPath("status"), string(t.Status), new(StringCodec))
+	return t.Create()
+}
+
+func (t *Ticket) Create() (*Ticket, error) {
+	f, err := CreateFile(t.Snapshot, t.prefixPath("op"), t.toArray(), new(ListCodec))
+	if err != nil {
+		return t, err
+	}
+	f, err = CreateFile(t.Snapshot, t.prefixPath("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
