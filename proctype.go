@@ -17,7 +17,6 @@ type ProcType struct {
 	Snapshot
 	Name        ProcessName
 	App         *App
-	MaxRestarts int
 	Port        int
 }
 
