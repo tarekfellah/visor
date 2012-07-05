@@ -74,6 +74,14 @@ func TestTicketClaim(t *testing.T) {
 		t.Error(err)
 	}
 
+	claims, err := ticket.Claims()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(claims) != 1 {
+		t.Error("claims/ folder expect to contain exactly one file")
+	}
+
 	_, err = ticket.Claim(host)
 	if err != ErrTicketClaimed {
 		t.Error("Ticket claimed twice")

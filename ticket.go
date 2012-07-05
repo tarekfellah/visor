@@ -99,6 +99,16 @@ func (t *Ticket) Create() (*Ticket, error) {
 	return t, err
 }
 
+// Claims returns the list of claimers
+func (t *Ticket) Claims() (claims []string, err error) {
+	claims, err = t.conn.Getdir(t.prefixPath("claims"), t.Rev)
+	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
+		claims = []string{}
+		err = nil
+	}
+	return
+}
+
 // Claim locks the Ticket to the passed host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
 	status, _, err := t.conn.Get(t.prefixPath("status"), &t.Rev)
