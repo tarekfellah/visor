@@ -69,12 +69,9 @@ func TestTicketClaim(t *testing.T) {
 		t.Error("Ticket not claimed")
 	}
 
-	body, _, err := ticket.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/claimed", &ticket.Rev)
-	if err != nil {
+	exists, _, err := ticket.conn.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claims/" + host)
+	if !exists {
 		t.Error(err)
-	}
-	if string(body) != host {
-		t.Error("Ticket not claimed")
 	}
 
 	_, err = ticket.Claim(host)
@@ -88,7 +85,7 @@ func TestTicketUnclaim(t *testing.T) {
 	id := s.Rev
 	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
-	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claimed", s.Rev, []byte(host))
+	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
@@ -110,7 +107,7 @@ func TestTicketUnclaim(t *testing.T) {
 
 func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claimed"
+	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claims/" + host
 	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
 	rev, err := s.conn.Set(p, s.Rev, []byte(host))
@@ -130,7 +127,7 @@ func TestTicketDone(t *testing.T) {
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
 	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
-	rev, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
+	rev, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
@@ -155,7 +152,7 @@ func TestTicketDoneWithWrongLock(t *testing.T) {
 	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
 	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
 
-	_, err := s.conn.Set(p+"/claimed", s.Rev, []byte(host))
+	_, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
