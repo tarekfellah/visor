@@ -12,6 +12,7 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Ticket carries instructions to start and stop Instances.
@@ -68,6 +69,7 @@ const (
 const (
 	TicketStatusClaimed   TicketStatus = "claimed"
 	TicketStatusUnClaimed TicketStatus = "unclaimed"
+	TicketStatusDead      TicketStatus = "dead"
 )
 
 //                                                      procType        
@@ -107,33 +109,45 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 		return t, ErrTicketClaimed
 	}
 
-	rev, err := t.conn.Set(t.prefixPath("status"), t.Rev, []byte(TicketStatusClaimed))
+	rev, err := t.conn.Set(t.claimPath(host), t.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
-		return nil, err
+		return t, err
 	}
 
-	rev, err = t.conn.Set(t.prefixPath("claimed"), t.Rev, []byte(host))
-	t.Snapshot = t.Snapshot.FastForward(rev)
+	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusClaimed))
 	if err == nil {
 		t.Status = TicketStatusClaimed
 	}
+	t.Snapshot = t.Snapshot.FastForward(rev)
 
 	return t, err
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (t *Ticket) Unclaim(host string) (err error) {
-	claimer, rev, err := t.conn.Get(t.prefixPath("claimed"), nil)
-	if err != nil {
-		return
-	}
-	if string(claimer) != host {
+	exists, _, err := t.conn.Exists(t.claimPath(host))
+	if !exists {
 		return ErrUnauthorized
 	}
 
-	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte("unclaimed"))
+	_, err = t.conn.Set(t.prefixPath("status"), -1, []byte(TicketStatusUnClaimed))
 	if err == nil {
-		t.Status = "unclaimed"
+		t.Status = TicketStatusUnClaimed
+	}
+	// TODO: Return new snapshot
+	return
+}
+
+// Dead marks the ticket as "dead"
+func (t *Ticket) Dead(host string) (err error) {
+	exists, rev, err := t.conn.Exists(t.claimPath(host))
+	if !exists {
+		return ErrUnauthorized
+	}
+
+	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusDead))
+	if err == nil {
+		t.Status = TicketStatusDead
 	}
 	// TODO: Return new snapshot
 	return
@@ -141,11 +155,8 @@ func (t *Ticket) Unclaim(host string) (err error) {
 
 // Done marks the Ticket as done/solved in the registry.
 func (t *Ticket) Done(host string) (err error) {
-	claimer, rev, err := t.conn.Get(t.prefixPath("claimed"), nil)
-	if err != nil {
-		return
-	}
-	if string(claimer) != host {
+	exists, rev, err := t.conn.Exists(t.claimPath(host))
+	if !exists {
 		return ErrUnauthorized
 	}
 
@@ -172,6 +183,10 @@ func (t *Ticket) Path() string {
 
 func (t *Ticket) prefixPath(aPath string) string {
 	return path.Join(t.Path(), aPath)
+}
+
+func (t *Ticket) claimPath(host string) string {
+	return t.prefixPath("claims/" + host)
 }
 
 func Tickets() ([]Ticket, error) {
