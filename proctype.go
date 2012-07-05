@@ -15,9 +15,9 @@ import (
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
 	Snapshot
-	Name        ProcessName
-	App         *App
-	Port        int
+	Name ProcessName
+	App  *App
+	Port int
 }
 
 const PROCS_PATH = "procs"

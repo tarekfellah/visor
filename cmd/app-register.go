@@ -16,7 +16,7 @@ var cmdAppRegister = &Command{
 	Short:     "app-register in the global registry",
 	UsageLine: "app-register [options] <name>",
 	Long: `
-App-register adds applications to the globa registry.
+App-register adds applications to the global registry.
 
 Options:
   -repo   CVS repository address (https://github.com/foo/<name>)
