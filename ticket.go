@@ -170,6 +170,11 @@ func (t *Ticket) Done(host string) (err error) {
 		return ErrUnauthorized
 	}
 
+	rev, err = t.conn.Rev()
+	if err != nil {
+		rev = t.Rev
+	}
+
 	err = t.conn.Del(t.Path(), rev)
 	if err == nil {
 		t.Status = "done"
