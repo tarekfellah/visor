@@ -88,29 +88,50 @@ func ClaimNextPort(s Snapshot) (port int, err error) {
 	return
 }
 
+func GetScale(app string, revision string, processName string, s Snapshot) (scale int, rev int64, err error) {
+	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
+	val, rev, err := s.conn.Get(path, nil)
+
+	// File doesn't exist, assume scale = 0
+	if rev == 0 {
+		err = nil
+		scale = 0
+		return
+	}
+
+	if err != nil {
+		scale = -1
+		return
+	}
+
+	scale, err = strconv.Atoi(string(val))
+	if err != nil {
+		scale = -1
+	}
+	return
+}
+
+func SetScale(app string, revision string, processName string, factor int, s Snapshot) (rev int64, err error) {
+	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
+	rev, err = s.conn.Set(path, s.Rev, []byte(strconv.Itoa(factor)))
+	return
+}
+
 func Scale(app string, revision string, processName string, factor int, s Snapshot) (err error) {
 	if factor < 0 {
 		return errors.New("scaling factor needs to be a positive integer")
 	}
 
-	p := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
 	op := OpStart
 	tickets := factor
 
-	res, frev, err := s.conn.Get(p, nil)
-	if err != nil && frev != 0 {
+	current, _, err := GetScale(app, revision, processName, s)
+	if err != nil {
 		return
 	}
 
 	// Check response isn't empty
-	if len(res) > 0 {
-		var current int
-
-		current, err = strconv.Atoi(string(res))
-		if err != nil {
-			return
-		}
-
+	if current > 0 {
 		tickets = factor - current
 
 		if tickets < 0 {
@@ -119,7 +140,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		}
 	}
 
-	rev, err := s.conn.Set(p, s.Rev, []byte(strconv.Itoa(factor)))
+	rev, err := SetScale(app, revision, processName, factor, s)
 	if err != nil {
 		return
 	}
