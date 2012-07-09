@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -49,7 +50,6 @@ func TestTicketCreateTicket(t *testing.T) {
 
 func TestTicketClaim(t *testing.T) {
 	s, host := ticketSetup()
-	id := s.Rev
 
 	ticket, err := CreateTicket("claim", "abcd123", "test", OpStart, s)
 	if err != nil {
@@ -61,7 +61,7 @@ func TestTicketClaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	status, _, err := ticket.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/status", &ticket.Rev)
+	status, _, err := ticket.conn.Get(fmt.Sprintf("tickets/%d/status", ticket.Id), &ticket.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,7 +69,7 @@ func TestTicketClaim(t *testing.T) {
 		t.Error("Ticket not claimed")
 	}
 
-	exists, _, err := ticket.conn.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claims/" + host)
+	exists, _, err := ticket.conn.Exists(fmt.Sprintf("tickets/%d/claims/%s", ticket.Id, host))
 	if !exists {
 		t.Error(err)
 	}

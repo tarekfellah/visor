@@ -75,7 +75,7 @@ const (
 //                                                      procType        
 func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{
-		Id:           s.Rev,
+		Id:           -1,
 		AppName:      appName,
 		RevisionName: revName,
 		ProcessName:  pName,
@@ -87,16 +87,24 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 	return t.Create()
 }
 
-func (t *Ticket) Create() (*Ticket, error) {
+func (t *Ticket) Create() (tt *Ticket, err error) {
+	tt = t
+
+	id, err := Getuid(t.Snapshot)
+	if err != nil {
+		return
+	}
+	t.Id = id
+
 	f, err := CreateFile(t.Snapshot, t.prefixPath("op"), t.toArray(), new(ListCodec))
 	if err != nil {
-		return t, err
+		return
 	}
 	f, err = CreateFile(t.Snapshot, t.prefixPath("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
-	return t, err
+	return
 }
 
 // Claims returns the list of claimers
