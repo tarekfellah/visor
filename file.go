@@ -27,7 +27,6 @@ func (f *File) createSnapshot(rev int64) (file Snapshotable) {
 	tmp := *f
 	tmp.Snapshot = Snapshot{rev, f.conn}
 	return &tmp
-	return
 }
 
 // FastForward advances the file in time. It returns
