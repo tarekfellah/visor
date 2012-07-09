@@ -87,6 +87,9 @@ func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err er
 
 // Getdir is a wrapper around (*doozer.Conn).Getdir with a prefixed path.
 func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
+	if rev < 0 {
+		return nil, fmt.Errorf("rev must be >= 0")
+	}
 	return c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
 }
 

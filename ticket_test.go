@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"testing"
@@ -26,6 +27,32 @@ func ticketSetup() (s Snapshot, hostname string) {
 	s = s.FastForward(-1)
 
 	return
+}
+
+func TestTicketCreateTickets(t *testing.T) {
+	s, _ := ticketSetup()
+
+	c := make(chan bool)
+
+	for i := 0; i < 10; i++ {
+		go func() {
+			_, err := CreateTicket("lol", "cat", "app", OpStart, s)
+			if err != nil {
+				t.Error(err)
+			}
+			c <- true
+		}()
+	}
+	for i := 0; i < 10; i++ {
+		<-c
+	}
+
+	rev, _ := s.conn.Rev()
+	dir, _ := s.conn.Getdir("/tickets", rev)
+
+	if len(dir) != 10 {
+		t.Errorf("tick creation failed: %d", len(dir))
+	}
 }
 
 func TestTicketCreateTicket(t *testing.T) {
@@ -49,7 +76,6 @@ func TestTicketCreateTicket(t *testing.T) {
 
 func TestTicketClaim(t *testing.T) {
 	s, host := ticketSetup()
-	id := s.Rev
 
 	ticket, err := CreateTicket("claim", "abcd123", "test", OpStart, s)
 	if err != nil {
@@ -61,7 +87,7 @@ func TestTicketClaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	status, _, err := ticket.conn.Get("tickets/"+strconv.FormatInt(id, 10)+"/status", &ticket.Rev)
+	status, _, err := ticket.conn.Get(fmt.Sprintf("tickets/%d/status", ticket.Id), &ticket.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,7 +95,7 @@ func TestTicketClaim(t *testing.T) {
 		t.Error("Ticket not claimed")
 	}
 
-	exists, _, err := ticket.conn.Exists("tickets/" + strconv.FormatInt(id, 10) + "/claims/" + host)
+	exists, _, err := ticket.conn.Exists(fmt.Sprintf("tickets/%d/claims/%s", ticket.Id, host))
 	if !exists {
 		t.Error(err)
 	}
