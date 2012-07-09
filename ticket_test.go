@@ -29,6 +29,32 @@ func ticketSetup() (s Snapshot, hostname string) {
 	return
 }
 
+func TestTicketCreateTickets(t *testing.T) {
+	s, _ := ticketSetup()
+
+    c := make(chan bool)
+
+    for i := 0; i < 10; i++ {
+        go func() {
+	        _, err := CreateTicket("lol", "cat", "app", OpStart, s)
+            if err != nil {
+                t.Error(err)
+            }
+            c <- true
+        }()
+    }
+    for i := 0; i < 10; i++ {
+        <-c
+    }
+
+    rev, _ := s.conn.Rev()
+    dir, _ := s.conn.Getdir("/tickets", rev)
+
+    if len(dir) != 10 {
+        t.Errorf("tick creation failed: %d", len(dir))
+    }
+}
+
 func TestTicketCreateTicket(t *testing.T) {
 	s, _ := ticketSetup()
 
