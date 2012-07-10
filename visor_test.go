@@ -34,6 +34,9 @@ func TestScaleUp(t *testing.T) {
 	s.conn.Del("/", s.Rev)
 	s = s.FastForward(-1)
 
+	s.conn.Set("/apps/dog/revs/master/file", -1, []byte{})
+	s.conn.Set("/apps/dog/procs/lol", -1, []byte{})
+
 	err = Scale("dog", "master", "lol", 5, s)
 	if err != nil {
 		t.Error(err)
@@ -63,6 +66,9 @@ func TestScaleDown(t *testing.T) {
 	}
 	s.conn.Del("/", s.Rev)
 	s = s.FastForward(-1)
+
+	s.conn.Set("/apps/cat/revs/master/file", -1, []byte{})
+	s.conn.Set("/apps/cat/procs/lol", -1, []byte{})
 
 	p := fmt.Sprintf(SCALE_PATH_FMT, "cat", "master", "lol")
 	r, err := s.conn.Set(p, s.Rev, []byte("5"))

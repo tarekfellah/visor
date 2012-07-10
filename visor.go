@@ -34,6 +34,7 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 	"path"
 	"strconv"
 	"time"
@@ -120,6 +121,15 @@ func SetScale(app string, revision string, processName string, factor int, s Sna
 func Scale(app string, revision string, processName string, factor int, s Snapshot) (err error) {
 	if factor < 0 {
 		return errors.New("scaling factor needs to be a positive integer")
+	}
+
+	exists, _, err := s.conn.Exists(path.Join(APPS_PATH, app, REVS_PATH, revision))
+	if !exists || err != nil {
+		return fmt.Errorf("%s@%s not found", app, revision)
+	}
+	exists, _, err = s.conn.Exists(path.Join(APPS_PATH, app, PROCS_PATH, processName))
+	if !exists || err != nil {
+		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
 	op := OpStart
