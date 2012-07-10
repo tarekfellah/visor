@@ -26,7 +26,7 @@ func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 	path = c.prefixPath(path)
 	newrev, err = c.conn.Set(path, rev, value)
 	if err != nil {
-		if newrev == 0 {
+		if newrev == 0 { // err + newrev == 0: REV MISMATCH
 			_, newrev, _ = c.Stat(path)
 		}
 		err = errors.New(fmt.Sprintf("error setting file '%s' to '%s': %s", path, string(value), err.Error()))
