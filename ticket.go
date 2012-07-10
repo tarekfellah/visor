@@ -220,13 +220,14 @@ func HostTickets(addr string) ([]Ticket, error) {
 	return nil, nil
 }
 
-func WatchTicket(s Snapshot, listener chan *Ticket) (err error) {
+func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	rev := s.Rev
 
 	for {
 		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "status"), rev+1)
 		if err != nil {
-			return err
+			errors <- err
+			return
 		}
 		rev = ev.Rev
 
@@ -240,7 +241,6 @@ func WatchTicket(s Snapshot, listener chan *Ticket) (err error) {
 		}
 		listener <- ticket
 	}
-	return err
 }
 
 func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, err error) {

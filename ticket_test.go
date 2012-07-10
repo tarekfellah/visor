@@ -202,7 +202,7 @@ func TestTicketWatchCreate(t *testing.T) {
 	s, _ := ticketSetup()
 	l := make(chan *Ticket)
 
-	go WatchTicket(s, l)
+	go WatchTicket(s, l, make(chan error))
 
 	_, err := CreateTicket("lol", "cat", "app", OpStart, s)
 	if err != nil {
@@ -221,7 +221,7 @@ func TestTicketWatchUnclaim(t *testing.T) {
 		t.Error(err)
 	}
 
-	go WatchTicket(ticket.Snapshot, l)
+	go WatchTicket(ticket.Snapshot, l, make(chan error))
 
 	ticket, err = ticket.Claim("host")
 	if err != nil {
