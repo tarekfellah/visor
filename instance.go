@@ -129,6 +129,19 @@ func (i *Instance) Unregister() (err error) {
 	return
 }
 
+func (i *InstanceInfo) Unregister(s Snapshot) (err error) {
+	rev := s.Rev
+
+	p := path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Name)
+
+	err = s.conn.Del(p, rev)
+	if err != nil {
+		return
+	}
+	err = s.conn.Del(path.Join(INSTANCES_PATH, i.Name), rev)
+	return
+}
+
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
 func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
