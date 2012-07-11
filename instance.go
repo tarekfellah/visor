@@ -17,7 +17,6 @@ import (
 const (
 	InsStateInitial State = "initial"
 	InsStateStarted       = "started"
-	InsStateReady         = "ready"
 	InsStateFailed        = "failed"
 	InsStateDead          = "dead"
 	InsStateExited        = "exited"
