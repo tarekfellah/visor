@@ -213,7 +213,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 
 	go WatchEvent(s, l)
 
-	_, err = ins.UpdateState(InsStateReady)
+	_, err = ins.UpdateState(InsStateStarted)
 	if err != nil {
 		t.Error(err)
 	}
