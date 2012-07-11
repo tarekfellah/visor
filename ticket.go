@@ -127,15 +127,16 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 		return t, ErrTicketClaimed
 	}
 
+	_, err = t.conn.Set(t.prefixPath("status"), t.Rev, []byte(TicketStatusClaimed))
+	if err == nil {
+		t.Status = TicketStatusClaimed
+	}
+
 	rev, err := t.conn.Set(t.claimPath(host), t.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return t, err
 	}
 
-	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusClaimed))
-	if err == nil {
-		t.Status = TicketStatusClaimed
-	}
 	t.Snapshot = t.Snapshot.FastForward(rev)
 
 	return t, err
