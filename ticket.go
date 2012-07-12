@@ -129,9 +129,10 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 	}
 
 	_, err = t.conn.Set(t.prefixPath("status"), t.Rev, []byte(TicketStatusClaimed))
-	if err == nil {
-		t.Status = TicketStatusClaimed
+	if err != nil {
+		return t, err
 	}
+	t.Status = TicketStatusClaimed
 
 	rev, err := t.conn.Set(t.claimPath(host), t.Rev, []byte(time.Now().UTC().String()))
 	if err != nil {
