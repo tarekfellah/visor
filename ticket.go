@@ -70,6 +70,7 @@ const (
 	TicketStatusClaimed   TicketStatus = "claimed"
 	TicketStatusUnClaimed TicketStatus = "unclaimed"
 	TicketStatusDead      TicketStatus = "dead"
+	TicketStatusDone      TicketStatus = "done"
 )
 
 //                                                      procType        
@@ -186,7 +187,7 @@ func (t *Ticket) Done(host string) (err error) {
 
 	err = t.conn.Del(t.Path(), rev)
 	if err == nil {
-		t.Status = "done"
+		t.Status = TicketStatusDone
 	}
 	return
 }
@@ -242,6 +243,26 @@ func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 		}
 		listener <- ticket
 	}
+}
+
+func WaitTicketProcessed(s Snapshot, id string) (status TicketStatus, err error) {
+	var ev doozer.Event
+
+	rev := s.Rev
+
+	for {
+		ev, err = s.conn.Wait(path.Join(TICKETS_PATH, id, "status"), rev+1)
+		if err != nil || ev.IsDel() {
+			status = TicketStatusDone
+			break
+		}
+		if ev.IsSet() && TicketStatus(ev.Body) == TicketStatusDead {
+			status = TicketStatusDead
+			break
+		}
+		rev = ev.Rev
+	}
+	return
 }
 
 func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, err error) {
