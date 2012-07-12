@@ -159,8 +159,8 @@ func (i *Instance) Id() string {
 func (i *Instance) String() string {
 	return strings.Join([]string{
 		i.ProcType.App.Name,
-		string(i.ProcType.Name),
 		i.Revision.Ref,
+		string(i.ProcType.Name),
 		i.Addr.IP.String(),
 		fmt.Sprintf("%d", i.Addr.Port),
 	}, " ")
