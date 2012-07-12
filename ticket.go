@@ -245,13 +245,13 @@ func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	}
 }
 
-func WaitTicketProcessed(s Snapshot, id string) (status TicketStatus, err error) {
+func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) {
 	var ev doozer.Event
 
 	rev := s.Rev
 
 	for {
-		ev, err = s.conn.Wait(path.Join(TICKETS_PATH, id, "status"), rev+1)
+		ev, err = s.conn.Wait(fmt.Sprintf("/%s/%d/status", TICKETS_PATH, id), rev+1)
 		if err != nil || ev.IsDel() {
 			status = TicketStatusDone
 			break
