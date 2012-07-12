@@ -93,23 +93,16 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := i.conn.SetMulti(i.Path(), map[string][]byte{
-		"host":     []byte(i.Addr.IP.String()),
-		"port":     []byte(strconv.Itoa(i.Addr.Port)),
-		"state":    []byte(i.State),
-		"app":      []byte(i.ProcType.App.Name),
-		"proctype": []byte(string(i.ProcType.Name)),
-		"revision": []byte(i.Revision.Ref),
-	}, i.Rev)
+	rev, err := i.conn.Set(i.Path()+"/info", i.Rev, []byte(i.String()))
+	if err != nil {
+		return i, err
+	}
+	rev, err = i.conn.Set(i.Path()+"/state", i.Rev, []byte(i.State))
 	if err != nil {
 		return i, err
 	}
 	now := []byte(time.Now().UTC().String())
 
-	rev, err = i.conn.Set(i.Path()+"/registered", i.Rev, now)
-	if err != nil {
-		return i, err
-	}
 	rev, err = i.conn.Set(i.ProcType.InstancePath(i.Id()), i.Rev, now)
 	instance = i.FastForward(rev)
 
@@ -164,33 +157,44 @@ func (i *Instance) Id() string {
 }
 
 func (i *Instance) String() string {
-	return fmt.Sprintf("%#v", i)
+	return strings.Join([]string{
+		i.ProcType.App.Name,
+		i.Revision.Ref,
+		string(i.ProcType.Name),
+		i.Addr.IP.String(),
+		fmt.Sprintf("%d", i.Addr.Port),
+	}, " ")
 }
 
 // GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.
 func GetInstanceInfo(s Snapshot, insName string) (ins *InstanceInfo, err error) {
-	keys := []string{"app", "host", "port", "proctype", "revision", "state"}
 	p := path.Join(INSTANCES_PATH, insName)
 
-	vals, err := s.conn.GetMulti(p, keys, s.FastForward(-1).Rev)
+	state, _, err := s.conn.Get(p+"/state", nil)
 	if err != nil {
 		return
 	}
 
-	port, err := strconv.Atoi(string(vals["port"]))
+	info, _, err := s.conn.Get(p+"/info", nil)
+	if err != nil {
+		return
+	}
+	fields := strings.Fields(string(info))
+
+	port, err := strconv.Atoi(string(fields[4]))
 	if err != nil {
 		return
 	}
 
 	ins = &InstanceInfo{
 		Name:         insName,
-		AppName:      string(vals["app"]),
-		Host:         string(vals["host"]),
+		AppName:      fields[0],
+		RevisionName: fields[1],
+		ProcessName:  ProcessName(fields[2]),
+		Host:         fields[3],
 		Port:         port,
-		ProcessName:  ProcessName(vals["proctype"]),
-		RevisionName: string(vals["revision"]),
-		ServiceName:  string(vals["app"]) + "-" + string(vals["proctype"]),
-		State:        State(string(vals["state"])),
+		ServiceName:  fields[0] + "-" + fields[2],
+		State:        State(state),
 	}
 
 	return

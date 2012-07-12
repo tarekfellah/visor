@@ -89,6 +89,26 @@ func TestInstanceRegister(t *testing.T) {
 	}
 }
 
+func TestGetInstanceInfo(t *testing.T) {
+	ins := instanceSetup("localhost:9494", "web")
+	_, err := ins.Register()
+	if err != nil {
+		t.Errorf("Instance registration failed: %s", err)
+	}
+	i, err := GetInstanceInfo(ins.Snapshot, ins.Id())
+	if err != nil {
+		t.Error(err)
+	}
+	if i.Name != ins.Id() ||
+		i.Port != ins.Addr.Port ||
+		i.RevisionName != ins.Revision.Ref ||
+		i.AppName != ins.ProcType.App.Name ||
+		i.ProcessName != ins.ProcType.Name ||
+		i.Host != ins.Addr.IP.String() {
+		t.Error("InstanceInfo fields don't match Instance")
+	}
+}
+
 func TestInstanceUnregister(t *testing.T) {
 	ins := instanceSetup("localhost:54321", "worker")
 
