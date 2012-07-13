@@ -10,10 +10,9 @@ import (
 )
 
 var (
-	ErrKeyConflict   = errors.New("key is already set")
-	ErrTicketClaimed = errors.New("ticket already claimed")
-	ErrUnauthorized  = errors.New("operation is not permitted")
-	ErrInvalidState  = errors.New("invalid state")
+	ErrKeyConflict  = errors.New("key is already set")
+	ErrUnauthorized = errors.New("operation is not permitted")
+	ErrInvalidState = errors.New("invalid state")
 )
 
 type Error struct{}
