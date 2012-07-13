@@ -141,7 +141,7 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 		return t, err
 	}
 	if TicketStatus(status) != TicketStatusUnClaimed {
-		return t, ErrTicketClaimed
+		return t, fmt.Errorf("ticket status is '%s'", string(status))
 	}
 
 	_, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusClaimed))
