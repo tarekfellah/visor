@@ -88,6 +88,18 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 	return t.Create()
 }
 
+// FastForward advances the ticket in time. It returns
+// a new instance of Ticket with the supplied revision.
+func (t *Ticket) FastForward(rev int64) *Ticket {
+	return t.Snapshot.fastForward(t, rev).(*Ticket)
+}
+
+func (t *Ticket) createSnapshot(rev int64) Snapshotable {
+	tmp := *t
+	tmp.Snapshot = Snapshot{rev, t.conn}
+	return &tmp
+}
+
 func (t *Ticket) Create() (tt *Ticket, err error) {
 	tt = t
 
@@ -110,7 +122,11 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 
 // Claims returns the list of claimers
 func (t *Ticket) Claims() (claims []string, err error) {
-	claims, err = t.conn.Getdir(t.prefixPath("claims"), t.Rev)
+	rev, err := t.conn.Rev()
+	if err != nil {
+		return
+	}
+	claims, err = t.conn.Getdir(t.prefixPath("claims"), rev)
 	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
 		claims = []string{}
 		err = nil
@@ -118,59 +134,68 @@ func (t *Ticket) Claims() (claims []string, err error) {
 	return
 }
 
-// Claim locks the Ticket to the passed host.
+// Claim locks the Ticket to the specified host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
-	status, _, err := t.conn.Get(t.prefixPath("status"), &t.Rev)
+	status, rev, err := t.conn.Get(t.prefixPath("status"), nil)
 	if err != nil {
 		return t, err
 	}
-	if TicketStatus(status) == TicketStatusClaimed {
+	if TicketStatus(status) != TicketStatusUnClaimed {
 		return t, ErrTicketClaimed
 	}
 
-	_, err = t.conn.Set(t.prefixPath("status"), t.Rev, []byte(TicketStatusClaimed))
+	_, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusClaimed))
 	if err != nil {
 		return t, err
 	}
 	t.Status = TicketStatusClaimed
 
-	rev, err := t.conn.Set(t.claimPath(host), t.Rev, []byte(time.Now().UTC().String()))
+	rev, err = t.conn.Set(t.claimPath(host), rev, []byte(time.Now().UTC().String()))
 	if err != nil {
 		return t, err
 	}
 
-	t.Snapshot = t.Snapshot.FastForward(rev)
-
-	return t, err
+	return t.FastForward(rev), err
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
-func (t *Ticket) Unclaim(host string) (err error) {
+func (t *Ticket) Unclaim(host string) (t1 *Ticket, err error) {
 	exists, _, err := t.conn.Exists(t.claimPath(host))
 	if !exists {
-		return ErrUnauthorized
+		return t, ErrUnauthorized
+	}
+	status, rev, err := t.conn.Get(t.prefixPath("status"), nil)
+	if err != nil {
+		return t, err
+	}
+	if TicketStatus(status) != TicketStatusClaimed {
+		return t, fmt.Errorf("can't unclaim ticket, status is '%s'", status)
 	}
 
-	_, err = t.conn.Set(t.prefixPath("status"), -1, []byte(TicketStatusUnClaimed))
-	if err == nil {
-		t.Status = TicketStatusUnClaimed
+	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusUnClaimed))
+	if err != nil {
+		return t, err
 	}
-	// TODO: Return new snapshot
+	t.Status = TicketStatusUnClaimed
+	t1 = t.FastForward(rev)
+
 	return
 }
 
 // Dead marks the ticket as "dead"
-func (t *Ticket) Dead(host string) (err error) {
-	exists, rev, err := t.conn.Exists(t.claimPath(host))
+func (t *Ticket) Dead(host string) (t1 *Ticket, err error) {
+	exists, _, err := t.conn.Exists(t.claimPath(host))
 	if !exists {
-		return ErrUnauthorized
+		return t, ErrUnauthorized
 	}
 
-	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusDead))
-	if err == nil {
-		t.Status = TicketStatusDead
+	rev, err := t.conn.Set(t.prefixPath("status"), -1, []byte(TicketStatusDead))
+	if err != nil {
+		return t, err
 	}
-	// TODO: Return new snapshot
+	t.Status = TicketStatusDead
+	t1 = t.FastForward(rev)
+
 	return
 }
 

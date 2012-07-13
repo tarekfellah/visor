@@ -123,9 +123,13 @@ func TestTicketUnclaim(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+	rev, err = s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/status", s.Rev, []byte("claimed"))
+	if err != nil {
+		t.Error(err)
+	}
 
 	ticket.Snapshot = ticket.Snapshot.FastForward(rev)
-	err = ticket.Unclaim(host)
+	_, err = ticket.Unclaim(host)
 	if err != nil {
 		t.Error(err)
 	}
@@ -150,7 +154,7 @@ func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	}
 
 	ticket.Snapshot = ticket.Snapshot.FastForward(rev)
-	err = ticket.Unclaim("foo.bar.local")
+	_, err = ticket.Unclaim("foo.bar.local")
 	if err != ErrUnauthorized {
 		t.Error("ticket unclaimed with wrong lock")
 	}
@@ -229,7 +233,7 @@ func TestTicketWatchUnclaim(t *testing.T) {
 		return
 	}
 
-	err = ticket.Unclaim("host")
+	_, err = ticket.Unclaim("host")
 	if err != nil {
 		t.Error(err)
 		return
