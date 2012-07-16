@@ -3,8 +3,9 @@ _obj
 example/example
 bin
 *.swp
-cmd/visor
-.go_path
+visor/visor
+.gopath
 tags
-cmd/visorcli.go-e
-visor.rb-e
+*-e
+go.mk
+.release

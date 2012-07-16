@@ -5,12 +5,12 @@ class Visor < Formula
   url 'https://github.com/soundcloud/visor/zipball/master'
   #md5 'd01e901a9bd781d0104990b2ece77bf0'
   depends_on 'go'
-  version '0.3.1'
+  version '0.3.2'
   skip_clean 'bin'
 
 
   def install
-    system "make local_build"
+    system "make gobuild"
     system "make DESTDIR=#{prefix} install"
   end
 
