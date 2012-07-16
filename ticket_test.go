@@ -109,7 +109,7 @@ func TestTicketClaim(t *testing.T) {
 	}
 
 	_, err = ticket.Claim(host)
-	if err != ErrTicketClaimed {
+	if err == nil {
 		t.Error("Ticket claimed twice")
 	}
 }
@@ -176,11 +176,11 @@ func TestTicketDone(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err := s.conn.Exists(p)
+	val, _, err := s.conn.Get(p+"/status", nil)
 	if err != nil {
 		t.Error(err)
 	}
-	if exists {
+	if TicketStatus(val) != TicketStatusDone {
 		t.Error("ticket not resolved")
 	}
 }

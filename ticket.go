@@ -211,7 +211,7 @@ func (t *Ticket) Done(host string) (err error) {
 		rev = t.Rev
 	}
 
-	err = t.conn.Del(t.Path(), rev)
+	t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusDone))
 	if err == nil {
 		t.Status = TicketStatusDone
 	}
@@ -278,7 +278,10 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) 
 
 	for {
 		ev, err = s.conn.Wait(fmt.Sprintf("/%s/%d/status", TICKETS_PATH, id), rev+1)
-		if err != nil || ev.IsDel() {
+		if err != nil {
+			return
+		}
+		if ev.IsSet() && TicketStatus(ev.Body) == TicketStatusDone {
 			status = TicketStatusDone
 			break
 		}
