@@ -1,4 +1,5 @@
-bin/visor: bin gofmt update_version
+bin/visor: gofmt update_version
+	mkdir -p bin
 	go build
 	go build -o bin/visor ./visor
 
