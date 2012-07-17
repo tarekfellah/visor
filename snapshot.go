@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"fmt"
 	"github.com/soundcloud/doozer"
 )
 
@@ -58,8 +59,36 @@ func DialUri(uri string, root string) (s Snapshot, err error) {
 	return
 }
 
-func (s Snapshot) Conn() *Conn {
-	return s.conn
+// Exists checks if the specified path exists at this snapshot's revision
+func (s Snapshot) Exists(path string) (bool, int64, error) {
+	return s.conn.Exists(path)
+}
+
+// Getdir returns the list of files in the specified directory, at this snapshot's revision
+func (s Snapshot) Getdir(path string) ([]string, error) {
+	return s.conn.Getdir(path, s.Rev)
+}
+
+// Set sets the specfied path's body to the passed value, at this snapshot's revision
+func (s Snapshot) Set(path string, val string) (int64, error) {
+	return s.conn.Set(path, s.Rev, []byte(val))
+}
+
+// Del deletes the file at the specified path, at this snapshot's revision
+func (s Snapshot) Del(path string) error {
+	return s.conn.Del(path, s.Rev)
+}
+
+// Update checks if the specified path exists, and if so, does a (*Snapshot).Set with the passed value.
+func (s Snapshot) Update(path string, val string) (rev int64, err error) {
+	exists, rev, err := s.Exists(path)
+	if err != nil {
+		return
+	}
+	if !exists {
+		return 0, fmt.Errorf("path %s doesn't exist", path)
+	}
+	return s.Set(path, val)
 }
 
 func (s Snapshot) createSnapshot(rev int64) Snapshotable {
