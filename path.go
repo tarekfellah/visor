@@ -17,14 +17,14 @@ func (p *Path) Del(key string) error {
 	return p.Snapshot.Del(p.Prefix(key))
 }
 
-func (p *Path) Prefix(path string, paths ...string) (fixed string) {
+func (p *Path) Prefix(path string, paths ...string) (result string) {
 	if path == "/" {
-		fixed = p.Dir
+		result = p.Dir
 	} else {
-		fixed = p.Dir + "/" + path
+		result = p.Dir + "/" + path
 	}
 	for _, p := range paths {
-		fixed += "/" + p
+		result += "/" + p
 	}
 	return
 }
