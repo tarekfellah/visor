@@ -22,7 +22,7 @@ func appSetup(name string) (app *App) {
 		panic(err)
 	}
 
-	app = &App{Name: name, RepoUrl: "git://cat.git", Stack: "whiskers", Snapshot: s, Env: Env{}}
+	app = NewApp(name, "git://cat.git", "whiskers", s)
 	app = app.FastForward(rev)
 
 	return
@@ -31,7 +31,7 @@ func appSetup(name string) (app *App) {
 func TestAppRegistration(t *testing.T) {
 	app := appSetup("lolcatapp")
 
-	check, _, err := app.conn.Exists(app.Path())
+	check, _, err := app.conn.Exists(app.Path.Dir)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,7 @@ func TestAppRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = app2.conn.Exists(app.Path())
+	check, _, err = app2.conn.Exists(app.Path.Dir)
 	if err != nil {
 		t.Error(err)
 		return
@@ -104,7 +104,7 @@ func TestAppUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := app.conn.Exists(app.Path())
+	check, _, err := app.conn.Exists(app.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -215,7 +215,7 @@ func TestApps(t *testing.T) {
 	names := []string{"cat", "dog", "lol"}
 
 	for i := range names {
-		a := NewApp(names[i], "zebra", "joke", app.Snapshot)
+		a := NewApp(names[i], "zebra", "joke", app.Path.Snapshot)
 		_, err := a.Register()
 		if err != nil {
 			t.Error(err)

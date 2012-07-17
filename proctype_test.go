@@ -41,7 +41,7 @@ func TestProcTypeRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(pty.Path())
+	check, _, err := s.conn.Exists(pty.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,7 +64,7 @@ func TestProcTypeUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.Exists(pty.Path())
+	check, _, err := s.Exists(pty.Path.Dir)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
 	}

@@ -20,7 +20,7 @@ const SERVICE_PROC_DEFAULT = "web"
 type Env map[string]string
 
 type App struct {
-	Snapshot
+	Path
 	Name       string
 	RepoUrl    string
 	Stack      Stack
@@ -30,7 +30,8 @@ type App struct {
 
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Snapshot: snapshot, Env: Env{}}
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
+	app.Path = Path{snapshot, path.Join(APPS_PATH, app.Name)}
 
 	return
 }
@@ -49,7 +50,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 
 // Register adds the App to the global process state.
 func (a *App) Register() (app *App, err error) {
-	exists, _, err := a.conn.Exists(a.Path())
+	exists, _, err := a.conn.Exists(a.Path.Dir)
 	if err != nil {
 		return nil, fmt.Errorf("application '%s' is already registered", a.Name)
 	}
@@ -61,7 +62,7 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	attrs := &File{a.Snapshot, a.Path() + "/attrs", map[string]interface{}{
+	attrs := &File{a.Snapshot, a.Path.Prefix("attrs"), map[string]interface{}{
 		"repo-url":    a.RepoUrl,
 		"stack":       string(a.Stack),
 		"deploy-type": a.DeployType,
@@ -79,7 +80,7 @@ func (a *App) Register() (app *App, err error) {
 		}
 	}
 
-	rev, err := a.setPath("registered", time.Now().UTC().String())
+	rev, err := a.Set("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -91,12 +92,12 @@ func (a *App) Register() (app *App, err error) {
 
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() error {
-	return a.Del(a.Path())
+	return a.Del("/")
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.Getdir(a.Path() + "/env")
+	varNames, err := a.Getdir(a.Path.Prefix("env"))
 
 	vars = Env{}
 
@@ -125,7 +126,7 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	k = strings.Replace(k, "_", "-", -1)
-	val, _, err := a.Get(a.Path() + "/env/" + k)
+	val, _, err := a.Get("env/" + k)
 	if err != nil {
 		return
 	}
@@ -136,7 +137,7 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
-	rev, err := a.setPath("env/"+strings.Replace(k, "_", "-", -1), v)
+	rev, err := a.Set("env/"+strings.Replace(k, "_", "-", -1), v)
 	if err != nil {
 		return
 	}
@@ -149,7 +150,7 @@ func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
 
 // DelEnvironmentVar removes the env variable for the given key.
 func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
-	err = a.delPath("env/" + k)
+	err = a.Del("env/" + k)
 	if err != nil {
 		return
 	}
@@ -159,7 +160,7 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
-	p := path.Join(a.Path(), PROCS_PATH)
+	p := a.Path.Prefix(PROCS_PATH)
 
 	exists, _, err := a.conn.Exists(p)
 	if err != nil || !exists {
@@ -193,27 +194,11 @@ func (a *App) Inspect() string {
 	return fmt.Sprintf("%#v", a)
 }
 
-// Path returns the path for the App in the global process state.
-func (a *App) Path() (p string) {
-	return path.Join(APPS_PATH, a.Name)
-}
-
-func (a *App) prefixPath(p string) string {
-	return path.Join(a.Path(), p)
-}
-
-func (a *App) setPath(k string, v string) (rev int64, err error) {
-	return a.Set(a.prefixPath(k), v)
-}
-func (a *App) delPath(k string) error {
-	return a.Del(a.prefixPath(k))
-}
-
 // GetApp fetches an app with the given name.
 func GetApp(s Snapshot, name string) (app *App, err error) {
 	app = NewApp(name, "", "", s)
 
-	f, err := Get(s, app.Path()+"/attrs", new(JSONCodec))
+	f, err := Get(s, app.Path.Prefix("attrs"), new(JSONCodec))
 	if err != nil {
 		return nil, err
 	}

@@ -27,7 +27,7 @@ func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
 
 	s = s.FastForward(rev)
 
-	app = &App{Name: name, RepoUrl: "git://" + name, Stack: Stack(name + "stack"), Snapshot: s}
+	app = NewApp(name, "git://"+name, Stack(name+"stack"), s)
 	l = make(chan *Event)
 
 	return

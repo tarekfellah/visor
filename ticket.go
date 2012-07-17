@@ -17,7 +17,7 @@ import (
 
 // Ticket carries instructions to start and stop Instances.
 type Ticket struct {
-	Snapshot
+	Path
 	Id           int64
 	AppName      string
 	RevisionName string
@@ -81,9 +81,9 @@ func CreateTicket(appName string, revName string, pName ProcessName, op Operatio
 		RevisionName: revName,
 		ProcessName:  pName,
 		Op:           op,
-		Snapshot:     s,
 		source:       nil,
 		Status:       TicketStatusUnClaimed,
+		Path:         Path{s, "<invalid-path>"},
 	}
 	return t.Create()
 }
@@ -108,12 +108,13 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 		return
 	}
 	t.Id = id
+	t.Path.Dir = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 
-	f, err := CreateFile(t.Snapshot, t.prefixPath("op"), t.toArray(), new(ListCodec))
+	f, err := CreateFile(t.Snapshot, t.Path.Prefix("op"), t.toArray(), new(ListCodec))
 	if err != nil {
 		return
 	}
-	f, err = CreateFile(t.Snapshot, t.prefixPath("status"), string(t.Status), new(StringCodec))
+	f, err = CreateFile(t.Snapshot, t.Path.Prefix("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.Rev)
 	}
@@ -126,7 +127,7 @@ func (t *Ticket) Claims() (claims []string, err error) {
 	if err != nil {
 		return
 	}
-	claims, err = t.conn.Getdir(t.prefixPath("claims"), rev)
+	claims, err = t.conn.Getdir(t.Path.Prefix("claims"), rev)
 	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
 		claims = []string{}
 		err = nil
@@ -136,7 +137,7 @@ func (t *Ticket) Claims() (claims []string, err error) {
 
 // Claim locks the Ticket to the specified host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
-	status, rev, err := t.conn.Get(t.prefixPath("status"), nil)
+	status, rev, err := t.conn.Get(t.Path.Prefix("status"), nil)
 	if err != nil {
 		return t, err
 	}
@@ -144,7 +145,7 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 		return t, fmt.Errorf("ticket status is '%s'", string(status))
 	}
 
-	_, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusClaimed))
+	_, err = t.conn.Set(t.Path.Prefix("status"), rev, []byte(TicketStatusClaimed))
 	if err != nil {
 		return t, err
 	}
@@ -164,7 +165,7 @@ func (t *Ticket) Unclaim(host string) (t1 *Ticket, err error) {
 	if !exists {
 		return t, ErrUnauthorized
 	}
-	status, rev, err := t.conn.Get(t.prefixPath("status"), nil)
+	status, rev, err := t.conn.Get(t.Path.Prefix("status"), nil)
 	if err != nil {
 		return t, err
 	}
@@ -172,7 +173,7 @@ func (t *Ticket) Unclaim(host string) (t1 *Ticket, err error) {
 		return t, fmt.Errorf("can't unclaim ticket, status is '%s'", status)
 	}
 
-	rev, err = t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusUnClaimed))
+	rev, err = t.conn.Set(t.Path.Prefix("status"), rev, []byte(TicketStatusUnClaimed))
 	if err != nil {
 		return t, err
 	}
@@ -189,7 +190,7 @@ func (t *Ticket) Dead(host string) (t1 *Ticket, err error) {
 		return t, ErrUnauthorized
 	}
 
-	rev, err := t.conn.Set(t.prefixPath("status"), -1, []byte(TicketStatusDead))
+	rev, err := t.conn.Set(t.Path.Prefix("status"), -1, []byte(TicketStatusDead))
 	if err != nil {
 		return t, err
 	}
@@ -211,7 +212,7 @@ func (t *Ticket) Done(host string) (err error) {
 		rev = t.Rev
 	}
 
-	t.conn.Set(t.prefixPath("status"), rev, []byte(TicketStatusDone))
+	t.conn.Set(t.Path.Prefix("status"), rev, []byte(TicketStatusDone))
 	if err == nil {
 		t.Status = TicketStatusDone
 	}
@@ -228,16 +229,8 @@ func (t *Ticket) IdString() string {
 	return fmt.Sprintf("TICKET[%d]", t.Id)
 }
 
-func (t *Ticket) Path() string {
-	return path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
-}
-
-func (t *Ticket) prefixPath(aPath string) string {
-	return path.Join(t.Path(), aPath)
-}
-
 func (t *Ticket) claimPath(host string) string {
-	return t.prefixPath("claims/" + host)
+	return t.Path.Prefix("claims", host)
 }
 
 func Tickets() ([]Ticket, error) {
@@ -301,7 +294,9 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 		return nil, fmt.Errorf("ticket id %s can't be parsed as an int64", idStr)
 	}
 
-	f, err := Get(snapshot, path.Join(TICKETS_PATH, idStr, "op"), new(ListCodec))
+	p := path.Join(TICKETS_PATH, idStr)
+
+	f, err := Get(snapshot, path.Join(p, "op"), new(ListCodec))
 	if err != nil {
 		return t, err
 	}
@@ -313,7 +308,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 		RevisionName: data[1],
 		ProcessName:  ProcessName(data[2]),
 		Op:           NewOperationType(data[3]),
-		Snapshot:     snapshot,
+		Path:         Path{snapshot, p},
 		source:       ev}
 	return t, err
 }
