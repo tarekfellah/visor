@@ -17,7 +17,7 @@ PKG=github.com/soundcloud/visor
 SUB_PKG=github.com/soundcloud/visor/visor
 include go.mk
 
-build: clean update_version debroot debbuild
+build: clean debroot debbuild
 
 ########## packaging
 DEB_NAME=visor
