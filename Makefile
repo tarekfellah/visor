@@ -3,7 +3,7 @@ bin/visor: gofmt update_version
 	go build
 	go build -o bin/visor ./visor
 
-install: gobuild
+install: update_version gobuild
 	mkdir -p $${DESTDIR-/usr/local}/bin
 	cp bin/visor $${DESTDIR-/usr/local}/bin
 
