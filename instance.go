@@ -93,17 +93,17 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := i.conn.Set(i.Path()+"/info", i.Rev, []byte(i.String()))
+	rev, err := i.Set(i.Path()+"/info", i.String())
 	if err != nil {
 		return i, err
 	}
-	rev, err = i.conn.Set(i.Path()+"/state", i.Rev, []byte(i.State))
+	rev, err = i.Set(i.Path()+"/state", string(i.State))
 	if err != nil {
 		return i, err
 	}
-	now := []byte(time.Now().UTC().String())
+	now := time.Now().UTC().String()
 
-	rev, err = i.conn.Set(i.ProcType.InstancePath(i.Id()), i.Rev, now)
+	rev, err = i.Set(i.ProcType.InstancePath(i.Id()), now)
 	instance = i.FastForward(rev)
 
 	return
@@ -111,33 +111,29 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	rev := i.Rev
-
-	err = i.conn.Del(i.ProcType.InstancePath(i.Id()), rev)
+	err = i.Del(i.ProcType.InstancePath(i.Id()))
 	if err != nil {
 		return
 	}
-	err = i.conn.Del(i.Path(), rev)
+	err = i.Del(i.Path())
 	return
 }
 
 func (i *InstanceInfo) Unregister(s Snapshot) (err error) {
-	rev := s.Rev
-
 	p := path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Name)
 
-	err = s.conn.Del(p, rev)
+	err = s.Del(p)
 	if err != nil {
 		return
 	}
-	err = s.conn.Del(path.Join(INSTANCES_PATH, i.Name), rev)
+	err = s.Del(path.Join(INSTANCES_PATH, i.Name))
 	return
 }
 
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
 func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
-	newrev, err := i.conn.Set(i.Path()+"/state", i.Rev, []byte(s))
+	newrev, err := i.Set(i.Path()+"/state", string(s))
 	if err != nil {
 		return
 	}

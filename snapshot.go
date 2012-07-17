@@ -61,7 +61,13 @@ func DialUri(uri string, root string) (s Snapshot, err error) {
 
 // Exists checks if the specified path exists at this snapshot's revision
 func (s Snapshot) Exists(path string) (bool, int64, error) {
-	return s.conn.Exists(path)
+	return s.conn.ExistsRev(path, &s.Rev)
+}
+
+// Get returns the value at the specified path, at this snapshot's revision
+func (s Snapshot) Get(path string) (string, int64, error) {
+	val, rev, err := s.conn.Get(path, &s.Rev)
+	return string(val), rev, err
 }
 
 // Getdir returns the list of files in the specified directory, at this snapshot's revision

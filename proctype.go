@@ -60,7 +60,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return p, err
 	}
 
-	rev, err := p.conn.Set(p.Path()+"/registered", p.Rev, []byte(time.Now().UTC().String()))
+	rev, err := p.Set(p.Path()+"/registered", time.Now().UTC().String())
 
 	if err != nil {
 		return p, err
@@ -72,7 +72,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 
 // Unregister unregisters a proctype from the registry.
 func (p *ProcType) Unregister() (err error) {
-	return p.conn.Del(p.Path(), p.Rev)
+	return p.Del(p.Path())
 }
 
 func (p *ProcType) Path() string {
@@ -93,7 +93,7 @@ func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 		return
 	}
 
-	ins, err = p.conn.Getdir(p.InstancesPath(), p.Snapshot.FastForward(-1).Rev)
+	ins, err = p.FastForward(-1).Getdir(p.InstancesPath())
 	if err != nil {
 		return
 	}

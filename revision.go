@@ -51,11 +51,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(r.ArchiveUrl))
+	rev, err := r.Set(r.Path()+"/archive-url", r.ArchiveUrl)
 	if err != nil {
 		return
 	}
-	rev, err = r.conn.Set(r.Path()+"/registered", r.Rev, []byte(time.Now().UTC().String()))
+	rev, err = r.Set(r.Path()+"/registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -67,11 +67,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister() (err error) {
-	return r.conn.Del(r.Path(), r.Rev)
+	return r.Del(r.Path())
 }
 
 func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	rev, err := r.conn.Set(r.Path()+"/archive-url", r.Rev, []byte(url))
+	rev, err := r.Set(r.Path()+"/archive-url", url)
 	if err != nil {
 		return
 	}
@@ -133,7 +133,7 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	refs, err := s.conn.Getdir(app.Path()+"/revs", s.Rev)
+	refs, err := s.Getdir(app.Path() + "/revs")
 	if err != nil {
 		return
 	}

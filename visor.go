@@ -52,7 +52,7 @@ type Stack string
 type State string
 
 func Init(s Snapshot) (rev int64, err error) {
-	exists, _, err := s.Exists(START_PORT_PATH)
+	exists, _, err := s.conn.Exists(START_PORT_PATH)
 	if err != nil {
 		return
 	}
@@ -114,7 +114,7 @@ func GetScale(app string, revision string, processName string, s Snapshot) (scal
 
 func SetScale(app string, revision string, processName string, factor int, s Snapshot) (rev int64, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
-	rev, err = s.conn.Set(path, s.Rev, []byte(strconv.Itoa(factor)))
+	rev, err = s.Set(path, strconv.Itoa(factor))
 	return
 }
 

@@ -44,7 +44,7 @@ func (f *File) FastForward(rev int64) *File {
 
 // Del deletes a file
 func (f *File) Del() error {
-	return f.conn.Del(f.Path, f.Rev)
+	return f.Snapshot.Del(f.Path)
 }
 
 // Create creates a file from its Value attribute

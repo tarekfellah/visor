@@ -91,12 +91,12 @@ func (a *App) Register() (app *App, err error) {
 
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() error {
-	return a.conn.Del(a.Path(), a.Rev)
+	return a.Del(a.Path())
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.conn.Getdir(a.Path()+"/env", a.Rev)
+	varNames, err := a.Getdir(a.Path() + "/env")
 
 	vars = Env{}
 
@@ -125,7 +125,7 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	k = strings.Replace(k, "_", "-", -1)
-	val, _, err := a.conn.Get(a.Path()+"/env/"+k, &a.Rev)
+	val, _, err := a.Get(a.Path() + "/env/" + k)
 	if err != nil {
 		return
 	}
@@ -166,7 +166,7 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 		return
 	}
 
-	pNames, err := a.conn.Getdir(p, a.Snapshot.FastForward(-1).Rev)
+	pNames, err := a.FastForward(-1).Getdir(p)
 	if err != nil {
 		return
 	}
@@ -203,10 +203,10 @@ func (a *App) prefixPath(p string) string {
 }
 
 func (a *App) setPath(k string, v string) (rev int64, err error) {
-	return a.conn.Set(a.prefixPath(k), a.Rev, []byte(v))
+	return a.Set(a.prefixPath(k), v)
 }
 func (a *App) delPath(k string) error {
-	return a.conn.Del(a.prefixPath(k), a.Rev)
+	return a.Del(a.prefixPath(k))
 }
 
 // GetApp fetches an app with the given name.
@@ -234,7 +234,7 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	names, err := s.conn.Getdir(APPS_PATH, s.FastForward(-1).Rev)
+	names, err := s.FastForward(-1).Getdir(APPS_PATH)
 	if err != nil {
 		return
 	}
