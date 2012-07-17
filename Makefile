@@ -17,7 +17,7 @@ PKG=github.com/soundcloud/visor
 SUB_PKG=github.com/soundcloud/visor/visor
 include go.mk
 
-build: clean update_version gobuild debroot debbuild
+build: clean update_version debroot debbuild
 
 ########## packaging
 DEB_NAME=visor
@@ -29,8 +29,7 @@ DEB_MAINTAINER=Daniel Bornkessel <daniel@soundcloud.com>
 include deb.mk
 
 debroot:
-	mkdir -p $(DEB_ROOT)/usr/bin
-	cp bin/visor $(DEB_ROOT)/usr/bin
+	DESTDIR=$(DEB_ROOT) $(MAKE) install
 
 clean: goclean debclean
 	rm -rf bin $(DEB_ROOT)
