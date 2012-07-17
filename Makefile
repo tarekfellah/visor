@@ -19,27 +19,20 @@ PKG=github.com/soundcloud/visor
 SUB_PKG=github.com/soundcloud/visor/visor
 include go.mk
 
-build: package
+build: clean update_version gobuild debroot debbuild
 
 ########## packaging
-FPM_EXECUTABLE:=$$(dirname $$(dirname $$(gem which fpm)))/bin/fpm
-FPM_ARGS=-t deb -m 'Visor authors (see page), Daniel Bornkessel <daniel@soundcloud.com> (packaging)' --url http://github.com/soundcloud/visor -s dir
-FAKEROOT=fakeroot
-RELEASE=$$(cat .release 2>/dev/null || echo "0")
+DEB_NAME=visor
+DEB_URL=http://github.com/soundcloud/visor
+DEB_VERSION=$$(cat VERSION)
+DEB_DESCRIPTION=visor cli
+DEB_MAINTAINER=Daniel Bornkessel <daniel@soundcloud.com>
 
-package: fmt update_version goclean gobuild bump_package_release
-	- mkdir -p $(FAKEROOT)/usr/bin
-	cp bin/visor $(FAKEROOT)/usr/bin
-	-rm *.deb
+include deb.mk
 
-	$(FPM_EXECUTABLE) -n "visor" \
-		-C $(FAKEROOT) \
-		--description "visor cli" \
-		$(FPM_ARGS) -t deb -v $$(cat VERSION) --iteration $(RELEASE) .;
+debroot:
+	mkdir -p $(DEB_ROOT)/usr/bin
+	cp bin/visor $(DEB_ROOT)/usr/bin
 
-
-bump_package_release:
-		echo $$(( $(RELEASE) + 1 )) > .release
-
-clean: goclean
-	rm -rf bin $(FAKEROOT)
+clean: goclean debclean
+	rm -rf bin $(DEB_ROOT)

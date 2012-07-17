@@ -9,3 +9,5 @@ tags
 *-e
 go.mk
 .release
+.pkgignore
+
