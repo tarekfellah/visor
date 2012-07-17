@@ -25,7 +25,7 @@ PKG_GOPATH=$(LOCAL_GOPATH)/src/$(PKG)
 unexport GIT_DIR
 
 
-gobuild:
+gobuild: gofmt
 	mkdir -p $$(dirname $(PKG_GOPATH)); \
 	ln -sfn $${PWD} $(PKG_GOPATH); \
 	cd $(PKG_GOPATH);\
@@ -33,6 +33,9 @@ gobuild:
 	  GOPATH=$(LOCAL_GOPATH) go get -v -d;\
 	  GOPATH=$(LOCAL_GOPATH) GOBIN=$${PWD}/bin go install -v $(PKG); \
 	  test -z "$(SUB_PKG)" || GOPATH=$(LOCAL_GOPATH) GOBIN=$${PWD}/bin go install -v $(SUB_PKG); \
+
+gofmt:
+	GOPATH=$(LOCAL_GOPATH) go fmt ./...
 
 gocheck:
 	@test -n "$(PKG)" || { echo "PKG variable must be set to package name" && exit 1; }

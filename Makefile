@@ -1,13 +1,10 @@
-bin/visor: bin fmt update_version
+bin/visor: bin gofmt update_version
 	go build
 	go build -o bin/visor ./visor
 
 install: gobuild
 	mkdir -p $${DESTDIR-/usr/local}/bin
 	cp bin/visor $${DESTDIR-/usr/local}/bin
-
-fmt:
-	go fmt ./...
 
 update_version:
 	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" visor/main.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" visor/main.go
