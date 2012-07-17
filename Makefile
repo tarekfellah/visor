@@ -23,7 +23,7 @@ build: clean update_version debroot debbuild
 DEB_NAME=visor
 DEB_URL=http://github.com/soundcloud/visor
 DEB_VERSION=$$(cat VERSION)
-DEB_DESCRIPTION=visor cli
+DEB_DESCRIPTION=A command line interface for visor
 DEB_MAINTAINER=Daniel Bornkessel <daniel@soundcloud.com>
 
 include deb.mk
