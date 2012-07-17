@@ -34,7 +34,7 @@ func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
 	rev := NewRevision(app, "stable", app.Snapshot)
 
-	check, _, err := s.conn.Exists(rev.Path())
+	check, _, err := s.conn.Exists(rev.Path.Dir)
 	if err != nil {
 		t.Error(err)
 		return
@@ -50,7 +50,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = s.conn.Exists(rev.Path())
+	check, _, err = s.conn.Exists(rev.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Path())
+	check, _, err := s.conn.Exists(rev.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}

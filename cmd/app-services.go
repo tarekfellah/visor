@@ -37,7 +37,7 @@ func runAppServices(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	proxies, err := app.Conn().Getdir("/proxies", app.Snapshot.Rev)
+	proxies, err := app.Snapshot.Getdir("/proxies")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching proxy addresses %s\n", err.Error())
 		os.Exit(2)

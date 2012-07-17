@@ -63,7 +63,7 @@ func TestTicketCreateTicket(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, _, err := s.conn.Get(ticket.Path()+"/op", &ticket.Snapshot.Rev)
+	b, _, err := s.conn.Get(ticket.Path.Prefix("op"), &ticket.Snapshot.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -117,13 +117,14 @@ func TestTicketClaim(t *testing.T) {
 func TestTicketUnclaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
-	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
+	p := fmt.Sprintf("tickets/%d", id)
+	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Path: Path{s, p}}
 
-	rev, err := s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/claims/"+host, s.Rev, []byte(host))
+	rev, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
 		t.Error(err)
 	}
-	rev, err = s.conn.Set("tickets/"+strconv.FormatInt(id, 10)+"/status", s.Rev, []byte("claimed"))
+	rev, err = s.conn.Set(p+"/status", s.Rev, []byte("claimed"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -145,8 +146,8 @@ func TestTicketUnclaim(t *testing.T) {
 
 func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(s.Rev, 10) + "/claims/" + host
-	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
+	p := fmt.Sprintf("tickets/%d/claims/%s", s.Rev, host)
+	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Path: Path{s, p}}
 
 	rev, err := s.conn.Set(p, s.Rev, []byte(host))
 	if err != nil {
@@ -162,8 +163,8 @@ func TestTicketUnclaimWithWrongLock(t *testing.T) {
 
 func TestTicketDone(t *testing.T) {
 	s, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
+	p := fmt.Sprintf("tickets/%d", s.Rev)
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Path: Path{s, p}}
 
 	rev, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
@@ -187,8 +188,8 @@ func TestTicketDone(t *testing.T) {
 
 func TestTicketDoneWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
-	p := "tickets/" + strconv.FormatInt(s.Rev, 10)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Snapshot: s}
+	p := fmt.Sprintf("tickets/%d", s.Rev)
+	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, Path: Path{s, p}}
 
 	_, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {

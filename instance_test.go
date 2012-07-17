@@ -54,7 +54,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 func TestInstanceRegister(t *testing.T) {
 	ins := instanceSetup("localhost:12345", "web")
 
-	check, _, err := ins.conn.Exists(ins.Path())
+	check, _, err := ins.conn.Exists(ins.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -67,7 +67,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err = ins.conn.Exists(ins.Path())
+	check, _, err = ins.conn.Exists(ins.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -123,7 +123,7 @@ func TestInstanceUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := ins.conn.Exists(ins.Path())
+	check, _, err := ins.conn.Exists(ins.Path.Dir)
 	if err != nil {
 		t.Error(err)
 	}
@@ -153,7 +153,7 @@ func TestInstanceUpdateState(t *testing.T) {
 		t.Error("Instance wasn't fast forwarded")
 	}
 
-	val, _, err := newIns.conn.Get(newIns.Path()+"/state", &newIns.Rev)
+	val, _, err := newIns.conn.Get(newIns.Path.Prefix("state"), &newIns.Rev)
 	if err != nil {
 		t.Error(err)
 	}

@@ -41,7 +41,12 @@ func (c *Conn) Stat(path string) (len int, pathrev int64, err error) {
 
 // Exists returns true or false depending on if the path exists
 func (c *Conn) Exists(path string) (exists bool, pathrev int64, err error) {
-	_, pathrev, err = c.conn.Stat(c.prefixPath(path), nil)
+	return c.ExistsRev(path, nil)
+}
+
+// Exists returns true or false depending on if the path exists
+func (c *Conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, err error) {
+	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
 	if err != nil {
 		return
 	}

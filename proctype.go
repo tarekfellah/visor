@@ -8,13 +8,12 @@ package visor
 import (
 	"errors"
 	"fmt"
-	"path"
 	"time"
 )
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
-	Snapshot
+	Path
 	Name ProcessName
 	App  *App
 	Port int
@@ -23,7 +22,13 @@ type ProcType struct {
 const PROCS_PATH = "procs"
 
 func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
-	return &ProcType{Name: name, App: app, Snapshot: s}
+	return &ProcType{
+		Name: name,
+		App:  app,
+		Path: Path{
+			s, app.Path.Prefix(PROCS_PATH, string(name)),
+		},
+	}
 }
 
 func (p *ProcType) createSnapshot(rev int64) Snapshotable {
@@ -40,7 +45,7 @@ func (p *ProcType) FastForward(rev int64) *ProcType {
 
 // Register registers a proctype with the registry.
 func (p *ProcType) Register() (ptype *ProcType, err error) {
-	exists, _, err := p.conn.Exists(p.Path())
+	exists, _, err := p.conn.Exists(p.Path.Dir)
 	if err != nil {
 		return
 	}
@@ -53,14 +58,14 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
-	port := &File{p.Snapshot, p.Path() + "/port", p.Port, new(IntCodec)}
+	port := &File{p.Snapshot, p.Path.Prefix("port"), p.Port, new(IntCodec)}
 
 	port, err = port.Create()
 	if err != nil {
 		return p, err
 	}
 
-	rev, err := p.conn.Set(p.Path()+"/registered", p.Rev, []byte(time.Now().UTC().String()))
+	rev, err := p.Set("registered", time.Now().UTC().String())
 
 	if err != nil {
 		return p, err
@@ -72,19 +77,15 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 
 // Unregister unregisters a proctype from the registry.
 func (p *ProcType) Unregister() (err error) {
-	return p.conn.Del(p.Path(), p.Rev)
+	return p.Del("/")
 }
 
-func (p *ProcType) Path() string {
-	return path.Join(p.App.Path(), PROCS_PATH, string(p.Name))
-}
-
-func (p *ProcType) InstancePath(Id string) string {
-	return path.Join(p.InstancesPath(), Id)
+func (p *ProcType) InstancePath(id string) string {
+	return p.Path.Prefix(INSTANCES_PATH, id)
 }
 
 func (p *ProcType) InstancesPath() string {
-	return path.Join(p.Path(), INSTANCES_PATH)
+	return p.Path.Prefix(INSTANCES_PATH)
 }
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
@@ -93,7 +94,7 @@ func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 		return
 	}
 
-	ins, err = p.conn.Getdir(p.InstancesPath(), p.Snapshot.FastForward(-1).Rev)
+	ins, err = p.FastForward(-1).Getdir(p.InstancesPath())
 	if err != nil {
 		return
 	}
@@ -123,19 +124,15 @@ func (p *ProcType) GetInstanceInfos() (ins []*InstanceInfo, err error) {
 
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
-	path := path.Join(app.Path(), PROCS_PATH, string(name))
+	path := app.Path.Prefix(PROCS_PATH, string(name))
 
 	port, err := Get(s, path+"/port", new(IntCodec))
 	if err != nil {
 		return
 	}
+	p = NewProcType(app, name, s)
+	p.Port = port.Value.(int)
 
-	p = &ProcType{
-		Name:     name,
-		Snapshot: s,
-		App:      app,
-		Port:     port.Value.(int),
-	}
 	return
 }
 
