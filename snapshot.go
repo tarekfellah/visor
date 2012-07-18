@@ -150,13 +150,6 @@ func (s Snapshot) SetScale(app string, revision string, processName string, fact
 	return
 }
 
-func IsErrNoEnt(e error) (r bool) {
-	if err, ok := e.(*Error); ok {
-		r = err.Err == ErrNoEnt
-	}
-	return
-}
-
 // fastForward either calls *createSnapshot* on *obj* or returns *obj* if it
 // can't advance the object in time. Note that fastForward can never fail.
 func (s *Snapshot) fastForward(obj Snapshotable, rev int64) Snapshotable {

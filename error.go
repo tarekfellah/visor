@@ -28,3 +28,10 @@ func NewError(err error, msg string) *Error {
 func (e *Error) Error() string {
 	return e.Message
 }
+
+func IsErrNoEnt(e error) (r bool) {
+	if err, ok := e.(*Error); ok {
+		r = err.Err == ErrNoEnt
+	}
+	return
+}
