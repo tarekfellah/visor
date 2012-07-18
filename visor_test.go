@@ -41,7 +41,6 @@ func TestScaleUp(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	return
 
 	factor, _, err := s.conn.Get(fmt.Sprintf(SCALE_PATH_FMT, "dog", "master", "lol"), nil)
 	if err != nil {
