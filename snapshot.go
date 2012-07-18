@@ -72,7 +72,7 @@ func (s Snapshot) Get(path string) (string, int64, error) {
 	return string(val), rev, err
 }
 
-// Get returns the value at the specified path, at this snapshot's revision
+// GetFile returns the value at the specified path as a file, at this snapshot's revision
 func (s Snapshot) GetFile(path string, codec Codec) (*File, error) {
 	return Get(s, path, codec)
 }
@@ -87,12 +87,12 @@ func (s Snapshot) Getdir(path string) ([]string, error) {
 	return s.conn.Getdir(path, s.Rev)
 }
 
-// SetBytes sets the specfied path's body to the passed value, at this snapshot's revision
+// Set sets the specfied path's body to the passed value, at this snapshot's revision
 func (s Snapshot) Set(path string, val string) (int64, error) {
 	return s.SetBytes(path, []byte(val))
 }
 
-// Set sets the specfied path's body to the passed value, at this snapshot's revision
+// SetBytes sets the specfied path's body to the passed value, at this snapshot's revision
 func (s Snapshot) SetBytes(path string, val []byte) (int64, error) {
 	return s.conn.Set(path, s.Rev, val)
 }
