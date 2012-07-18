@@ -47,6 +47,7 @@ var commands = []*Command{
 	cmdAppEnvGet,
 	cmdAppEnvSet,
 	cmdAppInstances,
+	cmdAppInstancesPurge,
 	cmdAppList,
 	cmdAppRegister,
 	cmdAppServices,
