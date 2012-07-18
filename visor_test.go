@@ -31,16 +31,17 @@ func TestScaleUp(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("/", s.Rev)
+	s.Del("/")
 	s = s.FastForward(-1)
 
-	s.conn.Set("/apps/dog/revs/master/file", -1, []byte{})
-	s.conn.Set("/apps/dog/procs/lol", -1, []byte{})
+	s.Set("/apps/dog/revs/master/file", "")
+	s.Set("/apps/dog/procs/lol", "")
 
-	err = Scale("dog", "master", "lol", 5, s)
+	err = Scale("dog", "master", "lol", 5, s.FastForward(-1))
 	if err != nil {
 		t.Error(err)
 	}
+	return
 
 	factor, _, err := s.conn.Get(fmt.Sprintf(SCALE_PATH_FMT, "dog", "master", "lol"), nil)
 	if err != nil {

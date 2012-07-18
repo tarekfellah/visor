@@ -23,16 +23,16 @@ func fileSetup(path string, value interface{}) *File {
 	return file
 }
 
-func TestUpdate(t *testing.T) {
+func TestSet(t *testing.T) {
 	path := "update-path"
 	value := "update-val"
 
 	f := fileSetup(path, value)
 
-	rev, _ := f.conn.Set(path, f.Rev, []byte(value))
+	rev, _ := f.conn.Set(path, f.Snapshot.Rev, []byte(value))
 	f = f.FastForward(rev)
 
-	f, err := f.Update([]byte(value + "!"))
+	f, err := f.Set([]byte(value + "!"))
 	if err != nil {
 		t.Error(err)
 		return
@@ -58,7 +58,7 @@ func TestFastForward(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	newRev, err := f.conn.Set(path, f.Rev, []byte(value))
+	newRev, err := f.Snapshot.Set(path, value)
 	if err != nil {
 		t.Error(err)
 		return
@@ -71,27 +71,27 @@ func TestFastForward(t *testing.T) {
 	}
 
 	f = f.FastForward(-1)
-	if f.Rev != newRev {
+	if f.Snapshot.Rev != newRev {
 		t.Errorf("expected %d got %d", newRev, f.Rev)
 	}
 }
 
-func TestUpdateConflict(t *testing.T) {
+func TestSetConflict(t *testing.T) {
 	path := "conflict-path"
 	value := "conflict-val"
 
 	f := fileSetup(path, value)
 
-	rev, _ := f.conn.Set(path, f.Rev, []byte(value))
+	rev, _ := f.Snapshot.Set(path, value)
 	f = f.FastForward(rev)
 
-	_, err := f.Update([]byte(value + "!"))
+	_, err := f.Set([]byte(value + "!"))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	_, err = f.Update([]byte("!"))
+	_, err = f.Set([]byte("!"))
 	if err == nil {
 		t.Error("expected update with old revision to fail")
 		return
@@ -104,7 +104,7 @@ func TestDel(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	_, err := f.conn.Set(path, f.Rev, []byte{})
+	_, err := f.Snapshot.SetBytes(path, []byte{})
 	if err != nil {
 		t.Error(err)
 	}

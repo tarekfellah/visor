@@ -8,6 +8,8 @@ package visor
 import (
 	"fmt"
 	"github.com/soundcloud/doozer"
+	"path"
+	"strconv"
 )
 
 // Snapshot represents a specific point in time
@@ -66,8 +68,18 @@ func (s Snapshot) Exists(path string) (bool, int64, error) {
 
 // Get returns the value at the specified path, at this snapshot's revision
 func (s Snapshot) Get(path string) (string, int64, error) {
-	val, rev, err := s.conn.Get(path, &s.Rev)
+	val, rev, err := s.GetBytes(path)
 	return string(val), rev, err
+}
+
+// Get returns the value at the specified path, at this snapshot's revision
+func (s Snapshot) GetFile(path string, codec Codec) (*File, error) {
+	return Get(s, path, codec)
+}
+
+// GetBytes returns the value at the specified path, at this snapshot's revision
+func (s Snapshot) GetBytes(path string) ([]byte, int64, error) {
+	return s.conn.Get(path, &s.Rev)
 }
 
 // Getdir returns the list of files in the specified directory, at this snapshot's revision
@@ -75,9 +87,14 @@ func (s Snapshot) Getdir(path string) ([]string, error) {
 	return s.conn.Getdir(path, s.Rev)
 }
 
-// Set sets the specfied path's body to the passed value, at this snapshot's revision
+// SetBytes sets the specfied path's body to the passed value, at this snapshot's revision
 func (s Snapshot) Set(path string, val string) (int64, error) {
-	return s.conn.Set(path, s.Rev, []byte(val))
+	return s.SetBytes(path, []byte(val))
+}
+
+// Set sets the specfied path's body to the passed value, at this snapshot's revision
+func (s Snapshot) SetBytes(path string, val []byte) (int64, error) {
+	return s.conn.Set(path, s.Rev, val)
 }
 
 // Del deletes the file at the specified path, at this snapshot's revision
@@ -103,6 +120,41 @@ func (s Snapshot) createSnapshot(rev int64) Snapshotable {
 
 func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
 	return s.fastForward(s, rev).(Snapshot)
+}
+
+func (s Snapshot) GetScale(app string, revision string, processName string) (scale int, rev int64, err error) {
+	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
+	f, err := s.GetFile(path, new(IntCodec))
+
+	// File doesn't exist, assume scale = 0
+	if IsErrNoEnt(err) {
+		err = nil
+		scale = 0
+		return
+	}
+
+	if err != nil {
+		scale = -1
+		return
+	}
+
+	rev = f.FileRev
+	scale = f.Value.(int)
+
+	return
+}
+
+func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (rev int64, err error) {
+	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
+	rev, err = s.Set(path, strconv.Itoa(factor))
+	return
+}
+
+func IsErrNoEnt(e error) (r bool) {
+	if err, ok := e.(*Error); ok {
+		r = err.Err == ErrNoEnt
+	}
+	return
 }
 
 // fastForward either calls *createSnapshot* on *obj* or returns *obj* if it
@@ -133,17 +185,17 @@ func Set(s Snapshot, path string, value interface{}, codec Codec) (snapshot Snap
 
 // Get returns the value for the given path
 func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
-	evalue, _, err := s.conn.Get(path, &s.Rev)
+	bytes, rev, err := s.GetBytes(path)
 	if err != nil {
 		return
 	}
 
-	value, err := codec.Decode(evalue)
+	value, err := codec.Decode(bytes)
 	if err != nil {
 		return
 	}
 
-	file = &File{Path: path, Value: value, Codec: codec, Snapshot: s}
+	file = &File{Path: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
 
 	return
 }

@@ -79,12 +79,15 @@ func (c *Conn) Rev() (int64, error) {
 
 // Get is a wrapper around (*doozer.Conn).Get with a prefixed path.
 func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
-	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
-	if filerev == 0 {
+	value, filerev, e := c.conn.Get(c.prefixPath(path), rev)
+
+	// If the file revision is 0 and there is no error, set the error appropriately.
+	// We don't want to overwrite the error in case it is network-related.
+	if filerev == 0 && e == nil {
 		if rev == nil {
-			err = fmt.Errorf("path \"%s\" not found at latest revision", path)
+			err = NewError(ErrNoEnt, fmt.Sprintf("path \"%s\" not found at latest revision", path))
 		} else {
-			err = fmt.Errorf("path \"%s\" not found at %d", path, *rev)
+			err = NewError(ErrNoEnt, fmt.Sprintf("path \"%s\" not found at %d", path, *rev))
 		}
 	}
 	return

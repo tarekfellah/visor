@@ -13,13 +13,14 @@ import (
 // at a specific point in time.
 type File struct {
 	Snapshot
-	Path  string
-	Value interface{}
-	Codec Codec
+	FileRev int64 // File rev, or 0 if path doesn't exist
+	Path    string
+	Value   interface{}
+	Codec   Codec
 }
 
 func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*File, error) {
-	file := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot}
+	file := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
 	return file.Create()
 }
 
@@ -49,17 +50,17 @@ func (f *File) Del() error {
 
 // Create creates a file from its Value attribute
 func (f *File) Create() (*File, error) {
-	return f.Update(f.Value)
+	return f.Set(f.Value)
 }
 
-// Update sets the value at this file's path to a new value.
-func (f *File) Update(value interface{}) (file *File, err error) {
-	evalue, err := f.Codec.Encode(value)
+// Set sets the value at this file's path to a new value.
+func (f *File) Set(value interface{}) (file *File, err error) {
+	bytes, err := f.Codec.Encode(value)
 	if err != nil {
 		return
 	}
 
-	rev, err := f.conn.Set(f.Path, f.Rev, evalue)
+	rev, err := f.SetBytes(f.Path, bytes)
 
 	if rev > 0 {
 		file = f.FastForward(rev)
@@ -71,6 +72,7 @@ func (f *File) Update(value interface{}) (file *File, err error) {
 		return
 	}
 	file.Value = value
+	file.FileRev = rev
 
 	return
 }

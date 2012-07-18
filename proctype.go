@@ -58,7 +58,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
-	port := &File{p.Snapshot, p.Path.Prefix("port"), p.Port, new(IntCodec)}
+	port := &File{p.Snapshot, -1, p.Path.Prefix("port"), p.Port, new(IntCodec)}
 
 	port, err = port.Create()
 	if err != nil {

@@ -13,6 +13,18 @@ var (
 	ErrKeyConflict  = errors.New("key is already set")
 	ErrUnauthorized = errors.New("operation is not permitted")
 	ErrInvalidState = errors.New("invalid state")
+	ErrNoEnt        = errors.New("file not found")
 )
 
-type Error struct{}
+type Error struct {
+	Err     error
+	Message string
+}
+
+func NewError(err error, msg string) *Error {
+	return &Error{err, msg}
+}
+
+func (e *Error) Error() string {
+	return e.Message
+}

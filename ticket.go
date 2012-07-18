@@ -116,7 +116,7 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	}
 	f, err = CreateFile(t.Snapshot, t.Path.Prefix("status"), string(t.Status), new(StringCodec))
 	if err == nil {
-		t.Snapshot = t.Snapshot.FastForward(f.Rev)
+		t.Snapshot = t.Snapshot.FastForward(f.FileRev)
 	}
 	return
 }
