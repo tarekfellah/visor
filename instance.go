@@ -96,18 +96,18 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := i.Set("info", i.String())
+	_, err = i.Set("info", i.String())
 	if err != nil {
 		return i, err
 	}
-	rev, err = i.Set("state", string(i.State))
+	_, err = i.Set("state", string(i.State))
 	if err != nil {
 		return i, err
 	}
 	now := time.Now().UTC().String()
 
-	rev, err = i.Snapshot.Set(i.ProcType.InstancePath(i.Id()), now)
-	instance = i.FastForward(rev)
+	s, err := i.Snapshot.Set(i.ProcType.InstancePath(i.Id()), now)
+	instance = i.FastForward(s.Rev)
 
 	return
 }

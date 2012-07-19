@@ -10,7 +10,8 @@ func (p *Path) Get(key string) (string, int64, error) {
 }
 
 func (p *Path) Set(key string, val string) (int64, error) {
-	return p.Snapshot.Set(p.Prefix(key), val)
+	s, err := p.Snapshot.Set(p.Prefix(key), val)
+	return s.Rev, err
 }
 
 func (p *Path) Del(key string) error {

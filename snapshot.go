@@ -88,13 +88,17 @@ func (s Snapshot) Getdir(path string) ([]string, error) {
 }
 
 // Set sets the specfied path's body to the passed value, at this snapshot's revision
-func (s Snapshot) Set(path string, val string) (int64, error) {
+func (s Snapshot) Set(path string, val string) (Snapshot, error) {
 	return s.SetBytes(path, []byte(val))
 }
 
 // SetBytes sets the specfied path's body to the passed value, at this snapshot's revision
-func (s Snapshot) SetBytes(path string, val []byte) (int64, error) {
-	return s.conn.Set(path, s.Rev, val)
+func (s Snapshot) SetBytes(path string, val []byte) (Snapshot, error) {
+	rev, err := s.conn.Set(path, s.Rev, val)
+	if err != nil {
+		return s, err
+	}
+	return s.FastForward(rev), err
 }
 
 // Del deletes the file at the specified path, at this snapshot's revision
@@ -103,13 +107,13 @@ func (s Snapshot) Del(path string) error {
 }
 
 // Update checks if the specified path exists, and if so, does a (*Snapshot).Set with the passed value.
-func (s Snapshot) Update(path string, val string) (rev int64, err error) {
-	exists, rev, err := s.Exists(path)
+func (s Snapshot) Update(path string, val string) (Snapshot, error) {
+	exists, _, err := s.Exists(path)
 	if err != nil {
-		return
+		return s, err
 	}
 	if !exists {
-		return 0, fmt.Errorf("path %s doesn't exist", path)
+		return s, NewError(ErrNoEnt, fmt.Sprintf("path '%s' does not exist at %d", path, s.Rev))
 	}
 	return s.Set(path, val)
 }
@@ -146,7 +150,8 @@ func (s Snapshot) GetScale(app string, revision string, processName string) (sca
 
 func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (rev int64, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
-	rev, err = s.Set(path, strconv.Itoa(factor))
+	s1, err := s.Set(path, strconv.Itoa(factor))
+	rev = s1.Rev
 	return
 }
 

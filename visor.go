@@ -52,18 +52,20 @@ type Stack string
 type State string
 
 func Init(s Snapshot) (rev int64, err error) {
+	var s1 Snapshot
+
 	exists, _, err := s.conn.Exists(START_PORT_PATH)
 	if err != nil {
 		return
 	}
 
 	if !exists {
-		rev, err = s.Set(START_PORT_PATH, strconv.Itoa(START_PORT))
+		s1, err = s.Set(START_PORT_PATH, strconv.Itoa(START_PORT))
 		if err != nil {
 			return
 		}
 
-		return rev, err
+		return s1.Rev, err
 	}
 	return s.conn.Rev()
 }

@@ -58,21 +58,21 @@ func TestFastForward(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	newRev, err := f.Snapshot.Set(path, value)
+	s, err := f.Snapshot.Set(path, value)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	_, err = f.conn.Set(path+"-1", newRev, []byte(value))
+	_, err = f.conn.Set(path+"-1", s.Rev, []byte(value))
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	f = f.FastForward(-1)
-	if f.Snapshot.Rev != newRev {
-		t.Errorf("expected %d got %d", newRev, f.Rev)
+	if f.Snapshot.Rev != s.Rev {
+		t.Errorf("expected %d got %d", s.Rev, f.Rev)
 	}
 }
 
@@ -82,8 +82,8 @@ func TestSetConflict(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	rev, _ := f.Snapshot.Set(path, value)
-	f = f.FastForward(rev)
+	s, _ := f.Snapshot.Set(path, value)
+	f = f.FastForward(s.Rev)
 
 	_, err := f.Set([]byte(value + "!"))
 	if err != nil {

@@ -60,10 +60,10 @@ func (f *File) Set(value interface{}) (file *File, err error) {
 		return
 	}
 
-	rev, err := f.SetBytes(f.Path, bytes)
+	s, err := f.SetBytes(f.Path, bytes)
 
-	if rev > 0 {
-		file = f.FastForward(rev)
+	if s.Rev > 0 {
+		file = f.FastForward(s.Rev)
 	} else {
 		file = f
 	}
@@ -72,7 +72,7 @@ func (f *File) Set(value interface{}) (file *File, err error) {
 		return
 	}
 	file.Value = value
-	file.FileRev = rev
+	file.FileRev = s.Rev
 
 	return
 }

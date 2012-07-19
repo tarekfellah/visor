@@ -7,29 +7,32 @@ package visor
 
 import "testing"
 
-func connSetup(name string) (conn *Conn) {
-	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+func connSetup() (*Conn, int64) {
+	s, err := Dial(DEFAULT_ADDR, "/conn-test")
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	err = s.conn.Del("/", r)
+	err = s.conn.Del("/", s.Rev)
+	r, err := s.conn.Rev()
+	if err != nil {
+		panic(err)
+	}
 
-	return s.conn
+	return s.conn, r
 }
 
-func TestDifferentRoot(t *testing.T) {
+func TestConnDifferentRoot(t *testing.T) {
 	body := "test"
 
-	s, _ := Dial(DEFAULT_ADDR, "/notvisor")
+	s, _ := Dial(DEFAULT_ADDR, "/not-conn-test")
 
 	_, err := s.conn.Set("root", s.Rev, []byte(body))
 	if err != nil {
 		t.Error(err)
 	}
 
-	b, _, err := s.conn.conn.Get("/notvisor/root", nil)
+	b, _, err := s.conn.conn.Get("/not-conn-test/root", nil)
 	if err != nil {
 		t.Error(err)
 	}
@@ -38,36 +41,36 @@ func TestDifferentRoot(t *testing.T) {
 	}
 }
 
-func TestExists(t *testing.T) {
-	path := "exists-test"
-	conn := connSetup(path)
+func TestConnExists(t *testing.T) {
+	c, rev := connSetup()
 
-	exists, _, err := conn.Exists(path)
-	if err != nil {
-		t.Error(err)
-	}
+	k := "key"
+	v := "value"
+
+	exists, _, _ := c.Exists(k)
 	if exists {
-		t.Error("path shouldn't exist")
+		t.Errorf("path '%s' shouldn't exist", k)
 	}
 
-	_, err = conn.Set(path+"/key", 0, []byte{})
+	_, err := c.Set(k, rev, []byte(v))
 	if err != nil {
-		t.Error(err)
+		panic(err)
 	}
-
-	exists, _, err = conn.Exists(path + "/key")
-	if err != nil {
-		t.Error(err)
-	}
+	exists, rev1, err := c.Exists(k)
 	if !exists {
-		t.Error("path doesn't exist")
+		t.Errorf("path %s should exist at latest rev", k)
 	}
 
-	exists, _, err = conn.Exists(path)
-	if err != nil {
-		t.Error(err)
-	}
+	exists, _, err = c.ExistsRev(k, &rev1)
 	if !exists {
-		t.Error("path doesn't exist")
+		t.Errorf("path %s should exist at rev %d", k, rev1)
+	}
+
+	exists, rev2, err := c.ExistsRev(k, &rev)
+	if exists {
+		t.Errorf("path %s shouldn't exist yet", k)
+	}
+	if rev2 != 0 {
+		t.Errorf("rev for %s should = 0", k)
 	}
 }
