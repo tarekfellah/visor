@@ -123,12 +123,10 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		}
 	}
 
-	rev, err := s.SetScale(app, revision, processName, factor)
+	s, err = s.SetScale(app, revision, processName, factor)
 	if err != nil {
 		return
 	}
-
-	s = s.FastForward(rev)
 
 	for i := 0; i < tickets; i++ {
 		var ticket *Ticket

@@ -126,6 +126,10 @@ func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
 	return s.fastForward(s, rev).(Snapshot)
 }
 
+// NOTE: This method does not check whether or not the scale target exists.
+// A scale of `0` will be returned if any of the path components are missing.
+// This is to avoid having to set the /apps/<app>/revs/<rev>/scale/<proc> paths to 0
+// when registering revisions.
 func (s Snapshot) GetScale(app string, revision string, processName string) (scale int, rev int64, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
 	f, err := s.GetFile(path, new(IntCodec))
@@ -148,11 +152,9 @@ func (s Snapshot) GetScale(app string, revision string, processName string) (sca
 	return
 }
 
-func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (rev int64, err error) {
+func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (s1 Snapshot, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
-	s1, err := s.Set(path, strconv.Itoa(factor))
-	rev = s1.Rev
-	return
+	return s.Set(path, strconv.Itoa(factor))
 }
 
 // fastForward either calls *createSnapshot* on *obj* or returns *obj* if it

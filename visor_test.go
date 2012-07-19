@@ -64,15 +64,14 @@ func TestScaleDown(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("/", s.Rev)
+	s.Del("/")
 	s = s.FastForward(-1)
 
 	s.conn.Set("/apps/cat/revs/master/file", -1, []byte{})
 	s.conn.Set("/apps/cat/procs/lol", -1, []byte{})
 
 	p := fmt.Sprintf(SCALE_PATH_FMT, "cat", "master", "lol")
-	r, err := s.conn.Set(p, s.Rev, []byte("5"))
-	s = s.FastForward(r)
+	s, err = s.Set(p, "5")
 
 	err = Scale("cat", "master", "lol", -1, s)
 	if err == nil {
@@ -92,7 +91,7 @@ func TestScaleDown(t *testing.T) {
 		t.Errorf("Scaling factor expected %s, got %s", "2", factor)
 	}
 
-	tickets, err := s.conn.Getdir(TICKETS_PATH, s.FastForward(-1).Rev)
+	tickets, err := s.FastForward(-1).Getdir(TICKETS_PATH)
 	if err != nil {
 		t.Error(err)
 	}
