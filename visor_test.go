@@ -99,3 +99,29 @@ func TestScaleDown(t *testing.T) {
 		t.Errorf("Expected tickets %s, got %d", "3", len(tickets))
 	}
 }
+
+func TestGetuid(t *testing.T) {
+	s, err := Dial(DEFAULT_ADDR, "/scale-test")
+	if err != nil {
+		panic(err)
+	}
+	uids := map[int64]bool{}
+	ch := make(chan bool)
+
+	for i := 0; i < 30; i++ {
+		go func(i int) {
+			uid, err := Getuid(s)
+			if err != nil {
+				t.Error(err)
+			}
+			if uids[uid] {
+				t.Error("duplicate UID")
+			}
+			uids[uid] = true
+			ch <- true
+		}(i)
+	}
+	for i := 0; i < 30; i++ {
+		<-ch
+	}
+}
