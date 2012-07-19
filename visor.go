@@ -46,6 +46,7 @@ const DEFAULT_ROOT string = "/visor"
 const SCALE_PATH string = "scale"
 const START_PORT int = 8000
 const START_PORT_PATH string = "/next-port"
+const UID_PATH string = "/uid"
 
 type ProcessName string
 type Stack string

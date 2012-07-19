@@ -218,6 +218,6 @@ func GetLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
 }
 
 // Getuid returns a unique ID from the coordinator
-func Getuid(s Snapshot) (rev int64, err error) {
-	return s.conn.Set("/uid", -1, []byte{})
+func Getuid(s Snapshot) (int64, error) {
+	return s.conn.Set(UID_PATH, -1, []byte{})
 }
