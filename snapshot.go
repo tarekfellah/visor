@@ -219,11 +219,5 @@ func GetLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
 
 // Getuid returns a unique ID from the coordinator
 func Getuid(s Snapshot) (rev int64, err error) {
-	for {
-		rev, err = s.conn.Set("/uid", -1, []byte{})
-		if err != doozer.ErrOldRev {
-			break
-		}
-	}
-	return
+	return s.conn.Set("/uid", -1, []byte{})
 }
