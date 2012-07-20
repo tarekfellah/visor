@@ -32,7 +32,6 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 
 	appname := &args[0]
 	revname := &args[1]
-	ptyname := &args[2]
 
 	app, err := visor.GetApp(s, *appname)
 	if err != nil {
@@ -47,7 +46,7 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 	}
 
 	for _, pty := range ptys {
-		if len(args) >= 3 && string(pty.Name) != *ptyname {
+		if len(args) >= 3 && string(pty.Name) != args[2] {
 			continue
 		}
 
