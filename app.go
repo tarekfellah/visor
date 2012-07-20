@@ -62,11 +62,16 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	attrs := &File{a.Snapshot, a.Path.Prefix("attrs"), map[string]interface{}{
-		"repo-url":    a.RepoUrl,
-		"stack":       string(a.Stack),
-		"deploy-type": a.DeployType,
-	}, new(JSONCodec)}
+	attrs := &File{
+		Snapshot: a.Snapshot,
+		Codec:    new(JSONCodec),
+		Path:     a.Path.Prefix("attrs"),
+		Value: map[string]interface{}{
+			"repo-url":    a.RepoUrl,
+			"stack":       string(a.Stack),
+			"deploy-type": a.DeployType,
+		},
+	}
 
 	_, err = attrs.Create()
 	if err != nil {

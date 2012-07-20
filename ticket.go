@@ -110,13 +110,13 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	t.Id = id
 	t.Path.Dir = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 
-	f, err := CreateFile(t.Snapshot, t.Path.Prefix("op"), t.toArray(), new(ListCodec))
+	f, err := CreateFile(t.Snapshot, t.Path.Prefix("op"), t.Array(), new(ListCodec))
 	if err != nil {
 		return
 	}
 	f, err = CreateFile(t.Snapshot, t.Path.Prefix("status"), string(t.Status), new(StringCodec))
 	if err == nil {
-		t.Snapshot = t.Snapshot.FastForward(f.Rev)
+		t.Snapshot = t.Snapshot.FastForward(f.FileRev)
 	}
 	return
 }
@@ -317,6 +317,6 @@ func (t *Ticket) Fields() string {
 	return fmt.Sprintf("%d %s %s %s %s", t.Id, t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String())
 }
 
-func (t *Ticket) toArray() []string {
+func (t *Ticket) Array() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
 }

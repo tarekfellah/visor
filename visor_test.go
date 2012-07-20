@@ -31,13 +31,13 @@ func TestScaleUp(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("/", s.Rev)
+	s.Del("/")
 	s = s.FastForward(-1)
 
-	s.conn.Set("/apps/dog/revs/master/file", -1, []byte{})
-	s.conn.Set("/apps/dog/procs/lol", -1, []byte{})
+	s.Set("/apps/dog/revs/master/file", "")
+	s.Set("/apps/dog/procs/lol", "")
 
-	err = Scale("dog", "master", "lol", 5, s)
+	err = Scale("dog", "master", "lol", 5, s.FastForward(-1))
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,15 +64,14 @@ func TestScaleDown(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	s.conn.Del("/", s.Rev)
+	s.Del("/")
 	s = s.FastForward(-1)
 
 	s.conn.Set("/apps/cat/revs/master/file", -1, []byte{})
 	s.conn.Set("/apps/cat/procs/lol", -1, []byte{})
 
 	p := fmt.Sprintf(SCALE_PATH_FMT, "cat", "master", "lol")
-	r, err := s.conn.Set(p, s.Rev, []byte("5"))
-	s = s.FastForward(r)
+	s, err = s.Set(p, "5")
 
 	err = Scale("cat", "master", "lol", -1, s)
 	if err == nil {
@@ -92,11 +91,37 @@ func TestScaleDown(t *testing.T) {
 		t.Errorf("Scaling factor expected %s, got %s", "2", factor)
 	}
 
-	tickets, err := s.conn.Getdir(TICKETS_PATH, s.FastForward(-1).Rev)
+	tickets, err := s.FastForward(-1).Getdir(TICKETS_PATH)
 	if err != nil {
 		t.Error(err)
 	}
 	if len(tickets) != 3 {
 		t.Errorf("Expected tickets %s, got %d", "3", len(tickets))
+	}
+}
+
+func TestGetuid(t *testing.T) {
+	s, err := Dial(DEFAULT_ADDR, "/scale-test")
+	if err != nil {
+		panic(err)
+	}
+	uids := map[int64]bool{}
+	ch := make(chan bool)
+
+	for i := 0; i < 30; i++ {
+		go func(i int) {
+			uid, err := Getuid(s)
+			if err != nil {
+				t.Error(err)
+			}
+			if uids[uid] {
+				t.Error("duplicate UID")
+			}
+			uids[uid] = true
+			ch <- true
+		}(i)
+	}
+	for i := 0; i < 30; i++ {
+		<-ch
 	}
 }

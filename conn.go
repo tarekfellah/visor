@@ -44,7 +44,7 @@ func (c *Conn) Exists(path string) (exists bool, pathrev int64, err error) {
 	return c.ExistsRev(path, nil)
 }
 
-// Exists returns true or false depending on if the path exists
+// ExistsRev returns true or false depending on if the path exists
 func (c *Conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, err error) {
 	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
 	if err != nil {
@@ -55,7 +55,6 @@ func (c *Conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, e
 	if pathrev != 0 {
 		exists = true
 	}
-
 	return
 }
 
@@ -80,11 +79,14 @@ func (c *Conn) Rev() (int64, error) {
 // Get is a wrapper around (*doozer.Conn).Get with a prefixed path.
 func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
 	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
-	if filerev == 0 {
+
+	// If the file revision is 0 and there is no error, set the error appropriately.
+	// We don't want to overwrite the error in case it is network-related.
+	if filerev == 0 && err == nil {
 		if rev == nil {
-			err = fmt.Errorf("path \"%s\" not found at latest revision", path)
+			err = NewError(ErrNoEnt, fmt.Sprintf("path \"%s\" not found at latest revision", path))
 		} else {
-			err = fmt.Errorf("path \"%s\" not found at %d", path, *rev)
+			err = NewError(ErrNoEnt, fmt.Sprintf("path \"%s\" not found at %d", path, *rev))
 		}
 	}
 	return
