@@ -88,7 +88,7 @@ func (r *Revision) Inspect() string {
 }
 
 func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.Path.Prefix(REVS_PATH + "/" + ref)
+	path := app.Path.Prefix(REVS_PATH, ref)
 	codec := new(StringCodec)
 
 	f, err := Get(s, path+"/archive-url", codec)
