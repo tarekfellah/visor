@@ -164,9 +164,7 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 }
 func TestEventInstanceRegistered(t *testing.T) {
 	s, app, l := eventSetup("regmouse")
-	rev := NewRevision(app, "stable", s)
-	pty := NewProcType(app, "web", s)
-	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", s)
+	ins, _ := NewInstance("web", "stable", app.Name, "127.0.0.1:8080", s)
 
 	go WatchEvent(s, l)
 
@@ -179,9 +177,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 }
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, app, l := eventSetup("unregmouse")
-	rev := NewRevision(app, "stable", s)
-	pty := NewProcType(app, "web", s)
-	ins, _ := NewInstance(pty, rev, "127.0.0.1:8080", s)
+	ins, _ := NewInstance("web", "stable", app.Name, "127.0.0.1:8080", s)
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
@@ -199,10 +195,8 @@ func TestEventInstanceUnregistered(t *testing.T) {
 }
 
 func TestEventInstanceStateChange(t *testing.T) {
-	s, app, l := eventSetup("statemouse")
-	rev := NewRevision(app, "stable-state", s)
-	pty := NewProcType(app, "web-state", s)
-	ins, _ := NewInstance(pty, rev, "127.0.0.1:8081", s)
+	s, _, l := eventSetup("statemouse")
+	ins, _ := NewInstance("web-state", "stable-state", "statemouse", "127.0.0.1:8081", s)
 
 	ins, err := ins.Register()
 	if err != nil {
