@@ -30,7 +30,7 @@ func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
 	rev.ArchiveUrl = "archive"
 
 	pty := NewProcType(app, pType, s)
-	ins, err = NewInstance(pty, rev, addr, s)
+	ins, err = NewInstance(string(pty.Name), rev.Ref, app.Name, addr, s)
 	if err != nil {
 		panic(err)
 	}
@@ -75,7 +75,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	check, _, err = ins.conn.Exists(ins.ProcType.InstancePath(ins.Id()))
+	check, _, err = ins.conn.Exists(ins.ProctypePath())
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,23 +89,23 @@ func TestInstanceRegister(t *testing.T) {
 	}
 }
 
-func TestGetInstanceInfo(t *testing.T) {
+func TestGetInstance(t *testing.T) {
 	ins := instanceSetup("localhost:9494", "web")
 	_, err := ins.Register()
 	if err != nil {
 		t.Errorf("Instance registration failed: %s", err)
 	}
-	i, err := GetInstanceInfo(ins.Snapshot, ins.Id())
+	i, err := GetInstance(ins.Snapshot, ins.Id())
 	if err != nil {
 		t.Error(err)
 	}
 	if i.Name != ins.Id() ||
-		i.Port != ins.Addr.Port ||
-		i.RevisionName != ins.Revision.Ref ||
-		i.AppName != ins.ProcType.App.Name ||
-		i.ProcessName != ins.ProcType.Name ||
-		i.Host != ins.Addr.IP.String() {
-		t.Error("InstanceInfo fields don't match Instance")
+		i.Port != ins.Port ||
+		i.RevisionName != ins.RevisionName ||
+		i.AppName != ins.AppName ||
+		i.ProcessName != ins.ProcessName ||
+		i.Host != ins.Host {
+		t.Error("Instance fields don't match Instance")
 	}
 }
 

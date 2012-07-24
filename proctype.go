@@ -102,16 +102,16 @@ func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 	return
 }
 
-func (p *ProcType) GetInstanceInfos() (ins []*InstanceInfo, err error) {
+func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 	insNames, err := p.GetInstanceNames()
 	if err != nil {
 		return
 	}
 
 	for _, insName := range insNames {
-		var i *InstanceInfo
+		var i *Instance
 
-		i, err = GetInstanceInfo(p.Snapshot, insName)
+		i, err = GetInstance(p.Snapshot, insName)
 		if err != nil {
 			return
 		}

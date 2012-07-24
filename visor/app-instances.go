@@ -48,7 +48,7 @@ func runAppInstances(cmd *Command, args []string) {
 			continue
 		}
 
-		ins, err := pty.GetInstanceInfos()
+		ins, err := pty.GetInstances()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching instances for %s %s\n", pty.Name, err.Error())
 			os.Exit(2)
