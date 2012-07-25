@@ -47,12 +47,14 @@ func NewInstance(pty string, rev string, app string, addr string, snapshot Snaps
 	ins = &Instance{
 		Host:         tcpAddr.IP.String(),
 		Port:         tcpAddr.Port,
+		ServiceName:  app + "-" + pty,
 		AppName:      app,
 		ProcessName:  ProcessName(pty),
 		RevisionName: rev,
 		State:        InsStateInitial,
 	}
 	ins.Path = Path{snapshot, "/instances/" + ins.Id()}
+	ins.Name = ins.Id()
 
 	return
 }
@@ -163,21 +165,13 @@ func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
 	}
 	fields := strings.Fields(string(info))
 
-	port, err := strconv.Atoi(string(fields[4]))
+	addr := fields[3] + ":" + fields[4]
+
+	ins, err = NewInstance(fields[2], fields[1], fields[0], addr, s)
 	if err != nil {
 		return
 	}
-
-	ins = &Instance{
-		Name:         insName,
-		AppName:      fields[0],
-		RevisionName: fields[1],
-		ProcessName:  ProcessName(fields[2]),
-		Host:         fields[3],
-		Port:         port,
-		ServiceName:  fields[0] + "-" + fields[2],
-		State:        State(state),
-	}
+	ins.State = State(state)
 
 	return
 }
