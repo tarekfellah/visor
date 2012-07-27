@@ -242,7 +242,7 @@ func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	}
 }
 
-func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) {
+func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, s1 Snapshot, err error) {
 	var ev doozer.Event
 
 	rev := s.Rev
@@ -252,6 +252,8 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) 
 		if err != nil {
 			return
 		}
+		rev = ev.Rev
+
 		if ev.IsSet() && TicketStatus(ev.Body) == TicketStatusDone {
 			status = TicketStatusDone
 			break
@@ -260,8 +262,9 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) 
 			status = TicketStatusDead
 			break
 		}
-		rev = ev.Rev
 	}
+	s1 = s.FastForward(rev)
+
 	return
 }
 
