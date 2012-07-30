@@ -142,12 +142,12 @@ func (i *Instance) AddrString() string {
 	return i.Host + ":" + strconv.Itoa(i.Port)
 }
 
-func (i *Instance) RevString() string {
-	return i.AppName + "-" + i.RevisionName
+func (i *Instance) RefString() string {
+	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
 }
 
 func (i *Instance) LogString() string {
-	return fmt.Sprintf("%s (%s)", i.RevString(), i.AddrString())
+	return fmt.Sprintf("%s (%s)", i.RefString(), i.AddrString())
 }
 
 // GetInstance returns an Instance from the given app, rev, proc and instance ids.
