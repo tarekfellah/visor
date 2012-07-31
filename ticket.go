@@ -219,28 +219,6 @@ func (t *Ticket) Done(host string) (err error) {
 	return
 }
 
-// String returns the Go-syntax representation of Ticket.
-func (t *Ticket) String() string {
-	return fmt.Sprintf("Ticket{id: %d, op: %s, app: %s, rev: %s, proc: %s}", t.Id, t.Op.String(), t.AppName, t.RevisionName, t.ProcessName)
-}
-
-// IdString returns a string of the format "TICKET[$ticket-id]"
-func (t *Ticket) IdString() string {
-	return fmt.Sprintf("TICKET[%d]", t.Id)
-}
-
-func (t *Ticket) claimPath(host string) string {
-	return t.Path.Prefix("claims", host)
-}
-
-func Tickets() ([]Ticket, error) {
-	return nil, nil
-}
-
-func HostTickets(addr string) ([]Ticket, error) {
-	return nil, nil
-}
-
 func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	rev := s.Rev
 
@@ -264,7 +242,7 @@ func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	}
 }
 
-func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) {
+func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, s1 Snapshot, err error) {
 	var ev doozer.Event
 
 	rev := s.Rev
@@ -274,6 +252,8 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) 
 		if err != nil {
 			return
 		}
+		rev = ev.Rev
+
 		if ev.IsSet() && TicketStatus(ev.Body) == TicketStatusDone {
 			status = TicketStatusDone
 			break
@@ -282,8 +262,9 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, err error) 
 			status = TicketStatusDead
 			break
 		}
-		rev = ev.Rev
 	}
+	s1 = s.FastForward(rev)
+
 	return
 }
 
@@ -313,10 +294,24 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 	return t, err
 }
 
+func (t *Ticket) claimPath(host string) string {
+	return t.Path.Prefix("claims", host)
+}
+
 func (t *Ticket) Fields() string {
 	return fmt.Sprintf("%d %s %s %s %s", t.Id, t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String())
 }
 
 func (t *Ticket) Array() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
+}
+
+// String returns the Go-syntax representation of Ticket.
+func (t *Ticket) String() string {
+	return fmt.Sprintf("Ticket{id: %d, op: %s, app: %s, rev: %s, proc: %s}", t.Id, t.Op.String(), t.AppName, t.RevisionName, t.ProcessName)
+}
+
+// IdString returns a string of the format "TICKET[$ticket-id]"
+func (t *Ticket) IdString() string {
+	return fmt.Sprintf("TICKET[%d]", t.Id)
 }

@@ -24,9 +24,9 @@ const (
 
 const INSTANCES_PATH = "instances"
 
-// InstanceInfo represents instance information as ids,
-// when it's impractical to use the full Instance type.
-type InstanceInfo struct {
+// An Instance represents a running process of a specific type.
+type Instance struct {
+	Path
 	Name         string
 	AppName      string
 	RevisionName string
@@ -37,39 +37,24 @@ type InstanceInfo struct {
 	State        State
 }
 
-func (i InstanceInfo) AddrString() string {
-	return i.Host + ":" + strconv.Itoa(i.Port)
-}
-func (i InstanceInfo) RevString() string {
-	return i.AppName + "-" + i.RevisionName
-}
-func (i InstanceInfo) LogString() string {
-	return fmt.Sprintf("%s (%s)", i.RevString(), i.AddrString())
-}
-
-// An Instance represents a running process of a specific type.
-type Instance struct {
-	Path
-	ProcType *ProcType // ProcType the instance belongs to
-	Revision *Revision
-	Addr     *net.TCPAddr // TCP address of the running instance
-	State    State        // Current state of the instance
-}
-
 // NewInstance creates and returns a new Instance object.
-func NewInstance(pty *ProcType, rev *Revision, addr string, snapshot Snapshot) (ins *Instance, err error) {
+func NewInstance(pty string, rev string, app string, addr string, snapshot Snapshot) (ins *Instance, err error) {
 	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
 
 	ins = &Instance{
-		Addr:     tcpAddr,
-		ProcType: pty,
-		Revision: rev,
-		State:    InsStateInitial,
+		Host:         tcpAddr.IP.String(),
+		Port:         tcpAddr.Port,
+		ServiceName:  app + "-" + pty,
+		AppName:      app,
+		ProcessName:  ProcessName(pty),
+		RevisionName: rev,
+		State:        InsStateInitial,
 	}
 	ins.Path = Path{snapshot, "/instances/" + ins.Id()}
+	ins.Name = ins.Id()
 
 	return
 }
@@ -84,6 +69,10 @@ func (i *Instance) createSnapshot(rev int64) Snapshotable {
 	tmp := *i
 	tmp.Snapshot = Snapshot{rev, i.conn}
 	return &tmp
+}
+
+func (i *Instance) ProctypePath() string {
+	return path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Id())
 }
 
 // Register registers an instance with the registry.
@@ -106,7 +95,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 	now := time.Now().UTC().String()
 
-	s, err := i.Snapshot.Set(i.ProcType.InstancePath(i.Id()), now)
+	s, err := i.Snapshot.Set(i.ProctypePath(), now)
 	instance = i.FastForward(s.Rev)
 
 	return
@@ -114,22 +103,11 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	err = i.Snapshot.Del(i.ProcType.InstancePath(i.Id()))
+	err = i.Snapshot.Del(i.ProctypePath())
 	if err != nil {
 		return
 	}
 	err = i.Del("/")
-	return
-}
-
-func (i *InstanceInfo) Unregister(s Snapshot) (err error) {
-	p := path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Name)
-
-	err = s.Del(p)
-	if err != nil {
-		return
-	}
-	err = s.Del(path.Join(INSTANCES_PATH, i.Name))
 	return
 }
 
@@ -147,21 +125,33 @@ func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
 }
 
 func (i *Instance) Id() string {
-	return strings.Replace(strings.Replace(i.Addr.String(), ".", "-", -1), ":", "-", -1)
+	return fmt.Sprintf("%s-%d", strings.Replace(i.Host, ".", "-", -1), i.Port)
 }
 
 func (i *Instance) String() string {
 	return strings.Join([]string{
-		i.ProcType.App.Name,
-		i.Revision.Ref,
-		string(i.ProcType.Name),
-		i.Addr.IP.String(),
-		fmt.Sprintf("%d", i.Addr.Port),
+		i.AppName,
+		i.RevisionName,
+		string(i.ProcessName),
+		i.Host,
+		fmt.Sprintf("%d", i.Port),
 	}, " ")
 }
 
-// GetInstanceInfo returns an InstanceInfo from the given app, rev, proc and instance ids.
-func GetInstanceInfo(s Snapshot, insName string) (ins *InstanceInfo, err error) {
+func (i *Instance) AddrString() string {
+	return i.Host + ":" + strconv.Itoa(i.Port)
+}
+
+func (i *Instance) RefString() string {
+	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
+}
+
+func (i *Instance) LogString() string {
+	return fmt.Sprintf("%s (%s)", i.RefString(), i.AddrString())
+}
+
+// GetInstance returns an Instance from the given app, rev, proc and instance ids.
+func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
 	p := path.Join(INSTANCES_PATH, insName)
 
 	state, _, err := s.conn.Get(p+"/state", nil)
@@ -175,21 +165,13 @@ func GetInstanceInfo(s Snapshot, insName string) (ins *InstanceInfo, err error) 
 	}
 	fields := strings.Fields(string(info))
 
-	port, err := strconv.Atoi(string(fields[4]))
+	addr := fields[3] + ":" + fields[4]
+
+	ins, err = NewInstance(fields[2], fields[1], fields[0], addr, s)
 	if err != nil {
 		return
 	}
-
-	ins = &InstanceInfo{
-		Name:         insName,
-		AppName:      fields[0],
-		RevisionName: fields[1],
-		ProcessName:  ProcessName(fields[2]),
-		Host:         fields[3],
-		Port:         port,
-		ServiceName:  fields[0] + "-" + fields[2],
-		State:        State(state),
-	}
+	ins.State = State(state)
 
 	return
 }

@@ -15,7 +15,7 @@ import (
 	"text/template"
 )
 
-const VERSION_STRING = "0.4.2"
+const VERSION_STRING = "0.5.1"
 
 type Command struct {
 	Run       func(cmd *Command, args []string)

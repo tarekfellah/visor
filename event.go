@@ -165,7 +165,7 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		}
 	case EvInsReg:
 		path := ev.Path
-		info, err = GetInstanceInfo(s, path["instance"])
+		info, err = GetInstance(s, path["instance"])
 
 		if err != nil {
 			fmt.Printf("error getting instance info: %s\n", err)
@@ -173,7 +173,7 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		}
 	case EvInsStateChange:
 		path := ev.Path
-		info, err = GetInstanceInfo(s, path["instance"])
+		info, err = GetInstance(s, path["instance"])
 
 		if err != nil {
 			fmt.Printf("error getting instance info: %s\n", err)

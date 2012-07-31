@@ -242,6 +242,37 @@ func TestTicketWatchUnclaim(t *testing.T) {
 	expectTicket("lol", "cat", "app", OpStart, l, t)
 }
 
+func TestTicketWaitTicketProcessed(t *testing.T) {
+	s, host := ticketSetup()
+
+	ticket, err := CreateTicket("lol", "cat", "app", OpStart, s)
+	if err != nil {
+		t.Error(err)
+	}
+
+	go func() {
+		ticket.Claim(host)
+		if err != nil {
+			t.Error(err)
+		}
+		ticket.Done(host)
+		if err != nil {
+			t.Error(err)
+		}
+	}()
+
+	status, s1, err := WaitTicketProcessed(s, ticket.Id)
+	if err != nil {
+		t.Error(err)
+	}
+	if s1.Rev <= s.Rev {
+		t.Error("revision didn't increase")
+	}
+	if status != TicketStatusDone {
+		t.Error("ticket status != 'done'")
+	}
+}
+
 func expectTicket(appName, revName, pName string, op OperationType, l chan *Ticket, t *testing.T) {
 	for {
 		select {
