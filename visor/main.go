@@ -15,7 +15,7 @@ import (
 	"text/template"
 )
 
-const VERSION_STRING = "v0.4.1"
+const VERSION_STRING = "0.4.2"
 
 type Command struct {
 	Run       func(cmd *Command, args []string)
@@ -35,10 +35,12 @@ func (c *Command) Usage() {
 
 var Uri string
 var Root string
+var Version bool
 
 func init() {
 	flag.StringVar(&Uri, "uri", visor.DEFAULT_URI, "doozer uri")
 	flag.StringVar(&Root, "root", visor.DEFAULT_ROOT, "doozer root")
+	flag.BoolVar(&Version, "version", false, "print version and exit")
 }
 
 var commands = []*Command{
@@ -68,6 +70,12 @@ func main() {
 	log.SetFlags(0)
 
 	args := flag.Args()
+
+	if Version == true {
+		fmt.Println(VERSION_STRING)
+		os.Exit(0)
+	}
+
 	if len(args) < 1 {
 		usage()
 	}
@@ -106,8 +114,9 @@ func usage() {
 var usageTmpl = `Usage: visor [globals] command [arguments]
 
 Globals:
-  -root Doozerd tree prefix
-  -uri  Doozerd cluster URI
+  -root     Doozerd tree prefix
+  -uri      Doozerd cluster URI
+  -version  Print version and exit
 
 Commands:{{range .}}
   {{.Name | printf "%-15s"}} {{.Short}}{{end}}

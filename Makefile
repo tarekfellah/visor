@@ -8,7 +8,7 @@ install: update_version gobuild
 	cp bin/visor $${DESTDIR-/usr/local}/bin
 
 update_version:
-	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" visor/main.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"v$$(cat VERSION)\"/" visor/main.go
+	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" visor/main.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"$$(cat VERSION)\"/" visor/main.go
 	grep ".*version '$$(cat VERSION)'" visor.rb || sed -i -e "s/.*version '[\.0-9]*'$$/  version '$$(cat VERSION)'/" visor.rb
 
 
