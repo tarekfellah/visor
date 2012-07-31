@@ -207,12 +207,29 @@ func TestEventInstanceStateChange(t *testing.T) {
 
 	go WatchEvent(s, l)
 
-	_, err = ins.UpdateState(InsStateStarted)
+	ins, err = ins.UpdateState(InsStateStarted)
 	if err != nil {
 		t.Error(err)
 	}
+	expectEvent(EvInsStart, "", l, t)
 
-	expectEvent(EvInsStateChange, "", l, t)
+	ins, err = ins.UpdateState(InsStateFailed)
+	if err != nil {
+		t.Error(err)
+	}
+	expectEvent(EvInsFail, "", l, t)
+
+	ins, err = ins.UpdateState(InsStateExited)
+	if err != nil {
+		t.Error(err)
+	}
+	expectEvent(EvInsExit, "", l, t)
+
+	_, err = ins.UpdateState(InsStateDead)
+	if err != nil {
+		t.Error(err)
+	}
+	expectEvent(EvInsDead, "", l, t)
 }
 
 func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {

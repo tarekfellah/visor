@@ -20,53 +20,64 @@ type Event struct {
 	source *doozer.Event     // Original event returned by doozer
 	Rev    int64
 }
+
 type EventType int
 
+var EventTypeStrings = map[EventType]string{
+	EvAppReg:    "<app registered>",
+	EvAppUnreg:  "<app unregistered>",
+	EvRevReg:    "<revision registered>",
+	EvRevUnreg:  "<revision unregistered>",
+	EvProcReg:   "<proctype registered>",
+	EvProcUnreg: "<proctype unregistered>",
+	EvInsReg:    "<instance registered>",
+	EvInsUnreg:  "<instance unregistered>",
+	EvInsStart:  "<instance started>",
+	EvInsFail:   "<instance failed>",
+	EvInsExit:   "<instance exited>",
+	EvInsDead:   "<instance died>",
+}
+
 func (e EventType) String() string {
-	switch e {
-	case EvAppReg:
-		return "<app registered>"
-	case EvAppUnreg:
-		return "<app unregistered>"
-	case EvRevReg:
-		return "<revision registered>"
-	case EvRevUnreg:
-		return "<revision unregistered>"
-	case EvProcReg:
-		return "<proctype registered>"
-	case EvProcUnreg:
-		return "<proctype unregistered>"
-	case EvInsReg:
-		return "<instance registered>"
-	case EvInsUnreg:
-		return "<instance unregistered>"
-	case EvInsStateChange:
-		return "<instance state changed>"
+	str, ok := EventTypeStrings[e]
+	if !ok {
+		return "<unknown event>"
 	}
-	return "<<unkown event>>"
+	return str
 }
 
 // Event types
 const (
-	EvAppReg         EventType = iota // App register
-	EvAppUnreg                        // App unregister
-	EvRevReg                          // Revision register
-	EvRevUnreg                        // Revision unregister
-	EvProcReg                         // ProcType register
-	EvProcUnreg                       // ProcType unregister
-	EvInsReg                          // Instance register
-	EvInsUnreg                        // Instance unregister
-	EvInsStateChange                  // Instance state change
+	EvAppReg    EventType = iota // App register
+	EvAppUnreg                   // App unregister
+	EvRevReg                     // Revision register
+	EvRevUnreg                   // Revision unregister
+	EvProcReg                    // ProcType register
+	EvProcUnreg                  // ProcType unregister
+	EvInsReg                     // Instance register
+	EvInsUnreg                   // Instance unregister
+	EvInsStart                   // Instance state changed to 'started'
+	EvInsFail                    // Instance state changed to 'failed'
+	EvInsDead                    // Instance state changed to 'dead'
+	EvInsExit                    // Instance state changed to 'exited'
+)
+
+const (
+	pathApp = iota
+	pathRev
+	pathProc
+	pathIns
+	pathInsState
 )
 
 var (
 	eventRegexps = map[string]*regexp.Regexp{}
 	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                      EvAppReg,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":         EvRevReg,
-		"^/apps/([^/]+)/procs/([^/]+)/registered$":        EvProcReg,
-		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": EvInsReg,
-		"^/instances/([^/]+)/state$":                      EvInsStateChange,
+		"^/apps/([^/]+)/registered$":                      pathApp,
+		"^/apps/([^/]+)/revs/([^/]+)/registered$":         pathRev,
+		"^/apps/([^/]+)/procs/([^/]+)/registered$":        pathProc,
+		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": pathIns,
+		"^/instances/([^/]+)/state$":                      pathInsState,
 	}
 )
 
@@ -163,15 +174,7 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
-	case EvInsReg:
-		path := ev.Path
-		info, err = GetInstance(s, path["instance"])
-
-		if err != nil {
-			fmt.Printf("error getting instance info: %s\n", err)
-			return
-		}
-	case EvInsStateChange:
+	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
 		path := ev.Path
 		info, err = GetInstance(s, path["instance"])
 
@@ -180,7 +183,6 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			return
 		}
 	}
-
 	return
 }
 
@@ -195,51 +197,58 @@ func parseEvent(src *doozer.Event) *Event {
 
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch ev {
-			case EvAppReg:
+			case pathApp:
 				emitter["app"] = match[1]
 
 				if src.IsSet() {
-					etype = ev
+					etype = EvAppReg
 				} else if src.IsDel() {
 					etype = EvAppUnreg
 				}
-			case EvRevReg:
+			case pathRev:
 				emitter["app"] = match[1]
 				emitter["rev"] = match[2]
 
 				if src.IsSet() {
-					etype = ev
+					etype = EvRevReg
 				} else if src.IsDel() {
 					etype = EvRevUnreg
 				}
-			case EvProcReg:
+			case pathProc:
 				emitter["app"] = match[1]
 				emitter["proctype"] = match[2]
 
 				if src.IsSet() {
-					etype = ev
+					etype = EvProcReg
 				} else if src.IsDel() {
 					etype = EvProcUnreg
 				}
-			case EvInsReg:
+			case pathIns:
 				emitter["app"] = match[1]
 				emitter["proctype"] = match[2]
 				emitter["instance"] = match[3]
 
 				if src.IsSet() {
-					etype = ev
+					etype = EvInsReg
 				} else if src.IsDel() {
 					etype = EvInsUnreg
 				}
-			case EvInsStateChange:
+			case pathInsState:
 				emitter["instance"] = match[1]
 
-				if src.IsDel() {
+				if !src.IsSet() {
 					break
 				}
 
-				if State(src.Body) != InsStateInitial {
-					etype = ev
+				switch State(src.Body) {
+				case InsStateStarted:
+					etype = EvInsStart
+				case InsStateExited:
+					etype = EvInsExit
+				case InsStateFailed:
+					etype = EvInsFail
+				case InsStateDead:
+					etype = EvInsDead
 				}
 			}
 			break
