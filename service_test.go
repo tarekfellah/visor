@@ -106,7 +106,7 @@ func TestServiceAddandGetAddr(t *testing.T) {
 		}
 	}
 
-	srv2, err := GetService(srv.FastForward(srv.Snapshot.Rev).Snapshot, name)
+	srv2, err := GetService(srv.Snapshot, name)
 	if err != nil {
 		t.Error(t)
 	}
@@ -141,7 +141,7 @@ func TestServiceRemoveAddr(t *testing.T) {
 		t.Error(err)
 	}
 
-	srv2, err := GetService(srv.FastForward(srv.Snapshot.Rev).Snapshot, name)
+	srv2, err := GetService(srv.Snapshot, name)
 	if err != nil {
 		t.Error(t)
 	}
@@ -153,23 +153,24 @@ func TestServiceRemoveAddr(t *testing.T) {
 }
 
 func TestServices(t *testing.T) {
+	var err error
+
 	srv := serviceSetup("memstore")
 	names := []string{"boombroker", "comastorage", "lulzdb"}
 
 	for _, name := range names {
-		s := NewService(name, srv.Path.Snapshot)
-		_, err := s.Register()
+		srv = NewService(name, srv.Snapshot)
+		srv, err = srv.Register()
 		if err != nil {
 			t.Error(err)
 		}
 	}
 
-	srv = srv.FastForward(-1)
-
 	srvs, err := Services(srv.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}
+
 	if len(srvs) != len(names) {
 		t.Errorf("expected length %d returned %d", len(names), len(srvs))
 	} else {
