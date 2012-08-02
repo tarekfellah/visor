@@ -62,33 +62,22 @@ const (
 	EvInsExit                    // Instance state changed to 'exited'
 )
 
+type eventPath int
+
 const (
-	pathApp = iota
+	pathApp eventPath = iota
 	pathRev
 	pathProc
 	pathIns
 	pathInsState
 )
 
-var (
-	eventRegexps = map[string]*regexp.Regexp{}
-	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                      pathApp,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":         pathRev,
-		"^/apps/([^/]+)/procs/([^/]+)/registered$":        pathProc,
-		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": pathIns,
-		"^/instances/([^/]+)/state$":                      pathInsState,
-	}
-)
-
-func init() {
-	for str, _ := range eventPaths {
-		re, err := regexp.Compile(str)
-		if err != nil {
-			panic(err)
-		}
-		eventRegexps[str] = re
-	}
+var eventPatterns = map[*regexp.Regexp]eventPath{
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/registered$"):                                pathApp,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/revs/([a-zA-Z0-9-]+)/registered$"):           pathRev,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/procs/([a-zA-Z0-9-]+)/registered$"):          pathProc,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/procs/([a-zA-Z0-9-]+)/instances/([0-9-]+)$"): pathIns,
+	regexp.MustCompile("^/instances/([0-9-]+)/state$"):                                      pathInsState,
 }
 
 func (ev *Event) String() string {
@@ -192,9 +181,7 @@ func parseEvent(src *doozer.Event) *Event {
 	etype := EventType(-1)
 	emitter := map[string]string{}
 
-	for str, ev := range eventPaths {
-		re := eventRegexps[str]
-
+	for re, ev := range eventPatterns {
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch ev {
 			case pathApp:
