@@ -164,8 +164,20 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
 	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
+		var i *Instance
+
 		e := ev.Emitter
-		info, err = GetInstance(s, e["instance"])
+		i, err = GetInstance(s, e["instance"])
+		if err != nil {
+			fmt.Printf("error getting instance: %s\n", err)
+			return
+		}
+		// XXX Find better place for this
+		e["app"] = i.AppName
+		e["rev"] = i.RevisionName
+		e["proctype"] = string(i.ProcessName)
+
+		info = i
 
 		if err != nil {
 			fmt.Printf("error getting instance info: %s\n", err)
