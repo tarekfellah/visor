@@ -13,12 +13,12 @@ import (
 
 // An Event represents a change to a file in the registry.
 type Event struct {
-	Type   EventType         // Type of event
-	Path   map[string]string // The parsed file path
-	Body   string            // Body of the changed file
-	Info   interface{}       // Extra information, such as InstanceInfo
-	source *doozer.Event     // Original event returned by doozer
-	Rev    int64
+	Type    EventType         // Type of event
+	Emitter map[string]string // The parsed file path
+	Body    string            // Body of the changed file
+	Info    interface{}       // Extra information, such as InstanceInfo
+	source  *doozer.Event     // Original event returned by doozer
+	Rev     int64
 }
 
 type EventType int
@@ -127,8 +127,8 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	switch ev.Type {
 	case EvAppReg:
-		path := ev.Path
-		info, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		info, err = GetApp(s, e["app"])
 
 		if err != nil {
 			fmt.Printf("error getting app: %s\n", err)
@@ -137,14 +137,14 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvRevReg:
 		var app *App
 
-		path := ev.Path
-		app, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		app, err = GetApp(s, e["app"])
 		if err != nil {
 			fmt.Printf("error getting app for revision: %s\n", err)
 			return
 		}
 
-		info, err = GetRevision(s, app, path["rev"])
+		info, err = GetRevision(s, app, e["rev"])
 		if err != nil {
 			fmt.Printf("error getting revision: %s\n", err)
 			return
@@ -152,20 +152,20 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvProcReg:
 		var app *App
 
-		path := ev.Path
-		app, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		app, err = GetApp(s, e["app"])
 		if err != nil {
 			fmt.Printf("error getting app for proctype: %s\n", err)
 			return
 		}
 
-		info, err = GetProcType(s, app, ProcessName(path["proctype"]))
+		info, err = GetProcType(s, app, ProcessName(e["proctype"]))
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
 	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
-		path := ev.Path
-		info, err = GetInstance(s, path["instance"])
+		e := ev.Emitter
+		info, err = GetInstance(s, e["instance"])
 
 		if err != nil {
 			fmt.Printf("error getting instance info: %s\n", err)

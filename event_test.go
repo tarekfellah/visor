@@ -237,8 +237,8 @@ func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
 		select {
 		case event := <-l:
 			if event.Type == etype {
-				if event.Path["app"] != appname {
-					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Path["app"])
+				if event.Emitter["app"] != appname {
+					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Emitter["app"])
 				}
 				return
 			} else if event.Type >= 0 {
