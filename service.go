@@ -69,8 +69,6 @@ func (s *Service) Unregister() error {
 
 // AddAddr adds the given address string to the Service.
 func (s *Service) AddAddr(addr string) (srv *Service, err error) {
-	s.Addrs[addr] = true
-
 	rev, err := s.Set(path.Join(ADDRS_PATH, addr), time.Now().UTC().String())
 	if err != nil {
 		return
@@ -78,22 +76,24 @@ func (s *Service) AddAddr(addr string) (srv *Service, err error) {
 
 	srv = s.FastForward(rev)
 
+	s.Addrs[addr] = true
+
 	return
 }
 
 // RemoveAddr removes the given address string from the Service.
 func (s *Service) RemoveAddr(addr string) (srv *Service, err error) {
-	_, ok := s.Addrs[addr]
-	if ok {
-		delete(s.Addrs, addr)
-	}
-
 	err = s.Del(path.Join(ADDRS_PATH, addr))
 	if err != nil {
 		return
 	}
 
 	srv = s.FastForward(s.Rev + 1)
+
+	_, ok := s.Addrs[addr]
+	if ok {
+		delete(s.Addrs, addr)
+	}
 
 	return
 }
