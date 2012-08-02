@@ -23,23 +23,23 @@ type Event struct {
 
 type EventType int
 
-var EventTypeStrings = map[EventType]string{
-	EvAppReg:    "<app registered>",
-	EvAppUnreg:  "<app unregistered>",
-	EvRevReg:    "<revision registered>",
-	EvRevUnreg:  "<revision unregistered>",
-	EvProcReg:   "<proctype registered>",
-	EvProcUnreg: "<proctype unregistered>",
-	EvInsReg:    "<instance registered>",
-	EvInsUnreg:  "<instance unregistered>",
-	EvInsStart:  "<instance started>",
-	EvInsFail:   "<instance failed>",
-	EvInsExit:   "<instance exited>",
-	EvInsDead:   "<instance died>",
+var EventTypes = map[EventType]string{
+	EvAppReg:    "app-register",
+	EvAppUnreg:  "app-unregister",
+	EvRevReg:    "rev-register",
+	EvRevUnreg:  "rev-unregister",
+	EvProcReg:   "proc-register",
+	EvProcUnreg: "proc-unregister",
+	EvInsReg:    "instance-register",
+	EvInsUnreg:  "instance-unregister",
+	EvInsStart:  "instance-start",
+	EvInsFail:   "instance-fail",
+	EvInsExit:   "instance-exit",
+	EvInsDead:   "instance-dead",
 }
 
 func (e EventType) String() string {
-	str, ok := EventTypeStrings[e]
+	str, ok := EventTypes[e]
 	if !ok {
 		return "<unknown event>"
 	}
