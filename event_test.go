@@ -211,25 +211,25 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsStart, "", l, t)
+	expectEvent(EvInsStart, "statemouse", l, t)
 
 	ins, err = ins.UpdateState(InsStateFailed)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsFail, "", l, t)
+	expectEvent(EvInsFail, "statemouse", l, t)
 
 	ins, err = ins.UpdateState(InsStateExited)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsExit, "", l, t)
+	expectEvent(EvInsExit, "statemouse", l, t)
 
 	_, err = ins.UpdateState(InsStateDead)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsDead, "", l, t)
+	expectEvent(EvInsDead, "statemouse", l, t)
 }
 
 func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
@@ -237,8 +237,8 @@ func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
 		select {
 		case event := <-l:
 			if event.Type == etype {
-				if event.Path["app"] != appname {
-					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Path["app"])
+				if event.Emitter["app"] != appname {
+					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Emitter["app"])
 				}
 				return
 			} else if event.Type >= 0 {

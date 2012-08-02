@@ -13,33 +13,33 @@ import (
 
 // An Event represents a change to a file in the registry.
 type Event struct {
-	Type   EventType         // Type of event
-	Path   map[string]string // The parsed file path
-	Body   string            // Body of the changed file
-	Info   interface{}       // Extra information, such as InstanceInfo
-	source *doozer.Event     // Original event returned by doozer
-	Rev    int64
+	Type    EventType         // Type of event
+	Emitter map[string]string // The parsed file path
+	Body    string            // Body of the changed file
+	Info    interface{}       // Extra information, such as InstanceInfo
+	source  *doozer.Event     // Original event returned by doozer
+	Rev     int64
 }
 
 type EventType int
 
-var EventTypeStrings = map[EventType]string{
-	EvAppReg:    "<app registered>",
-	EvAppUnreg:  "<app unregistered>",
-	EvRevReg:    "<revision registered>",
-	EvRevUnreg:  "<revision unregistered>",
-	EvProcReg:   "<proctype registered>",
-	EvProcUnreg: "<proctype unregistered>",
-	EvInsReg:    "<instance registered>",
-	EvInsUnreg:  "<instance unregistered>",
-	EvInsStart:  "<instance started>",
-	EvInsFail:   "<instance failed>",
-	EvInsExit:   "<instance exited>",
-	EvInsDead:   "<instance died>",
+var EventTypes = map[EventType]string{
+	EvAppReg:    "app-register",
+	EvAppUnreg:  "app-unregister",
+	EvRevReg:    "rev-register",
+	EvRevUnreg:  "rev-unregister",
+	EvProcReg:   "proc-register",
+	EvProcUnreg: "proc-unregister",
+	EvInsReg:    "instance-register",
+	EvInsUnreg:  "instance-unregister",
+	EvInsStart:  "instance-start",
+	EvInsFail:   "instance-fail",
+	EvInsExit:   "instance-exit",
+	EvInsDead:   "instance-dead",
 }
 
 func (e EventType) String() string {
-	str, ok := EventTypeStrings[e]
+	str, ok := EventTypes[e]
 	if !ok {
 		return "<unknown event>"
 	}
@@ -62,33 +62,22 @@ const (
 	EvInsExit                    // Instance state changed to 'exited'
 )
 
+type eventPath int
+
 const (
-	pathApp = iota
+	pathApp eventPath = iota
 	pathRev
 	pathProc
 	pathIns
 	pathInsState
 )
 
-var (
-	eventRegexps = map[string]*regexp.Regexp{}
-	eventPaths   = map[string]EventType{
-		"^/apps/([^/]+)/registered$":                      pathApp,
-		"^/apps/([^/]+)/revs/([^/]+)/registered$":         pathRev,
-		"^/apps/([^/]+)/procs/([^/]+)/registered$":        pathProc,
-		"^/apps/([^/]+)/procs/([^/]+)/instances/([^/]+)$": pathIns,
-		"^/instances/([^/]+)/state$":                      pathInsState,
-	}
-)
-
-func init() {
-	for str, _ := range eventPaths {
-		re, err := regexp.Compile(str)
-		if err != nil {
-			panic(err)
-		}
-		eventRegexps[str] = re
-	}
+var eventPatterns = map[*regexp.Regexp]eventPath{
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/registered$"):                                pathApp,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/revs/([a-zA-Z0-9-]+)/registered$"):           pathRev,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/procs/([a-zA-Z0-9-]+)/registered$"):          pathProc,
+	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/procs/([a-zA-Z0-9-]+)/instances/([0-9-]+)$"): pathIns,
+	regexp.MustCompile("^/instances/([0-9-]+)/state$"):                                      pathInsState,
 }
 
 func (ev *Event) String() string {
@@ -138,8 +127,8 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	switch ev.Type {
 	case EvAppReg:
-		path := ev.Path
-		info, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		info, err = GetApp(s, e["app"])
 
 		if err != nil {
 			fmt.Printf("error getting app: %s\n", err)
@@ -148,14 +137,14 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvRevReg:
 		var app *App
 
-		path := ev.Path
-		app, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		app, err = GetApp(s, e["app"])
 		if err != nil {
 			fmt.Printf("error getting app for revision: %s\n", err)
 			return
 		}
 
-		info, err = GetRevision(s, app, path["rev"])
+		info, err = GetRevision(s, app, e["rev"])
 		if err != nil {
 			fmt.Printf("error getting revision: %s\n", err)
 			return
@@ -163,20 +152,32 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvProcReg:
 		var app *App
 
-		path := ev.Path
-		app, err = GetApp(s, path["app"])
+		e := ev.Emitter
+		app, err = GetApp(s, e["app"])
 		if err != nil {
 			fmt.Printf("error getting app for proctype: %s\n", err)
 			return
 		}
 
-		info, err = GetProcType(s, app, ProcessName(path["proctype"]))
+		info, err = GetProcType(s, app, ProcessName(e["proctype"]))
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
 	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
-		path := ev.Path
-		info, err = GetInstance(s, path["instance"])
+		var i *Instance
+
+		e := ev.Emitter
+		i, err = GetInstance(s, e["instance"])
+		if err != nil {
+			fmt.Printf("error getting instance: %s\n", err)
+			return
+		}
+		// XXX Find better place for this
+		e["app"] = i.AppName
+		e["rev"] = i.RevisionName
+		e["proctype"] = string(i.ProcessName)
+
+		info = i
 
 		if err != nil {
 			fmt.Printf("error getting instance info: %s\n", err)
@@ -192,9 +193,7 @@ func parseEvent(src *doozer.Event) *Event {
 	etype := EventType(-1)
 	emitter := map[string]string{}
 
-	for str, ev := range eventPaths {
-		re := eventRegexps[str]
-
+	for re, ev := range eventPatterns {
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch ev {
 			case pathApp:

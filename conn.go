@@ -97,7 +97,11 @@ func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
 	if rev < 0 {
 		return nil, fmt.Errorf("rev must be >= 0")
 	}
-	return c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
+	keys, err = c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
+	if err == doozer.ErrNoEnt || (err != nil && err.Error() == "NOENT") {
+		err = NewError(ErrNoEnt, fmt.Sprintf(`dir "%s" not found at %d`, path, rev))
+	}
+	return
 }
 
 // Wait is a wrapper around (*doozer.Conn).Wait
