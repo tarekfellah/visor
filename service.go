@@ -108,7 +108,7 @@ func (s *Service) Inspect() string {
 
 func (s *Service) getAddrs() (addrs []string, err error) {
 	addrs, err = s.Getdir(s.Path.Prefix(ADDRS_PATH))
-	if err != nil && err.Error() == "NOENT" {
+	if err != nil && IsErrNoEnt(err) {
 		return addrs, nil
 	}
 
