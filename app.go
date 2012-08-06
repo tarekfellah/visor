@@ -154,7 +154,7 @@ func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
 
 // DelEnvironmentVar removes the env variable for the given key.
 func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
-	err = a.Del("env/" + k)
+	err = a.Del("env/" + strings.Replace(k, "_", "-", -1))
 	if err != nil {
 		return
 	}
