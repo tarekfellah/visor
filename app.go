@@ -7,7 +7,6 @@ package visor
 
 import (
 	"fmt"
-	"github.com/soundcloud/doozer"
 	"path"
 	"strings"
 	"time"
@@ -107,7 +106,7 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 	vars = Env{}
 
 	if err != nil {
-		if err.(*doozer.Error).Err == doozer.ErrNoEnt {
+		if IsErrNoEnt(err) {
 			return vars, nil
 		} else {
 			return
