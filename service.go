@@ -39,8 +39,7 @@ func NewServiceAddr(addr string, port, prio, weight int) (a *ServiceAddr) {
 	return
 }
 
-// NewServiceAddrFromFile returns a new ServiceAddr based of the passed File.
-func NewServiceAddrFromFile(f *File) *ServiceAddr {
+func newServiceAddrFromFile(f *File) *ServiceAddr {
 	value := f.Value.(map[string]interface{})
 
 	addr := &ServiceAddr{}
@@ -180,7 +179,7 @@ func (s *Service) getAddrs() (addrs map[string]*ServiceAddr, err error) {
 			return
 		}
 
-		addrs[name] = NewServiceAddrFromFile(f)
+		addrs[name] = newServiceAddrFromFile(f)
 	}
 
 	return
