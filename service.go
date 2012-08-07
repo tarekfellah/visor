@@ -39,20 +39,6 @@ func NewServiceAddr(addr string, port, prio, weight int) (a *ServiceAddr) {
 	return
 }
 
-func newServiceAddrFromFile(f *File) *ServiceAddr {
-	value := f.Value.(map[string]interface{})
-
-	addr := &ServiceAddr{}
-
-	addr.Addr = value["target"].(string)
-	addr.Target = value["target"].(string)
-	addr.Port = int(value["port"].(float64))
-	addr.Priority = int(value["priority"].(float64))
-	addr.Weight = int(value["weight"].(float64))
-
-	return addr
-}
-
 func (a *ServiceAddr) Create(s Snapshot, prefix string) (f *File, err error) {
 	value := map[string]interface{}{
 		"priority": a.Priority,
@@ -62,6 +48,24 @@ func (a *ServiceAddr) Create(s Snapshot, prefix string) (f *File, err error) {
 	}
 
 	f, err = CreateFile(s, path.Join(prefix, a.Addr), value, new(JSONCodec))
+
+	return
+}
+
+func GetServiceAddr(s Snapshot, path string) (addr *ServiceAddr, err error) {
+	f, err := s.GetFile(path, new(JSONCodec))
+	if err != nil {
+		return
+	}
+
+	addr = &ServiceAddr{}
+	value := f.Value.(map[string]interface{})
+
+	addr.Addr = value["target"].(string)
+	addr.Target = value["target"].(string)
+	addr.Port = int(value["port"].(float64))
+	addr.Priority = int(value["priority"].(float64))
+	addr.Weight = int(value["weight"].(float64))
 
 	return
 }
@@ -169,14 +173,14 @@ func (s *Service) getAddrs() (addrs map[string]*ServiceAddr, err error) {
 	addrs = map[string]*ServiceAddr{}
 
 	for _, name := range names {
-		var f *File
+		var addr *ServiceAddr
 
-		f, err = s.GetFile(s.Path.Prefix(path.Join(ADDRS_PATH, name)), new(JSONCodec))
+		addr, err = GetServiceAddr(s.Snapshot, s.Path.Prefix(path.Join(ADDRS_PATH, name)))
 		if err != nil {
 			return
 		}
 
-		addrs[name] = newServiceAddrFromFile(f)
+		addrs[name] = addr
 	}
 
 	return
