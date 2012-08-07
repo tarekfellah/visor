@@ -80,8 +80,9 @@ func GetServiceAddr(s Snapshot, path string) (addr *ServiceAddr, err error) {
 	}
 	addr.Port = int(p)
 
-	addr.Addr = data[3] // target
-	addr.Target = data[3]
+	addr.Addr = data[3]
+	// We do not need a separate Target and therefore use the identifier
+	addr.Target = addr.Addr
 
 	return
 }
