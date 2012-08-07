@@ -127,5 +127,5 @@ Globals:
   -version  Print version and exit
 
 Commands:{{range .Commands}}
-  {{.Name | printf "%-15s"}} {{.Short}}{{end}}
+  {{.Name | printf "%-20s"}} {{.Short}}{{end}}
 `
