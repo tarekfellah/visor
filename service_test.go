@@ -91,7 +91,10 @@ func TestServiceUnregistration(t *testing.T) {
 
 func TestServiceAddandGetAddr(t *testing.T) {
 	name := "cloudstorage"
-	addrs := []string{"1.2.3.4", "4.3.2.1"}
+	addrs := []*ServiceAddr{
+		NewServiceAddr("1.2.3.4", 1234, 0, 0),
+		NewServiceAddr("4.3.2.1", 1234, 0, 0),
+	}
 	srv := serviceSetup(name)
 
 	srv, err := srv.Register()
@@ -112,16 +115,19 @@ func TestServiceAddandGetAddr(t *testing.T) {
 	}
 
 	for _, addr := range addrs {
-		_, ok := srv2.Addrs[addr]
+		_, ok := srv2.Addrs[addr.Addr]
 		if !ok {
-			t.Errorf("expected %s to be present", addr)
+			t.Errorf("expected %s to be present", addr.Addr)
 		}
 	}
 }
 
 func TestServiceRemoveAddr(t *testing.T) {
 	name := "owlsomedb"
-	addrs := []string{"5.6.7.8", "8.7.6.5"}
+	addrs := []*ServiceAddr{
+		NewServiceAddr("5.6.7.8", 4321, 0, 0),
+		NewServiceAddr("8.7.6.5", 4321, 0, 0),
+	}
 	srv := serviceSetup(name)
 
 	srv, err := srv.Register()
@@ -139,6 +145,8 @@ func TestServiceRemoveAddr(t *testing.T) {
 	srv, err = srv.RemoveAddr("5.6.7.8")
 	if err != nil {
 		t.Error(err)
+
+		return
 	}
 
 	srv2, err := GetService(srv.Snapshot, name)
@@ -146,7 +154,7 @@ func TestServiceRemoveAddr(t *testing.T) {
 		t.Error(t)
 	}
 
-	_, ok := srv2.Addrs[addrs[0]]
+	_, ok := srv2.Addrs[addrs[0].Addr]
 	if ok {
 		t.Errorf("expected %s to be deleted", addrs[0])
 	}

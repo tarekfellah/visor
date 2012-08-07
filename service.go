@@ -16,15 +16,69 @@ const (
 	SERVICES_PATH = "services"
 )
 
+// ServiceAddr represents an entry of a Service and supports all fields to be used
+// as SRV record.
+type ServiceAddr struct {
+	Addr     string
+	Priority int
+	Port     int
+	Target   string
+	Weight   int
+}
+
+// NewServiceAddr returns a new ServiceAddr.
+func NewServiceAddr(addr string, port, prio, weight int) (a *ServiceAddr) {
+	a = &ServiceAddr{
+		Addr:     addr,
+		Target:   addr,
+		Priority: prio,
+		Port:     port,
+		Weight:   weight,
+	}
+
+	return
+}
+
+// NewServiceAddrFromFile returns a new ServiceAddr based of the passed File.
+func NewServiceAddrFromFile(f *File) *ServiceAddr {
+	value := f.Value.(map[string]interface{})
+
+	addr := &ServiceAddr{}
+
+	addr.Addr = value["target"].(string)
+	addr.Target = value["target"].(string)
+	addr.Port = int(value["port"].(float64))
+	addr.Priority = int(value["priority"].(float64))
+	addr.Weight = int(value["weight"].(float64))
+
+	return addr
+}
+
+func (a *ServiceAddr) toFile(s Snapshot, prefix string) (f *File) {
+	f = &File{
+		Snapshot: s,
+		Codec:    new(JSONCodec),
+		Path:     path.Join(prefix, a.Addr),
+		Value: map[string]interface{}{
+			"priority": a.Priority,
+			"port":     a.Port,
+			"target":   a.Target,
+			"weight":   a.Weight,
+		},
+	}
+
+	return
+}
+
 type Service struct {
 	Path
 	Name  string
-	Addrs map[string]bool
+	Addrs map[string]*ServiceAddr
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
-	srv = &Service{Name: name, Addrs: map[string]bool{}}
+	srv = &Service{Name: name, Addrs: map[string]*ServiceAddr{}}
 	srv.Path = Path{snapshot, path.Join(SERVICES_PATH, srv.Name)}
 
 	return
@@ -68,15 +122,15 @@ func (s *Service) Unregister() error {
 }
 
 // AddAddr adds the given address string to the Service.
-func (s *Service) AddAddr(addr string) (srv *Service, err error) {
-	rev, err := s.Set(path.Join(ADDRS_PATH, addr), time.Now().UTC().String())
+func (s *Service) AddAddr(addr *ServiceAddr) (srv *Service, err error) {
+	f, err := addr.toFile(s.Snapshot, s.Path.Prefix(ADDRS_PATH)).Create()
 	if err != nil {
 		return
 	}
 
-	srv = s.FastForward(rev)
+	srv = s.FastForward(f.Rev)
 
-	s.Addrs[addr] = true
+	s.Addrs[addr.Addr] = addr
 
 	return
 }
@@ -106,10 +160,27 @@ func (s *Service) Inspect() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-func (s *Service) getAddrs() (addrs []string, err error) {
-	addrs, err = s.Getdir(s.Path.Prefix(ADDRS_PATH))
-	if err != nil && IsErrNoEnt(err) {
-		return addrs, nil
+func (s *Service) getAddrs() (addrs map[string]*ServiceAddr, err error) {
+	names, err := s.Getdir(s.Path.Prefix(ADDRS_PATH))
+	if err != nil {
+		if IsErrNoEnt(err) {
+			return addrs, nil
+		} else {
+			return
+		}
+	}
+
+	addrs = map[string]*ServiceAddr{}
+
+	for _, name := range names {
+		var f *File
+
+		f, err = s.GetFile(s.Path.Prefix(path.Join(ADDRS_PATH, name)), new(JSONCodec))
+		if err != nil {
+			return
+		}
+
+		addrs[name] = NewServiceAddrFromFile(f)
 	}
 
 	return
@@ -129,9 +200,7 @@ func GetService(s Snapshot, name string) (srv *Service, err error) {
 		return
 	}
 
-	for _, addr := range addrs {
-		srv.Addrs[addr] = true
-	}
+	srv.Addrs = addrs
 
 	return
 }
