@@ -8,6 +8,7 @@ package visor
 import (
 	"fmt"
 	"path"
+	"strconv"
 	"time"
 )
 
@@ -40,32 +41,47 @@ func NewServiceAddr(addr string, port, prio, weight int) (a *ServiceAddr) {
 }
 
 func (a *ServiceAddr) Create(s Snapshot, prefix string) (f *File, err error) {
-	value := map[string]interface{}{
-		"priority": a.Priority,
-		"port":     a.Port,
-		"target":   a.Target,
-		"weight":   a.Weight,
+	data := []string{
+		strconv.Itoa(a.Priority),
+		strconv.Itoa(a.Weight),
+		strconv.Itoa(a.Port),
+		a.Addr,
 	}
 
-	f, err = CreateFile(s, path.Join(prefix, a.Addr), value, new(JSONCodec))
+	f, err = CreateFile(s, path.Join(prefix, a.Addr), data, new(ListCodec))
 
 	return
 }
 
 func GetServiceAddr(s Snapshot, path string) (addr *ServiceAddr, err error) {
-	f, err := s.GetFile(path, new(JSONCodec))
+	f, err := s.GetFile(path, new(ListCodec))
 	if err != nil {
 		return
 	}
 
 	addr = &ServiceAddr{}
-	value := f.Value.(map[string]interface{})
+	data := f.Value.([]string)
 
-	addr.Addr = value["target"].(string)
-	addr.Target = value["target"].(string)
-	addr.Port = int(value["port"].(float64))
-	addr.Priority = int(value["priority"].(float64))
-	addr.Weight = int(value["weight"].(float64))
+	p, err := strconv.ParseInt(data[0], 10, 0)
+	if err != nil {
+		return
+	}
+	addr.Priority = int(p)
+
+	w, err := strconv.ParseInt(data[1], 10, 0)
+	if err != nil {
+		return
+	}
+	addr.Weight = int(w)
+
+	p, err = strconv.ParseInt(data[2], 10, 0)
+	if err != nil {
+		return
+	}
+	addr.Port = int(p)
+
+	addr.Addr = data[3] // target
+	addr.Target = data[3]
 
 	return
 }
