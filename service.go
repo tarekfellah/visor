@@ -54,7 +54,7 @@ func NewServiceAddrFromFile(f *File) *ServiceAddr {
 	return addr
 }
 
-func (a *ServiceAddr) toFile(s Snapshot, prefix string) (f *File) {
+func (a *ServiceAddr) File(s Snapshot, prefix string) (f *File) {
 	f = &File{
 		Snapshot: s,
 		Codec:    new(JSONCodec),
@@ -123,7 +123,7 @@ func (s *Service) Unregister() error {
 
 // AddAddr adds the given address string to the Service.
 func (s *Service) AddAddr(addr *ServiceAddr) (srv *Service, err error) {
-	f, err := addr.toFile(s.Snapshot, s.Path.Prefix(ADDRS_PATH)).Create()
+	f, err := addr.File(s.Snapshot, s.Path.Prefix(ADDRS_PATH)).Create()
 	if err != nil {
 		return
 	}
