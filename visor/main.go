@@ -104,7 +104,15 @@ func usage() {
 	t := template.New("top")
 	t.Funcs(template.FuncMap{"trim": strings.TrimSpace})
 	template.Must(t.Parse(usageTmpl))
-	if err := t.Execute(os.Stderr, commands); err != nil {
+	data := struct {
+		Commands []*Command
+		Globals  map[string]string
+	}{
+		commands,
+		map[string]string{"root": Root, "uri": Uri},
+	}
+
+	if err := t.Execute(os.Stderr, data); err != nil {
 		panic(err)
 	}
 
@@ -114,10 +122,10 @@ func usage() {
 var usageTmpl = `Usage: visor [globals] command [arguments]
 
 Globals:
-  -root     Doozerd tree prefix
-  -uri      Doozerd cluster URI
+  -root     Doozerd tree prefix ({{.Globals.root}})
+  -uri      Doozerd cluster URI ({{.Globals.uri}})
   -version  Print version and exit
 
-Commands:{{range .}}
+Commands:{{range .Commands}}
   {{.Name | printf "%-15s"}} {{.Short}}{{end}}
 `
