@@ -53,18 +53,15 @@ func newServiceAddrFromFile(f *File) *ServiceAddr {
 	return addr
 }
 
-func (a *ServiceAddr) File(s Snapshot, prefix string) (f *File) {
-	f = &File{
-		Snapshot: s,
-		Codec:    new(JSONCodec),
-		Path:     path.Join(prefix, a.Addr),
-		Value: map[string]interface{}{
-			"priority": a.Priority,
-			"port":     a.Port,
-			"target":   a.Target,
-			"weight":   a.Weight,
-		},
+func (a *ServiceAddr) Create(s Snapshot, prefix string) (f *File, err error) {
+	value := map[string]interface{}{
+		"priority": a.Priority,
+		"port":     a.Port,
+		"target":   a.Target,
+		"weight":   a.Weight,
 	}
+
+	f, err = CreateFile(s, path.Join(prefix, a.Addr), value, new(JSONCodec))
 
 	return
 }
@@ -122,7 +119,7 @@ func (s *Service) Unregister() error {
 
 // AddAddr adds the given address string to the Service.
 func (s *Service) AddAddr(addr *ServiceAddr) (srv *Service, err error) {
-	f, err := addr.File(s.Snapshot, s.Path.Prefix(ADDRS_PATH)).Create()
+	f, err := addr.Create(s.Snapshot, s.Path.Prefix(ADDRS_PATH))
 	if err != nil {
 		return
 	}
