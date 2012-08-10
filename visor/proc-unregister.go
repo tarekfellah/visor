@@ -13,7 +13,7 @@ import (
 
 var cmdProcUnregister = &Command{
 	Name:      "proc-unregister",
-	Short:     "proc-unregister from app",
+	Short:     "remove proctype",
 	UsageLine: "proc-unregister <app> <name>",
 	Long: `
 Proc-unregister removes a proctype from an application.

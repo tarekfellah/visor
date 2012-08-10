@@ -13,7 +13,7 @@ import (
 
 var cmdAppServices = &Command{
 	Name:      "app-services",
-	Short:     "app-services for app",
+	Short:     "list services for an app",
 	UsageLine: "app-services <name>",
 	Long: `
 App-services returns services and meta information for an application.

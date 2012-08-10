@@ -13,7 +13,7 @@ import (
 
 var cmdRevUnregister = &Command{
 	Name:      "rev-unregister",
-	Short:     "rev-unregister from app",
+	Short:     "removes revision",
 	UsageLine: "rev-unregister <app> <name>",
 	Long: `
 Rev-unregister removes a revsion from an application.

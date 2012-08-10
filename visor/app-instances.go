@@ -13,7 +13,7 @@ import (
 
 var cmdAppInstances = &Command{
 	Name:      "app-instances",
-	Short:     "app-instances for app",
+	Short:     "list instances",
 	UsageLine: "app-instances <name> [proc]",
 	Long: `
 App-instances returns instances and there state for an application.

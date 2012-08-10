@@ -13,7 +13,7 @@ import (
 
 var cmdRevDescribe = &Command{
 	Name:      "rev-describe",
-	Short:     "rev-describe for app",
+	Short:     "shows info for rev",
 	UsageLine: "rev-describe <app> <name>",
 	Long: `
 Rev-describe returns meta information for the revision.

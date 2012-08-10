@@ -13,7 +13,7 @@ import (
 
 var cmdInit = &Command{
 	Name:      "init",
-	Short:     "init coordinator state",
+	Short:     "initialize coordinator state",
 	UsageLine: "scale",
 	Long: `
 Init takes care of basic setup of the coordinator tree structure.

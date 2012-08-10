@@ -13,7 +13,7 @@ import (
 
 var cmdAppDescribe = &Command{
 	Name:      "app-describe",
-	Short:     "app-describe in global registry",
+	Short:     "shows app info",
 	UsageLine: "app-describe <name>",
 	Long: `
 App-describe returns meta information for the appliation given.

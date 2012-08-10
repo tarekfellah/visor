@@ -13,7 +13,7 @@ import (
 
 var cmdProcRegister = &Command{
 	Name:      "proc-register",
-	Short:     "proc-register for app",
+	Short:     "create proctype",
 	UsageLine: "proc-register <app> <name>",
 	Long: `
 Proc-register adds a new named proctype to an application.
