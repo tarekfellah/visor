@@ -11,20 +11,16 @@ import (
 	"time"
 )
 
-const (
-	ADDRS_PATH    = "addrs"
-	SERVICES_PATH = "services"
-)
+const SERVICES_PATH = "services"
 
 type Service struct {
 	Path
-	Name  string
-	Addrs map[string]bool
+	Name string
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
-	srv = &Service{Name: name, Addrs: map[string]bool{}}
+	srv = &Service{Name: name}
 	srv.Path = Path{snapshot, path.Join(SERVICES_PATH, srv.Name)}
 
 	return
@@ -67,37 +63,6 @@ func (s *Service) Unregister() error {
 	return s.Del("/")
 }
 
-// AddAddr adds the given address string to the Service.
-func (s *Service) AddAddr(addr string) (srv *Service, err error) {
-	rev, err := s.Set(path.Join(ADDRS_PATH, addr), time.Now().UTC().String())
-	if err != nil {
-		return
-	}
-
-	srv = s.FastForward(rev)
-
-	s.Addrs[addr] = true
-
-	return
-}
-
-// RemoveAddr removes the given address string from the Service.
-func (s *Service) RemoveAddr(addr string) (srv *Service, err error) {
-	err = s.Del(path.Join(ADDRS_PATH, addr))
-	if err != nil {
-		return
-	}
-
-	srv = s.FastForward(s.Rev + 1)
-
-	_, ok := s.Addrs[addr]
-	if ok {
-		delete(s.Addrs, addr)
-	}
-
-	return
-}
-
 func (s *Service) String() string {
 	return fmt.Sprintf("Service<%s>", s.Name)
 }
@@ -106,10 +71,28 @@ func (s *Service) Inspect() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-func (s *Service) getAddrs() (addrs []string, err error) {
-	addrs, err = s.Getdir(s.Path.Prefix(ADDRS_PATH))
-	if err != nil && IsErrNoEnt(err) {
-		return addrs, nil
+func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
+	p := s.Path.Prefix(ENDPOINTS_PATH)
+
+	exists, _, err := s.conn.Exists(p)
+	if err != nil || !exists {
+		return
+	}
+
+	addrs, err := s.Getdir(p)
+	if err != nil {
+		return
+	}
+
+	for _, addr := range addrs {
+		var e *Endpoint
+
+		e, err = GetEndpoint(s.Snapshot, s, addr)
+		if err != nil {
+			return
+		}
+
+		endpoints = append(endpoints, e)
 	}
 
 	return
@@ -122,15 +105,6 @@ func GetService(s Snapshot, name string) (srv *Service, err error) {
 	exists, _, err := s.conn.Exists(srv.Path.Dir)
 	if err != nil && !exists {
 		return
-	}
-
-	addrs, err := srv.getAddrs()
-	if err != nil {
-		return
-	}
-
-	for _, addr := range addrs {
-		srv.Addrs[addr] = true
 	}
 
 	return

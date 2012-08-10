@@ -73,5 +73,5 @@ func (*ListCodec) Encode(input interface{}) ([]byte, error) {
 	return []byte(strings.Join(input.([]string), " ")), nil
 }
 func (*ListCodec) Decode(input []byte) (interface{}, error) {
-	return strings.Split(string(input), " "), nil
+	return strings.Fields(string(input)), nil
 }
