@@ -25,7 +25,7 @@ func init() {
 }
 
 func runRevDescribe(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if len(args) < 2 {
 		cmd.Flag.Usage()
 	}
 
