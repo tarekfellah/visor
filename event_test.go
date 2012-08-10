@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
+func eventSetup() (s Snapshot, l chan *Event) {
 	s, err := Dial(DEFAULT_ADDR, "/event-test")
 	if err != nil {
 		panic(err)
@@ -27,14 +27,18 @@ func eventSetup(name string) (s Snapshot, app *App, l chan *Event) {
 
 	s = s.FastForward(rev)
 
-	app = NewApp(name, "git://"+name, Stack(name+"stack"), s)
 	l = make(chan *Event)
 
 	return
 }
 
+func eventAppSetup(name string, s Snapshot) *App {
+	return NewApp(name, "git://"+name, Stack(name+"stack"), s)
+}
+
 func TestEventAppRegistered(t *testing.T) {
-	s, app, l := eventSetup("regcat")
+	s, l := eventSetup()
+	app := eventAppSetup("regcat", s)
 
 	go WatchEvent(s, l)
 
@@ -43,11 +47,13 @@ func TestEventAppRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppReg, "regcat", l, t)
-
+	expectEvent(EvAppReg, map[string]string{"app": "regcat"}, l, t)
 }
+
 func TestEventAppUnregistered(t *testing.T) {
-	s, app, l := eventSetup("unregcat")
+	s, l := eventSetup()
+	app := eventAppSetup("unregcat", s)
+
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
@@ -63,10 +69,13 @@ func TestEventAppUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppUnreg, "unregcat", l, t)
+	expectEvent(EvAppUnreg, map[string]string{"app": "unregcat"}, l, t)
 }
+
 func TestEventRevRegistered(t *testing.T) {
-	s, app, l := eventSetup("regdog")
+	s, l := eventSetup()
+	app := eventAppSetup("regdog", s)
+	emitter := map[string]string{"app": "regdog", "rev": "stable"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -85,10 +94,13 @@ func TestEventRevRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevReg, "regdog", l, t)
+	expectEvent(EvRevReg, emitter, l, t)
 }
+
 func TestEventRevUnregistered(t *testing.T) {
-	s, app, l := eventSetup("unregdog")
+	s, l := eventSetup()
+	app := eventAppSetup("unregdog", s)
+	emitter := map[string]string{"app": "unregdog", "rev": "stable"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -112,10 +124,13 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevUnreg, "unregdog", l, t)
+	expectEvent(EvRevUnreg, emitter, l, t)
 }
+
 func TestEventProcTypeRegistered(t *testing.T) {
-	s, app, l := eventSetup("regstar")
+	s, l := eventSetup()
+	app := eventAppSetup("regstar", s)
+	emitter := map[string]string{"app": "regstar", "proctype": "all"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -141,11 +156,15 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcReg, "regstar", l, t)
+	expectEvent(EvProcReg, emitter, l, t)
 }
+
 func TestEventProcTypeUnregistered(t *testing.T) {
-	s, app, l := eventSetup("unregstar")
+	s, l := eventSetup()
+	app := eventAppSetup("unregstar", s)
 	pty := NewProcType(app, "all", s)
+	emitter := map[string]string{"app": "unregstar", "proctype": "all"}
+
 	pty, err := pty.Register()
 	if err != nil {
 		t.Error(err)
@@ -160,11 +179,14 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcUnreg, "unregstar", l, t)
+	expectEvent(EvProcUnreg, emitter, l, t)
 }
+
 func TestEventInstanceRegistered(t *testing.T) {
-	s, app, l := eventSetup("regmouse")
+	s, l := eventSetup()
+	app := eventAppSetup("regmouse", s)
 	ins, _ := NewInstance("web", "stable", app.Name, "127.0.0.1:8080", s)
+	emitter := map[string]string{"app": "regmouse", "proctype": "web", "rev": "stable"}
 
 	go WatchEvent(s, l)
 
@@ -173,11 +195,14 @@ func TestEventInstanceRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvInsReg, "regmouse", l, t)
+	expectEvent(EvInsReg, emitter, l, t)
 }
+
 func TestEventInstanceUnregistered(t *testing.T) {
-	s, app, l := eventSetup("unregmouse")
-	ins, _ := NewInstance("web", "stable", app.Name, "127.0.0.1:8080", s)
+	s, l := eventSetup()
+	ins, _ := NewInstance("web", "stable", "unregmouse", "127.0.0.1:8080", s)
+	emitter := map[string]string{"app": "unregmouse", "proctype": "web"}
+
 	ins, err := ins.Register()
 	if err != nil {
 		t.Error(err)
@@ -191,12 +216,13 @@ func TestEventInstanceUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvInsUnreg, "unregmouse", l, t)
+	expectEvent(EvInsUnreg, emitter, l, t)
 }
 
 func TestEventInstanceStateChange(t *testing.T) {
-	s, _, l := eventSetup("statemouse")
+	s, l := eventSetup()
 	ins, _ := NewInstance("web-state", "stable-state", "statemouse", "127.0.0.1:8081", s)
+	emitter := map[string]string{"app": "statemouse", "proctype": "web-state", "rev": "stable-state"}
 
 	ins, err := ins.Register()
 	if err != nil {
@@ -211,34 +237,108 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsStart, "statemouse", l, t)
+	expectEvent(EvInsStart, emitter, l, t)
 
 	ins, err = ins.UpdateState(InsStateFailed)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsFail, "statemouse", l, t)
+	expectEvent(EvInsFail, emitter, l, t)
 
 	ins, err = ins.UpdateState(InsStateExited)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsExit, "statemouse", l, t)
+	expectEvent(EvInsExit, emitter, l, t)
 
 	_, err = ins.UpdateState(InsStateDead)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsDead, "statemouse", l, t)
+	expectEvent(EvInsDead, emitter, l, t)
 }
 
-func expectEvent(etype EventType, appname string, l chan *Event, t *testing.T) {
+func TestEventSrvRegistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventsrv", s)
+
+	go WatchEvent(s, l)
+
+	srv, err := srv.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvSrvReg, map[string]string{"service": "eventsrv"}, l, t)
+}
+
+func TestEventSrvUnregistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventunsrv", s)
+
+	srv, err := srv.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(srv.Rev)
+
+	go WatchEvent(s, l)
+
+	err = srv.Unregister()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvSrvUnreg, map[string]string{"service": "eventunsrv"}, l, t)
+}
+
+func TestEventEpRegistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventep", s)
+	ep := NewEndpoint(srv, "1.2.3.4", s)
+
+	go WatchEvent(s, l)
+
+	ep, err := ep.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvEpReg, map[string]string{"service": "eventep", "endpoint": "1.2.3.4"}, l, t)
+}
+
+func TestEventEpUnregistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventunep", s)
+	ep := NewEndpoint(srv, "4.3.2.1", s)
+
+	ep, err := ep.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(ep.Rev)
+
+	go WatchEvent(s, l)
+
+	err = ep.Unregister()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvEpUnreg, map[string]string{"service": "eventunep", "endpoint": "4.3.2.1"}, l, t)
+}
+
+func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) {
 	for {
 		select {
 		case event := <-l:
 			if event.Type == etype {
-				if event.Emitter["app"] != appname {
-					t.Errorf("received incorrect app name: expected %s got %s", appname, event.Emitter["app"])
+				for key, value := range emitterMap {
+					if event.Emitter[key] != value {
+						t.Errorf("received incorrect emitter field %s: expected %s got %s", key, value, event.Emitter[key])
+					}
 				}
 				return
 			} else if event.Type >= 0 {

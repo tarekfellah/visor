@@ -7,6 +7,7 @@ package visor
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 )
 
@@ -45,6 +46,10 @@ func (e *Endpoint) FastForward(rev int64) *Endpoint {
 
 // Register the endpoint.
 func (e *Endpoint) Register() (ep *Endpoint, err error) {
+	if net.ParseIP(e.Addr) == nil {
+		return nil, fmt.Errorf("addr %s is not a valide IP", e.Addr)
+	}
+
 	exists, _, err := e.conn.Exists(e.Path.String())
 	if err != nil {
 		return
