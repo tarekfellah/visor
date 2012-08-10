@@ -8,94 +8,19 @@ package visor
 import (
 	"fmt"
 	"path"
-	"strconv"
 	"time"
 )
 
-const (
-	ADDRS_PATH    = "addrs"
-	SERVICES_PATH = "services"
-)
-
-// ServiceAddr represents an entry of a Service and supports all fields to be used
-// as SRV record.
-type ServiceAddr struct {
-	Addr     string
-	Priority int
-	Port     int
-	Target   string
-	Weight   int
-}
-
-// NewServiceAddr returns a new ServiceAddr.
-func NewServiceAddr(addr string, port, prio, weight int) (a *ServiceAddr) {
-	a = &ServiceAddr{
-		Addr:     addr,
-		Target:   addr,
-		Priority: prio,
-		Port:     port,
-		Weight:   weight,
-	}
-
-	return
-}
-
-func (a *ServiceAddr) Create(s Snapshot, prefix string) (f *File, err error) {
-	data := []string{
-		strconv.Itoa(a.Priority),
-		strconv.Itoa(a.Weight),
-		strconv.Itoa(a.Port),
-		a.Addr,
-	}
-
-	f, err = CreateFile(s, path.Join(prefix, a.Addr), data, new(ListCodec))
-
-	return
-}
-
-func GetServiceAddr(s Snapshot, path string) (addr *ServiceAddr, err error) {
-	f, err := s.GetFile(path, new(ListCodec))
-	if err != nil {
-		return
-	}
-
-	addr = &ServiceAddr{}
-	data := f.Value.([]string)
-
-	p, err := strconv.ParseInt(data[0], 10, 0)
-	if err != nil {
-		return
-	}
-	addr.Priority = int(p)
-
-	w, err := strconv.ParseInt(data[1], 10, 0)
-	if err != nil {
-		return
-	}
-	addr.Weight = int(w)
-
-	p, err = strconv.ParseInt(data[2], 10, 0)
-	if err != nil {
-		return
-	}
-	addr.Port = int(p)
-
-	addr.Addr = data[3]
-	// We do not need a separate Target and therefore use the identifier
-	addr.Target = addr.Addr
-
-	return
-}
+const SERVICES_PATH = "services"
 
 type Service struct {
 	Path
-	Name  string
-	Addrs map[string]*ServiceAddr
+	Name string
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
-	srv = &Service{Name: name, Addrs: map[string]*ServiceAddr{}}
+	srv = &Service{Name: name}
 	srv.Path = Path{snapshot, path.Join(SERVICES_PATH, srv.Name)}
 
 	return
@@ -138,37 +63,6 @@ func (s *Service) Unregister() error {
 	return s.Del("/")
 }
 
-// AddAddr adds the given address string to the Service.
-func (s *Service) AddAddr(addr *ServiceAddr) (srv *Service, err error) {
-	f, err := addr.Create(s.Snapshot, s.Path.Prefix(ADDRS_PATH))
-	if err != nil {
-		return
-	}
-
-	srv = s.FastForward(f.Rev)
-
-	s.Addrs[addr.Addr] = addr
-
-	return
-}
-
-// RemoveAddr removes the given address string from the Service.
-func (s *Service) RemoveAddr(addr string) (srv *Service, err error) {
-	err = s.Del(path.Join(ADDRS_PATH, addr))
-	if err != nil {
-		return
-	}
-
-	srv = s.FastForward(s.Rev + 1)
-
-	_, ok := s.Addrs[addr]
-	if ok {
-		delete(s.Addrs, addr)
-	}
-
-	return
-}
-
 func (s *Service) String() string {
 	return fmt.Sprintf("Service<%s>", s.Name)
 }
@@ -177,27 +71,28 @@ func (s *Service) Inspect() string {
 	return fmt.Sprintf("%#v", s)
 }
 
-func (s *Service) getAddrs() (addrs map[string]*ServiceAddr, err error) {
-	names, err := s.Getdir(s.Path.Prefix(ADDRS_PATH))
-	if err != nil {
-		if IsErrNoEnt(err) {
-			return addrs, nil
-		} else {
-			return
-		}
+func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
+	p := s.Path.Prefix(ENDPOINTS_PATH)
+
+	exists, _, err := s.conn.Exists(p)
+	if err != nil || !exists {
+		return
 	}
 
-	addrs = map[string]*ServiceAddr{}
+	addrs, err := s.Getdir(p)
+	if err != nil {
+		return
+	}
 
-	for _, name := range names {
-		var addr *ServiceAddr
+	for _, addr := range addrs {
+		var e *Endpoint
 
-		addr, err = GetServiceAddr(s.Snapshot, s.Path.Prefix(path.Join(ADDRS_PATH, name)))
+		e, err = GetEndpoint(s.Snapshot, s, addr)
 		if err != nil {
 			return
 		}
 
-		addrs[name] = addr
+		endpoints = append(endpoints, e)
 	}
 
 	return
@@ -211,13 +106,6 @@ func GetService(s Snapshot, name string) (srv *Service, err error) {
 	if err != nil && !exists {
 		return
 	}
-
-	addrs, err := srv.getAddrs()
-	if err != nil {
-		return
-	}
-
-	srv.Addrs = addrs
 
 	return
 }
