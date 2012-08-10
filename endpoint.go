@@ -114,7 +114,6 @@ func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error)
 		return
 	}
 	e.Port = int(p)
-
 	e.Target = data[3]
 
 	e = e.FastForward(f.FileRev)
