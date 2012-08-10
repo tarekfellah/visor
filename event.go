@@ -38,6 +38,8 @@ var EventTypes = map[EventType]string{
 	EvInsDead:   "instance-dead",
 	EvSrvReg:    "service-register",
 	EvSrvUnreg:  "service-unregister",
+	EvEpReg:     "endpoint-register",
+	EvEpUnreg:   "endpoint-unregister",
 }
 
 func (e EventType) String() string {
@@ -64,6 +66,8 @@ const (
 	EvInsExit                    // Instance state changed to 'exited'
 	EvSrvReg                     // Service register
 	EvSrvUnreg                   // Service unregister
+	EvEpReg                      // Endpoint register
+	EvEpUnreg                    // Endpoint unregister
 )
 
 type eventPath int
@@ -75,6 +79,7 @@ const (
 	pathIns
 	pathInsState
 	pathSrv
+	pathEp
 )
 
 var eventPatterns = map[*regexp.Regexp]eventPath{
@@ -84,6 +89,7 @@ var eventPatterns = map[*regexp.Regexp]eventPath{
 	regexp.MustCompile("^/apps/([a-zA-Z0-9-]+)/procs/([a-zA-Z0-9-]+)/instances/([0-9-]+)$"): pathIns,
 	regexp.MustCompile("^/instances/([0-9-]+)/state$"):                                      pathInsState,
 	regexp.MustCompile("^/services/([a-zA-Z0-9-]+)/registered$"):                            pathSrv,
+	regexp.MustCompile("^/services/([a-zA-Z0-9-]+)/endpoints/([0-9\\.]+)$"):                 pathEp,
 }
 
 func (ev *Event) String() string {
@@ -196,6 +202,20 @@ func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			fmt.Printf("error getting service: %s\n", err)
 			return
 		}
+	case EvEpReg:
+		var srv *Service
+
+		e := ev.Emitter
+		srv, err = GetService(s, e["service"])
+		if err != nil {
+			fmt.Printf("error getting service for endpoint: %s\n", err)
+			return
+		}
+
+		info, err = GetEndpoint(s, srv, e["endpoint"])
+		if err != nil {
+			fmt.Printf("error getting endpoint: %s\n", err)
+		}
 	}
 	return
 }
@@ -269,6 +289,15 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvSrvReg
 				} else if src.IsDel() {
 					etype = EvSrvUnreg
+				}
+			case pathEp:
+				emitter["service"] = match[1]
+				emitter["endpoint"] = match[2]
+
+				if src.IsSet() {
+					etype = EvEpReg
+				} else if src.IsDel() {
+					etype = EvEpUnreg
 				}
 			}
 			break
