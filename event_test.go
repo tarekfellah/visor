@@ -258,6 +258,41 @@ func TestEventInstanceStateChange(t *testing.T) {
 	expectEvent(EvInsDead, emitter, l, t)
 }
 
+func TestEventSrvRegistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventsrv", s)
+
+	go WatchEvent(s, l)
+
+	srv, err := srv.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvSrvReg, map[string]string{"service": "eventsrv"}, l, t)
+}
+
+func TestEventSrvUnregistered(t *testing.T) {
+	s, l := eventSetup()
+	srv := NewService("eventunsrv", s)
+
+	srv, err := srv.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	s = s.FastForward(srv.Rev)
+
+	err = srv.Unregister()
+	if err != nil {
+		t.Error(err)
+	}
+
+	go WatchEvent(s, l)
+
+	expectEvent(EvSrvUnreg, map[string]string{"service": "eventunsrv"}, l, t)
+}
+
 func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) {
 	for {
 		select {
