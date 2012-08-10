@@ -13,7 +13,7 @@ import (
 
 var cmdRevRegister = &Command{
 	Name:      "rev-register",
-	Short:     "rev-register for app",
+	Short:     "create revision",
 	UsageLine: "rev-register <app> <name> <artifact-url>",
 	Long: `
 Rev-register adds a new named revision to an application.

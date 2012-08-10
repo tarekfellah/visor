@@ -44,7 +44,7 @@ func runAppInstances(cmd *Command, args []string) {
 	}
 
 	for _, pty := range ptys {
-		if len(args) > 1 && string(pty.Name) != args[0] {
+		if len(args) >= 2 && string(pty.Name) != args[1] {
 			continue
 		}
 
