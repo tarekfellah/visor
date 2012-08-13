@@ -13,7 +13,7 @@ import (
 
 var cmdRevUnregister = &Command{
 	Name:      "rev-unregister",
-	Short:     "rev-unregister from app",
+	Short:     "removes revision",
 	UsageLine: "rev-unregister <app> <name>",
 	Long: `
 Rev-unregister removes a revsion from an application.
@@ -25,7 +25,7 @@ func init() {
 }
 
 func runRevUnregister(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if len(args) < 2 {
 		cmd.Flag.Usage()
 	}
 

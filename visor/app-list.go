@@ -13,7 +13,7 @@ import (
 
 var cmdAppList = &Command{
 	Name:      "app-list",
-	Short:     "app-list for app",
+	Short:     "lists apps",
 	UsageLine: "app-list",
 	Long: `
 App-list returns all registered applications.

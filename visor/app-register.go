@@ -13,7 +13,7 @@ import (
 
 var cmdAppRegister = &Command{
 	Name:      "app-register",
-	Short:     "app-register in the global registry",
+	Short:     "create app in global registry",
 	UsageLine: "app-register [options] <name>",
 	Long: `
 App-register adds applications to the global registry.

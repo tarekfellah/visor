@@ -13,7 +13,7 @@ import (
 
 var cmdAppUnregister = &Command{
 	Name:      "app-unregister",
-	Short:     "app-unregister from the global registry",
+	Short:     "remove app from the global registry",
 	UsageLine: "app-unregister <name>",
 	Long: `
 App-unregister removes applications from the globa registry.

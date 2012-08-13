@@ -13,7 +13,7 @@ import (
 
 var cmdAppInstances = &Command{
 	Name:      "app-instances",
-	Short:     "app-instances for app",
+	Short:     "list instances",
 	UsageLine: "app-instances <name> [proc]",
 	Long: `
 App-instances returns instances and there state for an application.
@@ -44,7 +44,7 @@ func runAppInstances(cmd *Command, args []string) {
 	}
 
 	for _, pty := range ptys {
-		if len(args) > 1 && string(pty.Name) != args[0] {
+		if len(args) >= 2 && string(pty.Name) != args[1] {
 			continue
 		}
 

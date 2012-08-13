@@ -13,7 +13,7 @@ import (
 
 var cmdRevExists = &Command{
 	Name:      "rev-exists",
-	Short:     "rev-exists for app",
+	Short:     "checks if rev exists",
 	UsageLine: "rev-exists <app> <name>",
 	Long: `
 Rev-exists tells of a revision exists for the given application.
@@ -25,7 +25,7 @@ func init() {
 }
 
 func runRevExists(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if len(args) < 2 {
 		cmd.Flag.Usage()
 	}
 

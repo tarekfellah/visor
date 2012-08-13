@@ -13,7 +13,7 @@ import (
 
 var cmdProcUnregister = &Command{
 	Name:      "proc-unregister",
-	Short:     "proc-unregister from app",
+	Short:     "remove proctype",
 	UsageLine: "proc-unregister <app> <name>",
 	Long: `
 Proc-unregister removes a proctype from an application.
@@ -25,7 +25,7 @@ func init() {
 }
 
 func runProcUnregister(cmd *Command, args []string) {
-	if len(args) < 1 {
+	if len(args) < 2 {
 		cmd.Flag.Usage()
 	}
 

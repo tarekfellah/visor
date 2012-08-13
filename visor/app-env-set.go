@@ -13,7 +13,7 @@ import (
 
 var cmdAppEnvSet = &Command{
 	Name:      "app-env-set",
-	Short:     "app-env-set for app",
+	Short:     "store environment variable",
 	UsageLine: "app-env-set <app> <key> <value>",
 	Long: `
 App-env-set stores a value for the given key in the application environment.

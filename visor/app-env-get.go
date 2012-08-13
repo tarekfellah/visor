@@ -13,7 +13,7 @@ import (
 
 var cmdAppEnvGet = &Command{
 	Name:      "app-env-get",
-	Short:     "app-env-get for app",
+	Short:     "retrieve environment",
 	UsageLine: "app-env-get <app> [key]",
 	Long: `
 App-env-get returns the whole or filtered environment for an application.

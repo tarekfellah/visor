@@ -13,7 +13,7 @@ import (
 
 var cmdAppEnvDel = &Command{
 	Name:      "app-env-del",
-	Short:     "app-env-del for app",
+	Short:     "delete environment variable",
 	UsageLine: "app-env-del <app> <key>",
 	Long: `
 App-env-del removes a value for the given key in the application environment.
