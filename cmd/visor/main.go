@@ -66,6 +66,8 @@ var commands = []*Command{
 	cmdRevRegister,
 	cmdRevUnregister,
 	cmdScale,
+	cmdServiceRegister,
+	cmdServiceUnregister,
 }
 
 func main() {
