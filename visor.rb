@@ -9,6 +9,11 @@ class Visor < Formula
 
 
   def install
+    begin
+      system("which hg")
+    rescue
+      system "brew install hg"
+    end
     system "make GOBIN=#{prefix}/bin"
   end
 
