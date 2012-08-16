@@ -1,35 +1,34 @@
-bin/visor: gofmt update_version
-	mkdir -p bin
-	go build
-	go build -o bin/visor ./visor
+VERSION=$$(cat VERSION)
 
-install: update_version gobuild
-	mkdir -p $${DESTDIR-/usr/local}/bin
-	cp bin/visor $${DESTDIR-/usr/local}/bin
-
-update_version:
-	grep "const VERSION_STRING = \"v$$(cat VERSION)\"" visor/main.go || sed -i -e "s/const VERSION_STRING .*/const VERSION_STRING = \"$$(cat VERSION)\"/" visor/main.go
-	grep ".*version '$$(cat VERSION)'" visor.rb || sed -i -e "s/.*version '[\.0-9]*'$$/  version '$$(cat VERSION)'/" visor.rb
-
-
-########### local build:
 PKG=github.com/soundcloud/visor
-SUB_PKG=github.com/soundcloud/visor/visor
-include go.mk
+PKG_GOPATH=$(PWD)/src/$(PKG)
+GOFLAGS=-v -x -ldflags "-X main.VERSION_STRING $(VERSION)"
+GOPATH=$(PWD)
 
-build: clean debroot debbuild
+compile: $(PKG_GOPATH)
+	go get $(GOFLAGS) -d $(PKG)/visor
+	go install $(GOFLAGS) $(PKG)/visor
+
+$(PKG_GOPATH):
+	mkdir -p $$(dirname $(PKG_GOPATH))
+	ln -sfn $(PWD) $(PKG_GOPATH)
 
 ########## packaging
+
 DEB_NAME=visor
 DEB_URL=http://github.com/soundcloud/visor
-DEB_VERSION=$$(cat VERSION)
+DEB_VERSION=$(VERSION)
 DEB_DESCRIPTION=A command line interface for visor
 DEB_MAINTAINER=Daniel Bornkessel <daniel@soundcloud.com>
 
 include deb.mk
 
 debroot:
-	DESTDIR=$(DEB_ROOT) $(MAKE) install
+	GOBIN=$(DEB_ROOT)/usr/bin $(MAKE)
 
-clean: goclean debclean
-	rm -rf bin $(DEB_ROOT)
+##########
+
+build: clean debroot debbuild
+
+clean: debclean
+	rm -rf bin src pkg $(DEB_ROOT)
