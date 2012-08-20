@@ -100,12 +100,14 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 
 // GetService fetches a service with the given name.
 func GetService(s Snapshot, name string) (srv *Service, err error) {
-	srv = NewService(name, s)
+	service := NewService(name, s)
 
-	exists, _, err := s.conn.Exists(srv.Path.Dir)
-	if err != nil && !exists {
+	exists, _, err := s.conn.Exists(service.Path.Dir)
+	if err != nil || !exists {
 		return
 	}
+
+	srv = service
 
 	return
 }
