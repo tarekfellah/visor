@@ -3,11 +3,10 @@ VERSION=$$(cat VERSION)
 PKG=github.com/soundcloud/visor
 PKG_GOPATH=$(PWD)/src/$(PKG)
 GOFLAGS=-v -x -ldflags "-X main.VERSION_STRING $(VERSION)"
-GOPATH=$(PWD)
 
 compile: $(PKG_GOPATH)
-	go get $(GOFLAGS) -d $(PKG)/visor
-	go install $(GOFLAGS) $(PKG)/visor
+	GOPATH=$(PWD) go get $(GOFLAGS) -d $(PKG)/visor
+	GOPATH=$(PWD) go install $(GOFLAGS) $(PKG)/visor
 
 $(PKG_GOPATH):
 	mkdir -p $$(dirname $(PKG_GOPATH))
