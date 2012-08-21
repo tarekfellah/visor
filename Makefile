@@ -1,13 +1,11 @@
 VERSION=$$(cat VERSION)
 
 GOPATH?=$(PWD)
-GOBIN?=$(GOPATH)/bin
-PKG=github.com/soundcloud/visor
 GOFLAGS=-v -x -ldflags "-X main.VERSION_STRING $(VERSION)"
 
 compile:
-	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./visor
-	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./visor
+	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
+	GOPATH=$(GOPATH) go install $(GOFLAGS) ./cmd/visor
 
 ########## packaging
 

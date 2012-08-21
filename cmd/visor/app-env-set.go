@@ -6,32 +6,33 @@
 package main
 
 import (
-	"../"
+	"../../"
 	"fmt"
 	"os"
 )
 
-var cmdAppEnvDel = &Command{
-	Name:      "app-env-del",
-	Short:     "delete environment variable",
-	UsageLine: "app-env-del <app> <key>",
+var cmdAppEnvSet = &Command{
+	Name:      "app-env-set",
+	Short:     "store environment variable",
+	UsageLine: "app-env-set <app> <key> <value>",
 	Long: `
-App-env-del removes a value for the given key in the application environment.
+App-env-set stores a value for the given key in the application environment.
   `,
 }
 
 func init() {
-	cmdAppEnvDel.Run = runAppEnvDel
+	cmdAppEnvSet.Run = runAppEnvSet
 }
 
-func runAppEnvDel(cmd *Command, args []string) {
-	if len(args) < 2 {
+func runAppEnvSet(cmd *Command, args []string) {
+	if len(args) < 3 {
 		cmd.Flag.Usage()
 	}
 
-	s := cmdAppEnvDel.Snapshot
+	s := cmdAppEnvSet.Snapshot
 	name := args[0]
 	key := args[1]
+	val := args[2]
 
 	app, err := visor.GetApp(s, name)
 	if err != nil {
@@ -39,9 +40,9 @@ func runAppEnvDel(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	_, err = app.DelEnvironmentVar(key)
+	_, err = app.SetEnvironmentVar(key, val)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error removing env var %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Error setting env var %s\n", err.Error())
 		os.Exit(2)
 	}
 }
