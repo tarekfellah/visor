@@ -14,7 +14,9 @@ class Visor < Formula
     rescue
       system "brew install hg"
     end
-    system "make GOPATH=#{buildpath} GOBIN=#{prefix}/bin"
+    ENV['GOPATH'] = buildpath
+    ENV['GOBIN'] = "#{prefix}/bin"
+    system "make"
   end
 
   def test
