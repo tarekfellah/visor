@@ -55,6 +55,8 @@ var commands = []*Command{
 	cmdAppRevisions,
 	cmdAppServices,
 	cmdAppUnregister,
+	cmdEndpointRegister,
+	cmdEndpointUnregister,
 	cmdInit,
 	cmdProcRegister,
 	cmdProcUnregister,
