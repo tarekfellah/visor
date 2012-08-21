@@ -296,24 +296,30 @@ func TestEventSrvUnregistered(t *testing.T) {
 func TestEventEpRegistered(t *testing.T) {
 	s, l := eventSetup()
 	srv := NewService("eventep", s)
-	ep := NewEndpoint(srv, "1.2.3.4", s)
-
-	go WatchEvent(s, l)
-
-	ep, err := ep.Register()
+	ep, err := NewEndpoint(srv, "1.2.3.4", 1000, s)
 	if err != nil {
 		t.Error(err)
 	}
 
-	expectEvent(EvEpReg, map[string]string{"service": "eventep", "endpoint": "1.2.3.4"}, l, t)
+	go WatchEvent(s, l)
+
+	ep, err = ep.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	expectEvent(EvEpReg, map[string]string{"service": "eventep", "endpoint": "1-2-3-4-1000"}, l, t)
 }
 
 func TestEventEpUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	srv := NewService("eventunep", s)
-	ep := NewEndpoint(srv, "4.3.2.1", s)
+	ep, err := NewEndpoint(srv, "4.3.2.1", 2000, s)
+	if err != nil {
+		t.Error(err)
+	}
 
-	ep, err := ep.Register()
+	ep, err = ep.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -327,7 +333,7 @@ func TestEventEpUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvEpUnreg, map[string]string{"service": "eventunep", "endpoint": "4.3.2.1"}, l, t)
+	expectEvent(EvEpUnreg, map[string]string{"service": "eventunep", "endpoint": "4-3-2-1-2000"}, l, t)
 }
 
 func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) {

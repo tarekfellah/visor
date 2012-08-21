@@ -34,9 +34,12 @@ func endpointSetup(srvName string) (s Snapshot, srv *Service) {
 
 func TestEndpointRegister(t *testing.T) {
 	s, srv := endpointSetup("dahoopz")
-	ep := NewEndpoint(srv, "1.2.3.4", s)
+	ep, err := NewEndpoint(srv, "1.2.3.4", 1000, s)
+	if err != nil {
+		t.Error(err)
+	}
 
-	ep, err := ep.Register()
+	ep, err = ep.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -52,9 +55,12 @@ func TestEndpointRegister(t *testing.T) {
 
 func TestEndpointUnregister(t *testing.T) {
 	s, srv := endpointSetup("megahoopz")
-	ep := NewEndpoint(srv, "4.3.2.1", s)
+	ep, err := NewEndpoint(srv, "4.3.2.1", 2000, s)
+	if err != nil {
+		t.Error(err)
+	}
 
-	ep, err := ep.Register()
+	ep, err = ep.Register()
 	if err != nil {
 		t.Error(err)
 	}
@@ -72,16 +78,17 @@ func TestEndpointUnregister(t *testing.T) {
 
 func TestEndpointGet(t *testing.T) {
 	s, srv := endpointSetup("gethoopz")
-	ep := NewEndpoint(srv, "5.6.7.8", s)
-
-	ep.Port = 8000
-
-	ep, err := ep.Register()
+	ep, err := NewEndpoint(srv, "5.6.7.8", 8000, s)
 	if err != nil {
 		t.Error(err)
 	}
 
-	ep2, err := GetEndpoint(ep.Snapshot, srv, ep.Addr)
+	ep, err = ep.Register()
+	if err != nil {
+		t.Error(err)
+	}
+
+	ep2, err := GetEndpoint(ep.Snapshot, srv, ep.Id())
 	if err != nil {
 		t.Error(err)
 		return

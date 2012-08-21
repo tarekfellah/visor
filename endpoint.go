@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 )
 
 const ENDPOINTS_PATH = "endpoints"
@@ -18,16 +19,25 @@ const ENDPOINTS_PATH = "endpoints"
 type Endpoint struct {
 	Path
 	Service  *Service
-	Addr     string
+	IP       string
 	Priority int
 	Port     int
 	Target   string
 	Weight   int
 }
 
-func NewEndpoint(srv *Service, addr string, s Snapshot) (e *Endpoint) {
-	e = &Endpoint{Addr: addr, Target: addr}
-	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, addr)}
+func NewEndpoint(srv *Service, addr string, port int, s Snapshot) (e *Endpoint, err error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", addr, port))
+	if err != nil {
+		return
+	}
+
+	e = &Endpoint{
+		IP:     tcpAddr.IP.String(),
+		Port:   tcpAddr.Port,
+		Target: addr,
+	}
+	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
 
 	return
 }
@@ -46,10 +56,6 @@ func (e *Endpoint) FastForward(rev int64) *Endpoint {
 
 // Register the endpoint.
 func (e *Endpoint) Register() (ep *Endpoint, err error) {
-	if net.ParseIP(e.Addr) == nil {
-		return nil, fmt.Errorf("addr %s is not a valide IP", e.Addr)
-	}
-
 	exists, _, err := e.conn.Exists(e.Path.String())
 	if err != nil {
 		return
@@ -59,10 +65,11 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 	}
 
 	data := []string{
+		e.IP,
 		strconv.Itoa(e.Priority),
 		strconv.Itoa(e.Weight),
 		strconv.Itoa(e.Port),
-		e.Addr,
+		e.Target,
 	}
 
 	f, err := CreateFile(e.Snapshot, e.Path.String(), data, new(ListCodec))
@@ -80,18 +87,22 @@ func (e *Endpoint) Unregister() error {
 	return e.Del("/")
 }
 
+func (e *Endpoint) Id() string {
+	return fmt.Sprintf("%s-%d", strings.Replace(e.IP, ".", "-", -1), e.Port)
+}
+
 func (e *Endpoint) String() string {
-	return fmt.Sprintf("Endpoint<%s>", e.Addr)
+	return fmt.Sprintf("Endpoint<%s>", e.Id())
 }
 
 func (e *Endpoint) Inspect() string {
 	return fmt.Sprintf("%#v", e)
 }
 
-// GetEndpoint fetches the endpoint for the given service and addr from the global
+// GetEndpoint fetches the endpoint for the given service and id from the global
 // registry.
-func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error) {
-	path := srv.Path.Prefix(ENDPOINTS_PATH, addr)
+func GetEndpoint(s Snapshot, srv *Service, id string) (e *Endpoint, err error) {
+	path := srv.Path.Prefix(ENDPOINTS_PATH, id)
 
 	f, err := s.GetFile(path, new(ListCodec))
 	if err != nil {
@@ -99,27 +110,27 @@ func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error)
 	}
 	data := f.Value.([]string)
 
-	e = &Endpoint{Addr: addr}
-	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, addr)}
+	e = &Endpoint{IP: data[0], Target: data[4]}
 
-	p, err := strconv.ParseInt(data[0], 10, 0)
+	p, err := strconv.ParseInt(data[1], 10, 0)
 	if err != nil {
 		return
 	}
 	e.Priority = int(p)
 
-	w, err := strconv.ParseInt(data[1], 10, 0)
+	w, err := strconv.ParseInt(data[2], 10, 0)
 	if err != nil {
 		return
 	}
 	e.Weight = int(w)
 
-	p, err = strconv.ParseInt(data[2], 10, 0)
+	p, err = strconv.ParseInt(data[3], 10, 0)
 	if err != nil {
 		return
 	}
 	e.Port = int(p)
-	e.Target = data[3]
+
+	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
 
 	e = e.FastForward(f.FileRev)
 
