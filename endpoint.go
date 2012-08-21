@@ -19,6 +19,7 @@ const ENDPOINTS_PATH = "endpoints"
 type Endpoint struct {
 	Path
 	Service  *Service
+	Addr     string
 	IP       string
 	Priority int
 	Port     int
@@ -33,9 +34,9 @@ func NewEndpoint(srv *Service, addr string, port int, s Snapshot) (e *Endpoint, 
 	}
 
 	e = &Endpoint{
-		IP:     tcpAddr.IP.String(),
-		Port:   tcpAddr.Port,
-		Target: addr,
+		Addr: addr,
+		IP:   tcpAddr.IP.String(),
+		Port: tcpAddr.Port,
 	}
 	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
 
@@ -65,11 +66,11 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 	}
 
 	data := []string{
+		e.Addr,
 		e.IP,
+		strconv.Itoa(e.Port),
 		strconv.Itoa(e.Priority),
 		strconv.Itoa(e.Weight),
-		strconv.Itoa(e.Port),
-		e.Target,
 	}
 
 	f, err := CreateFile(e.Snapshot, e.Path.String(), data, new(ListCodec))
@@ -88,7 +89,7 @@ func (e *Endpoint) Unregister() error {
 }
 
 func (e *Endpoint) Id() string {
-	return fmt.Sprintf("%s-%d", strings.Replace(e.IP, ".", "-", -1), e.Port)
+	return EndpointId(e.Addr, e.Port)
 }
 
 func (e *Endpoint) String() string {
@@ -110,29 +111,34 @@ func GetEndpoint(s Snapshot, srv *Service, id string) (e *Endpoint, err error) {
 	}
 	data := f.Value.([]string)
 
-	e = &Endpoint{IP: data[0], Target: data[4]}
+	e = &Endpoint{Addr: data[0], IP: data[1]}
 
-	p, err := strconv.ParseInt(data[1], 10, 0)
+	p, err := strconv.ParseInt(data[2], 10, 0)
 	if err != nil {
 		return
 	}
-	e.Priority = int(p)
-
-	w, err := strconv.ParseInt(data[2], 10, 0)
-	if err != nil {
-		return
-	}
-	e.Weight = int(w)
+	e.Port = int(p)
 
 	p, err = strconv.ParseInt(data[3], 10, 0)
 	if err != nil {
 		return
 	}
-	e.Port = int(p)
+	e.Priority = int(p)
+
+	w, err := strconv.ParseInt(data[4], 10, 0)
+	if err != nil {
+		return
+	}
+	e.Weight = int(w)
 
 	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
 
 	e = e.FastForward(f.FileRev)
 
 	return
+}
+
+// EndpointId returns a proper Id for the given addr & port
+func EndpointId(addr string, port int) string {
+	return fmt.Sprintf("%s-%d", strings.Replace(addr, ".", "-", -1), port)
 }

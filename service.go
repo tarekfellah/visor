@@ -79,15 +79,15 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 		return
 	}
 
-	addrs, err := s.Getdir(p)
+	ids, err := s.Getdir(p)
 	if err != nil {
 		return
 	}
 
-	for _, addr := range addrs {
+	for _, id := range ids {
 		var e *Endpoint
 
-		e, err = GetEndpoint(s.Snapshot, s, addr)
+		e, err = GetEndpoint(s.Snapshot, s, id)
 		if err != nil {
 			return
 		}
