@@ -6,8 +6,8 @@
 package main
 
 import (
+	"../"
 	"fmt"
-	"github.com/soundcloud/visor"
 	"log"
 	"os"
 	"strconv"
