@@ -14,7 +14,7 @@ class Visor < Formula
     rescue
       system "brew install hg"
     end
-    system "make GOBIN=#{prefix}/bin"
+    system "make GOPATH=#{buildpath} GOBIN=#{prefix}/bin"
   end
 
   def test
