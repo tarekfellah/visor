@@ -1,14 +1,14 @@
 VERSION=$$(cat VERSION)
 
 GOPATH?=$(PWD)
+GOBIN?=$(GOPATH)/bin
 GOFLAGS=-v -x -ldflags "-X main.VERSION_STRING $(VERSION)"
 
 compile:
 	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
-	GOPATH=$(GOPATH) go install $(GOFLAGS) ./cmd/visor
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./cmd/visor
 
 ########## packaging
-
 DEB_NAME=visor
 DEB_URL=http://github.com/soundcloud/visor
 DEB_VERSION=$(VERSION)
@@ -21,7 +21,6 @@ debroot:
 	GOBIN=$(DEB_ROOT)/usr/bin $(MAKE)
 
 ##########
-
 build: clean debroot debbuild
 
 clean: debclean
