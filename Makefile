@@ -8,6 +8,9 @@ compile:
 	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
 	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./cmd/visor
 
+install:
+	GOBIN=$(DESTDIR)/usr/local/bin $(MAKE)
+
 ########## packaging
 DEB_NAME=visor
 DEB_URL=http://github.com/soundcloud/visor
