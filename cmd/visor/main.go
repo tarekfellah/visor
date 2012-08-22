@@ -6,9 +6,9 @@
 package main
 
 import (
-	"../../"
 	"flag"
 	"fmt"
+	"github.com/soundcloud/visor"
 	"log"
 	"os"
 	"strings"
