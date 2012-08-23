@@ -5,10 +5,24 @@ class Visor < Formula
   url 'https://github.com/soundcloud/visor/zipball/master'
   depends_on 'go'
   skip_clean 'bin'
-  version '0.5.6'
+  version '0.5.7'
 
 
   def install
+    unless buildpath
+      puts <<-EOF
+
+Your brew version is outdated, please execute:
+
+  brew update
+
+and try again
+
+      EOF
+
+      exit 1
+    end
+
     begin
       system("which hg")
     rescue
@@ -31,7 +45,7 @@ and reinstall with brew by executing:
 
       EOF
 
-      exit 1
+      exit 2
     end
     ENV['GOPATH'] = buildpath
     ENV['GOBIN'] = "#{prefix}/bin"
