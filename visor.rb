@@ -5,11 +5,13 @@ class Visor < Formula
   url 'https://github.com/soundcloud/visor/zipball/master'
   depends_on 'go'
   skip_clean 'bin'
-  version '0.5.7'
+  version '0.5.8'
 
 
   def install
-    unless buildpath
+    begin
+      buildpath
+    rescue
       puts <<-EOF
 
 Your brew version is outdated, please execute:
