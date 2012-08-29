@@ -39,29 +39,42 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	ptys, err := app.GetProcTypes()
+	switch len(args) {
+	case 2:
+		ptys, err := app.GetProcTypes()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching proctypes: %s\n", err.Error())
+			os.Exit(2)
+		}
+		for _, pty := range ptys {
+			purgeProctypeInstances(pty, revname)
+		}
+	case 3:
+		pty, err := visor.GetProcType(s, app, visor.ProcessName(args[2]))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error fetching proctype: %s\n", err.Error())
+			os.Exit(2)
+		}
+		purgeProctypeInstances(pty, revname)
+		return
+	default:
+		fmt.Fprintf(os.Stderr, "Wrong number of arguments")
+		os.Exit(1)
+	}
+}
+
+func purgeProctypeInstances(pty *visor.ProcType, revname *string) {
+	ins, err := pty.GetInstances()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error fetching proctypes: %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Error fetching instances for %s: %s\n", pty.Name, err.Error())
 		os.Exit(2)
 	}
 
-	for _, pty := range ptys {
-		if len(args) >= 3 && string(pty.Name) != args[2] {
-			continue
-		}
-
-		ins, err := pty.GetInstances()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error fetching instances for %s: %s\n", pty.Name, err.Error())
-			os.Exit(2)
-		}
-
-		for _, i := range ins {
-			if i.State == visor.InsStateDead && i.RevisionName == *revname {
-				err := i.Unregister()
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "Error removing instance %s: %s\n", i.Name, err.Error())
-				}
+	for _, i := range ins {
+		if i.State == visor.InsStateDead && i.RevisionName == *revname {
+			err := i.Unregister()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error removing instance %s: %s\n", i.Name, err.Error())
 			}
 		}
 	}
