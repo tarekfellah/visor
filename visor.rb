@@ -3,21 +3,58 @@ require 'formula'
 class Visor < Formula
   homepage 'http://github.com/soundcloud/visor'
   url 'https://github.com/soundcloud/visor/zipball/master'
-  #md5 'd01e901a9bd781d0104990b2ece77bf0'
   depends_on 'go'
-  version '0.5.2'
   skip_clean 'bin'
+  version '0.5.8'
 
 
   def install
-    system "make gobuild"
-    system "make DESTDIR=#{prefix} install"
+    begin
+      buildpath
+    rescue
+      puts <<-EOF
+
+Your brew version is outdated, please execute:
+
+  brew update
+
+and try again
+
+      EOF
+
+      exit 1
+    end
+
+    begin
+      system("which hg")
+    rescue
+      system "brew install hg"
+    end
+
+    begin
+      system("hg --version")
+    rescue
+      hg_path = `which hg`
+      puts <<-EOF
+
+Your mercurial installation is broken. Please delete your current mercurial installation
+and reinstall with brew by executing:
+
+  sudo mv #{hg_path.chomp} /tmp
+  brew install --force mercurial || brew update --force mercurial
+
+
+
+      EOF
+
+      exit 2
+    end
+    ENV['GOPATH'] = buildpath
+    ENV['GOBIN'] = "#{prefix}/bin"
+    system "make"
   end
 
   def test
-    # This test will fail and we won't accept that! It's enough to just replace
-    # "false" with the main program this formula installs, but it'd be nice if you
-    # were more thorough. Run the test with `brew test visor`.
     system "visor --version"
   end
 end
