@@ -33,7 +33,7 @@ func runServiceRegister(cmd *Command, args []string) {
 
 	_, err := srv.Register()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error unregistering service %s\n", err.Error())
+		fmt.Fprintf(os.Stderr, "Error registering service %s\n", err.Error())
 		os.Exit(2)
 	}
 }

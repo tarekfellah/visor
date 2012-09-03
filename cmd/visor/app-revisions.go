@@ -16,7 +16,7 @@ var cmdAppRevisions = &Command{
 	Short:     "list revisions for an app",
 	UsageLine: "app-revisions <name>",
 	Long: `
-App-services returns services and meta information for an application.
+App-revisions returns revisions and meta information for an application.
   `,
 }
 
