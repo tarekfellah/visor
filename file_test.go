@@ -58,7 +58,7 @@ func TestFastForward(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	s, err := f.Snapshot.Set(path, value)
+	s, err := f.Snapshot.set(path, value)
 	if err != nil {
 		t.Error(err)
 		return
@@ -82,7 +82,7 @@ func TestSetConflict(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	s, _ := f.Snapshot.Set(path, value)
+	s, _ := f.Snapshot.set(path, value)
 	f = f.FastForward(s.Rev)
 
 	_, err := f.Set([]byte(value + "!"))
@@ -104,7 +104,7 @@ func TestDel(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	_, err := f.Snapshot.SetBytes(path, []byte{})
+	_, err := f.Snapshot.setBytes(path, []byte{})
 	if err != nil {
 		t.Error(err)
 	}

@@ -64,7 +64,7 @@ func TestEndpointUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.Exists(ep.Path.String())
+	check, _, err := s.exists(ep.Path.String())
 	if check {
 		t.Errorf("endpoint %s is still registered", ep)
 	}

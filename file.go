@@ -45,7 +45,7 @@ func (f *File) FastForward(rev int64) *File {
 
 // Del deletes a file
 func (f *File) Del() error {
-	return f.Snapshot.Del(f.Path)
+	return f.Snapshot.del(f.Path)
 }
 
 // Create creates a file from its Value attribute
@@ -60,7 +60,7 @@ func (f *File) Set(value interface{}) (file *File, err error) {
 		return
 	}
 
-	s, err := f.SetBytes(f.Path, bytes)
+	s, err := f.setBytes(f.Path, bytes)
 
 	if s.Rev > 0 {
 		file = f.FastForward(s.Rev)

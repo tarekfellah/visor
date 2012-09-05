@@ -95,7 +95,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 	now := time.Now().UTC().String()
 
-	s, err := i.Snapshot.Set(i.ProctypePath(), now)
+	s, err := i.Snapshot.set(i.ProctypePath(), now)
 	instance = i.FastForward(s.Rev)
 
 	return
@@ -103,7 +103,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	err = i.Snapshot.Del(i.ProctypePath())
+	err = i.Snapshot.del(i.ProctypePath())
 	if err != nil {
 		return
 	}

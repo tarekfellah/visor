@@ -128,7 +128,7 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	refs, err := s.Getdir(app.Path.Prefix("revs"))
+	refs, err := s.getdir(app.Path.Prefix("revs"))
 	if err != nil {
 		return
 	}

@@ -93,7 +93,7 @@ func (e *Endpoint) Inspect() string {
 func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error) {
 	path := srv.Path.Prefix(ENDPOINTS_PATH, addr)
 
-	f, err := s.GetFile(path, new(ListCodec))
+	f, err := s.getFile(path, new(ListCodec))
 	if err != nil {
 		return
 	}

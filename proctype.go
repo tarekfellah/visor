@@ -94,7 +94,7 @@ func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 		return
 	}
 
-	ins, err = p.FastForward(-1).Getdir(p.InstancesPath())
+	ins, err = p.FastForward(-1).getdir(p.InstancesPath())
 	if err != nil {
 		return
 	}

@@ -62,38 +62,38 @@ func DialUri(uri string, root string) (s Snapshot, err error) {
 }
 
 // Exists checks if the specified path exists at this snapshot's revision
-func (s Snapshot) Exists(path string) (bool, int64, error) {
+func (s Snapshot) exists(path string) (bool, int64, error) {
 	return s.conn.ExistsRev(path, &s.Rev)
 }
 
 // Get returns the value at the specified path, at this snapshot's revision
-func (s Snapshot) Get(path string) (string, int64, error) {
-	val, rev, err := s.GetBytes(path)
+func (s Snapshot) get(path string) (string, int64, error) {
+	val, rev, err := s.getBytes(path)
 	return string(val), rev, err
 }
 
 // GetFile returns the value at the specified path as a file, at this snapshot's revision
-func (s Snapshot) GetFile(path string, codec Codec) (*File, error) {
+func (s Snapshot) getFile(path string, codec Codec) (*File, error) {
 	return Get(s, path, codec)
 }
 
 // GetBytes returns the value at the specified path, at this snapshot's revision
-func (s Snapshot) GetBytes(path string) ([]byte, int64, error) {
+func (s Snapshot) getBytes(path string) ([]byte, int64, error) {
 	return s.conn.Get(path, &s.Rev)
 }
 
 // Getdir returns the list of files in the specified directory, at this snapshot's revision
-func (s Snapshot) Getdir(path string) ([]string, error) {
+func (s Snapshot) getdir(path string) ([]string, error) {
 	return s.conn.Getdir(path, s.Rev)
 }
 
 // Set sets the specfied path's body to the passed value, at this snapshot's revision
-func (s Snapshot) Set(path string, val string) (Snapshot, error) {
-	return s.SetBytes(path, []byte(val))
+func (s Snapshot) set(path string, val string) (Snapshot, error) {
+	return s.setBytes(path, []byte(val))
 }
 
 // SetBytes sets the specfied path's body to the passed value, at this snapshot's revision
-func (s Snapshot) SetBytes(path string, val []byte) (Snapshot, error) {
+func (s Snapshot) setBytes(path string, val []byte) (Snapshot, error) {
 	rev, err := s.conn.Set(path, s.Rev, val)
 	if err != nil {
 		return s, err
@@ -102,20 +102,20 @@ func (s Snapshot) SetBytes(path string, val []byte) (Snapshot, error) {
 }
 
 // Del deletes the file at the specified path, at this snapshot's revision
-func (s Snapshot) Del(path string) error {
+func (s Snapshot) del(path string) error {
 	return s.conn.Del(path, s.Rev)
 }
 
 // Update checks if the specified path exists, and if so, does a (*Snapshot).Set with the passed value.
-func (s Snapshot) Update(path string, val string) (Snapshot, error) {
-	exists, _, err := s.Exists(path)
+func (s Snapshot) update(path string, val string) (Snapshot, error) {
+	exists, _, err := s.exists(path)
 	if err != nil {
 		return s, err
 	}
 	if !exists {
 		return s, NewError(ErrNoEnt, fmt.Sprintf("path '%s' does not exist at %d", path, s.Rev))
 	}
-	return s.Set(path, val)
+	return s.set(path, val)
 }
 
 func (s Snapshot) createSnapshot(rev int64) Snapshotable {
@@ -132,7 +132,7 @@ func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
 // when registering revisions.
 func (s Snapshot) GetScale(app string, revision string, processName string) (scale int, rev int64, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
-	f, err := s.GetFile(path, new(IntCodec))
+	f, err := s.getFile(path, new(IntCodec))
 
 	// File doesn't exist, assume scale = 0
 	if IsErrNoEnt(err) {
@@ -154,7 +154,7 @@ func (s Snapshot) GetScale(app string, revision string, processName string) (sca
 
 func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (s1 Snapshot, err error) {
 	path := path.Join(APPS_PATH, app, REVS_PATH, revision, SCALE_PATH, processName)
-	return s.Set(path, strconv.Itoa(factor))
+	return s.set(path, strconv.Itoa(factor))
 }
 
 // fastForward either calls *createSnapshot* on *obj* or returns *obj* if it
@@ -185,7 +185,7 @@ func Set(s Snapshot, path string, value interface{}, codec Codec) (snapshot Snap
 
 // Get returns the value for the given path
 func Get(s Snapshot, path string, codec Codec) (file *File, err error) {
-	bytes, rev, err := s.GetBytes(path)
+	bytes, rev, err := s.getBytes(path)
 	if err != nil {
 		return
 	}

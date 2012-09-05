@@ -79,7 +79,7 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 		return
 	}
 
-	addrs, err := s.Getdir(p)
+	addrs, err := s.getdir(p)
 	if err != nil {
 		return
 	}
@@ -117,7 +117,7 @@ func Services(s Snapshot) (srvs []*Service, err error) {
 		return
 	}
 
-	names, err := s.Getdir(SERVICES_PATH)
+	names, err := s.getdir(SERVICES_PATH)
 	if err != nil {
 		return
 	}

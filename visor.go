@@ -61,7 +61,7 @@ func Init(s Snapshot) (rev int64, err error) {
 	}
 
 	if !exists {
-		s1, err = s.Set(START_PORT_PATH, strconv.Itoa(START_PORT))
+		s1, err = s.set(START_PORT_PATH, strconv.Itoa(START_PORT))
 		if err != nil {
 			return
 		}

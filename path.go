@@ -6,16 +6,16 @@ type Path struct {
 }
 
 func (p *Path) Get(key string) (string, int64, error) {
-	return p.Snapshot.Get(p.Prefix(key))
+	return p.Snapshot.get(p.Prefix(key))
 }
 
 func (p *Path) Set(key string, val string) (int64, error) {
-	s, err := p.Snapshot.Set(p.Prefix(key), val)
+	s, err := p.Snapshot.set(p.Prefix(key), val)
 	return s.Rev, err
 }
 
 func (p *Path) Del(key string) error {
-	return p.Snapshot.Del(p.Prefix(key))
+	return p.Snapshot.del(p.Prefix(key))
 }
 
 func (p *Path) Prefix(path string, paths ...string) (result string) {

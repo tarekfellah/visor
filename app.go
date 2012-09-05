@@ -101,7 +101,7 @@ func (a *App) Unregister() error {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.Getdir(a.Path.Prefix("env"))
+	varNames, err := a.getdir(a.Path.Prefix("env"))
 
 	vars = Env{}
 
@@ -171,7 +171,7 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 		return
 	}
 
-	pNames, err := a.FastForward(-1).Getdir(p)
+	pNames, err := a.FastForward(-1).getdir(p)
 	if err != nil {
 		return
 	}
@@ -223,7 +223,7 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	names, err := s.FastForward(-1).Getdir(APPS_PATH)
+	names, err := s.FastForward(-1).getdir(APPS_PATH)
 	if err != nil {
 		return
 	}
