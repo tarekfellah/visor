@@ -132,7 +132,7 @@ func (s Snapshot) getFile(path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = &File{Path: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
+	file = &File{dir: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
 
 	return
 }
@@ -214,7 +214,7 @@ func getLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = &File{Path: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
+	file = &File{dir: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
 
 	return
 }

@@ -14,13 +14,13 @@ import (
 type File struct {
 	Snapshot
 	FileRev int64 // File rev, or 0 if path doesn't exist
-	Path    string
+	dir     string
 	Value   interface{}
 	Codec   Codec
 }
 
 func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*File, error) {
-	file := &File{Path: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
+	file := &File{dir: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
 	return file.Create()
 }
 
@@ -35,7 +35,7 @@ func (f *File) createSnapshot(rev int64) (file Snapshotable) {
 func (f *File) FastForward(rev int64) *File {
 	if rev == -1 {
 		var err error
-		_, rev, err = f.conn.Stat(f.Path)
+		_, rev, err = f.conn.Stat(f.dir)
 		if err != nil {
 			return f
 		}
@@ -45,7 +45,7 @@ func (f *File) FastForward(rev int64) *File {
 
 // Del deletes a file
 func (f *File) Del() error {
-	return f.Snapshot.del(f.Path)
+	return f.Snapshot.del(f.dir)
 }
 
 // Create creates a file from its Value attribute
@@ -60,7 +60,7 @@ func (f *File) Set(value interface{}) (file *File, err error) {
 		return
 	}
 
-	s, err := f.setBytes(f.Path, bytes)
+	s, err := f.setBytes(f.dir, bytes)
 
 	if s.Rev > 0 {
 		file = f.FastForward(s.Rev)

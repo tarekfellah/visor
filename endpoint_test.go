@@ -41,7 +41,7 @@ func TestEndpointRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(ep.Path.String())
+	check, _, err := s.conn.Exists(ep.dir.String())
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,7 +64,7 @@ func TestEndpointUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.exists(ep.Path.String())
+	check, _, err := s.exists(ep.dir.String())
 	if check {
 		t.Errorf("endpoint %s is still registered", ep)
 	}

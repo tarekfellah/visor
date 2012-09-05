@@ -26,7 +26,7 @@ const INSTANCES_PATH = "instances"
 
 // An Instance represents a running process of a specific type.
 type Instance struct {
-	Path
+	dir
 	Name         string
 	AppName      string
 	RevisionName string
@@ -53,7 +53,7 @@ func NewInstance(pty string, rev string, app string, addr string, snapshot Snaps
 		RevisionName: rev,
 		State:        InsStateInitial,
 	}
-	ins.Path = Path{snapshot, "/instances/" + ins.Id()}
+	ins.dir = dir{snapshot, "/instances/" + ins.Id()}
 	ins.Name = ins.Id()
 
 	return
@@ -77,7 +77,7 @@ func (i *Instance) ProctypePath() string {
 
 // Register registers an instance with the registry.
 func (i *Instance) Register() (instance *Instance, err error) {
-	exists, _, err := i.conn.Exists(i.Path.Dir)
+	exists, _, err := i.conn.Exists(i.dir.Name)
 	if err != nil {
 		return
 	}

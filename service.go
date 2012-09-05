@@ -14,14 +14,14 @@ import (
 const SERVICES_PATH = "services"
 
 type Service struct {
-	Path
+	dir
 	Name string
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
 	srv = &Service{Name: name}
-	srv.Path = Path{snapshot, path.Join(SERVICES_PATH, srv.Name)}
+	srv.dir = dir{snapshot, path.Join(SERVICES_PATH, srv.Name)}
 
 	return
 }
@@ -40,7 +40,7 @@ func (s *Service) FastForward(rev int64) *Service {
 
 // Register adds the Service to the global process state.
 func (s *Service) Register() (srv *Service, err error) {
-	exists, _, err := s.conn.Exists(s.Path.Dir)
+	exists, _, err := s.conn.Exists(s.dir.Name)
 	if err != nil {
 		return
 	}
@@ -72,7 +72,7 @@ func (s *Service) Inspect() string {
 }
 
 func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
-	p := s.Path.Prefix(ENDPOINTS_PATH)
+	p := s.dir.Prefix(ENDPOINTS_PATH)
 
 	exists, _, err := s.conn.Exists(p)
 	if err != nil || !exists {
@@ -102,7 +102,7 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 func GetService(s Snapshot, name string) (srv *Service, err error) {
 	srv = NewService(name, s)
 
-	exists, _, err := s.conn.Exists(srv.Path.Dir)
+	exists, _, err := s.conn.Exists(srv.dir.Name)
 	if err != nil && !exists {
 		return
 	}

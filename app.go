@@ -19,7 +19,7 @@ const SERVICE_PROC_DEFAULT = "web"
 type Env map[string]string
 
 type App struct {
-	Path
+	dir
 	Name       string
 	RepoUrl    string
 	Stack      Stack
@@ -30,7 +30,7 @@ type App struct {
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
-	app.Path = Path{snapshot, path.Join(APPS_PATH, app.Name)}
+	app.dir = dir{snapshot, path.Join(APPS_PATH, app.Name)}
 
 	return
 }
@@ -49,7 +49,7 @@ func (a *App) FastForward(rev int64) (app *App) {
 
 // Register adds the App to the global process state.
 func (a *App) Register() (app *App, err error) {
-	exists, _, err := a.conn.Exists(a.Path.Dir)
+	exists, _, err := a.conn.Exists(a.dir.Name)
 	if err != nil {
 		return nil, fmt.Errorf("application '%s' is already registered", a.Name)
 	}
@@ -64,7 +64,7 @@ func (a *App) Register() (app *App, err error) {
 	attrs := &File{
 		Snapshot: a.Snapshot,
 		Codec:    new(JSONCodec),
-		Path:     a.Path.Prefix("attrs"),
+		dir:      a.dir.Prefix("attrs"),
 		Value: map[string]interface{}{
 			"repo-url":    a.RepoUrl,
 			"stack":       string(a.Stack),
@@ -101,7 +101,7 @@ func (a *App) Unregister() error {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.getdir(a.Path.Prefix("env"))
+	varNames, err := a.getdir(a.dir.Prefix("env"))
 
 	vars = Env{}
 
@@ -164,7 +164,7 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
-	p := a.Path.Prefix(PROCS_PATH)
+	p := a.dir.Prefix(PROCS_PATH)
 
 	exists, _, err := a.conn.Exists(p)
 	if err != nil || !exists {
@@ -202,7 +202,7 @@ func (a *App) Inspect() string {
 func GetApp(s Snapshot, name string) (app *App, err error) {
 	app = NewApp(name, "", "", s)
 
-	f, err := s.getFile(app.Path.Prefix("attrs"), new(JSONCodec))
+	f, err := s.getFile(app.dir.Prefix("attrs"), new(JSONCodec))
 	if err != nil {
 		return nil, err
 	}
