@@ -94,6 +94,16 @@ func (s Snapshot) SetScale(app string, revision string, processName string, fact
 	return s.set(path, strconv.Itoa(factor))
 }
 
+// GetProxies gets the list of bazooka-proxy service IPs
+func (s Snapshot) GetProxies() ([]string, error) {
+	return s.getdir(PROXY_DIR)
+}
+
+// GetPms gets the list of bazooka-pm service IPs
+func (s Snapshot) GetPms() ([]string, error) {
+	return s.getdir(PM_DIR)
+}
+
 // Getuid returns a unique ID from the coordinator
 func Getuid(s Snapshot) (int64, error) {
 	return s.conn.Set(UID_PATH, -1, []byte{})
@@ -111,7 +121,7 @@ func (s Snapshot) get(path string) (string, int64, error) {
 }
 
 // getFile returns the value at the specified path as a file, at this snapshot's revision
-func (s Snapshot) getFile(path string, codec Codec) (*File, error) {
+func (s Snapshot) getFile(path string, codec Codec) (file *File, err error) {
 	bytes, rev, err := s.getBytes(path)
 	if err != nil {
 		return

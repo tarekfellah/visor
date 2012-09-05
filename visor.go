@@ -47,6 +47,8 @@ const SCALE_PATH string = "scale"
 const START_PORT int = 8000
 const START_PORT_PATH string = "/next-port"
 const UID_PATH string = "/uid"
+const PROXY_DIR = "/proxies"
+const PM_DIR = "/pms"
 
 type ProcessName string
 type Stack string
