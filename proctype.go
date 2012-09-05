@@ -80,21 +80,17 @@ func (p *ProcType) Unregister() (err error) {
 	return p.Del("/")
 }
 
-func (p *ProcType) InstancePath(id string) string {
-	return p.Path.Prefix(INSTANCES_PATH, id)
-}
-
-func (p *ProcType) InstancesPath() string {
+func (p *ProcType) instancesPath() string {
 	return p.Path.Prefix(INSTANCES_PATH)
 }
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
-	exists, _, err := p.conn.Exists(p.InstancesPath())
+	exists, _, err := p.conn.Exists(p.instancesPath())
 	if err != nil || !exists {
 		return
 	}
 
-	ins, err = p.FastForward(-1).getdir(p.InstancesPath())
+	ins, err = p.FastForward(-1).getdir(p.instancesPath())
 	if err != nil {
 		return
 	}
