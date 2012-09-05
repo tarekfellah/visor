@@ -65,13 +65,13 @@ func (i *Instance) FastForward(rev int64) *Instance {
 	return i.Snapshot.fastForward(i, rev).(*Instance)
 }
 
-func (i *Instance) createSnapshot(rev int64) Snapshotable {
+func (i *Instance) createSnapshot(rev int64) snapshotable {
 	tmp := *i
 	tmp.Snapshot = Snapshot{rev, i.conn}
 	return &tmp
 }
 
-func (i *Instance) ProctypePath() string {
+func (i *Instance) proctypePath() string {
 	return path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Id())
 }
 
@@ -95,7 +95,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 	}
 	now := time.Now().UTC().String()
 
-	s, err := i.Snapshot.set(i.ProctypePath(), now)
+	s, err := i.Snapshot.set(i.proctypePath(), now)
 	instance = i.FastForward(s.Rev)
 
 	return
@@ -103,7 +103,7 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	err = i.Snapshot.del(i.ProctypePath())
+	err = i.Snapshot.del(i.proctypePath())
 	if err != nil {
 		return
 	}

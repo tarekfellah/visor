@@ -29,7 +29,7 @@ func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
 	return
 }
 
-func (r *Revision) createSnapshot(rev int64) Snapshotable {
+func (r *Revision) createSnapshot(rev int64) snapshotable {
 	tmp := *r
 	tmp.Snapshot = Snapshot{rev, r.conn}
 	return &tmp

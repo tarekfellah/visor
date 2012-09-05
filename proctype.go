@@ -31,7 +31,7 @@ func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
 	}
 }
 
-func (p *ProcType) createSnapshot(rev int64) Snapshotable {
+func (p *ProcType) createSnapshot(rev int64) snapshotable {
 	tmp := *p
 	tmp.Snapshot = Snapshot{rev, p.conn}
 	return &tmp

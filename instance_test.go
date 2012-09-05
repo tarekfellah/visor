@@ -75,7 +75,7 @@ func TestInstanceRegister(t *testing.T) {
 		t.Error("Instance registration failed")
 	}
 
-	check, _, err = ins.conn.Exists(ins.ProctypePath())
+	check, _, err = ins.conn.Exists(ins.proctypePath())
 	if err != nil {
 		t.Error(err)
 	}

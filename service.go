@@ -26,7 +26,7 @@ func NewService(name string, snapshot Snapshot) (srv *Service) {
 	return
 }
 
-func (s *Service) createSnapshot(rev int64) Snapshotable {
+func (s *Service) createSnapshot(rev int64) snapshotable {
 	tmp := *s
 	tmp.Snapshot = Snapshot{rev, s.conn}
 	return &tmp

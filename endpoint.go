@@ -32,7 +32,7 @@ func NewEndpoint(srv *Service, addr string, s Snapshot) (e *Endpoint) {
 	return
 }
 
-func (e *Endpoint) createSnapshot(rev int64) Snapshotable {
+func (e *Endpoint) createSnapshot(rev int64) snapshotable {
 	tmp := *e
 	tmp.Snapshot = Snapshot{rev, e.conn}
 	return &tmp

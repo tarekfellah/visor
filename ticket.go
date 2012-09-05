@@ -94,7 +94,7 @@ func (t *Ticket) FastForward(rev int64) *Ticket {
 	return t.Snapshot.fastForward(t, rev).(*Ticket)
 }
 
-func (t *Ticket) createSnapshot(rev int64) Snapshotable {
+func (t *Ticket) createSnapshot(rev int64) snapshotable {
 	tmp := *t
 	tmp.Snapshot = Snapshot{rev, t.conn}
 	return &tmp

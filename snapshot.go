@@ -23,8 +23,8 @@ type Snapshot struct {
 // Snapshotable is implemented by any type which
 // is time-aware, and can be moved forward in time
 // by calling createSnapshot with a new revision.
-type Snapshotable interface {
-	createSnapshot(rev int64) Snapshotable
+type snapshotable interface {
+	createSnapshot(rev int64) snapshotable
 }
 
 // Dial calls doozer.Dial and returns a Snapshot of the coordinator
@@ -178,7 +178,7 @@ func (s Snapshot) update(path string, val string) (Snapshot, error) {
 	return s.set(path, val)
 }
 
-func (s Snapshot) createSnapshot(rev int64) Snapshotable {
+func (s Snapshot) createSnapshot(rev int64) snapshotable {
 	return Snapshot{rev, s.conn}
 }
 
@@ -188,7 +188,7 @@ func (s Snapshot) FastForward(rev int64) (ns Snapshot) {
 
 // fastForward either calls *createSnapshot* on *obj* or returns *obj* if it
 // can't advance the object in time. Note that fastForward can never fail.
-func (s *Snapshot) fastForward(obj Snapshotable, rev int64) Snapshotable {
+func (s *Snapshot) fastForward(obj snapshotable, rev int64) snapshotable {
 	var err error
 
 	if rev == -1 {

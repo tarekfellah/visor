@@ -35,7 +35,7 @@ func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *A
 	return
 }
 
-func (a *App) createSnapshot(rev int64) Snapshotable {
+func (a *App) createSnapshot(rev int64) snapshotable {
 	tmp := *a
 	tmp.Snapshot = Snapshot{rev, a.conn}
 	return &tmp
