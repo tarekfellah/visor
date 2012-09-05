@@ -73,7 +73,7 @@ func Init(s Snapshot) (rev int64, err error) {
 
 func ClaimNextPort(s Snapshot) (port int, err error) {
 	for {
-		f, err := GetLatest(s, START_PORT_PATH, new(IntCodec))
+		f, err := getLatest(s, START_PORT_PATH, new(IntCodec))
 		if err == nil {
 			port = f.Value.(int)
 

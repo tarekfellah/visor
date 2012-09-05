@@ -202,7 +202,7 @@ func (a *App) Inspect() string {
 func GetApp(s Snapshot, name string) (app *App, err error) {
 	app = NewApp(name, "", "", s)
 
-	f, err := Get(s, app.Path.Prefix("attrs"), new(JSONCodec))
+	f, err := s.getFile(app.Path.Prefix("attrs"), new(JSONCodec))
 	if err != nil {
 		return nil, err
 	}

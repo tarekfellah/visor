@@ -277,7 +277,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 
 	p := path.Join(TICKETS_PATH, idStr)
 
-	f, err := Get(snapshot, path.Join(p, "op"), new(ListCodec))
+	f, err := snapshot.getFile(path.Join(p, "op"), new(ListCodec))
 	if err != nil {
 		return t, err
 	}

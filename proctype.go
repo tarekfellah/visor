@@ -126,7 +126,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
 	path := app.Path.Prefix(PROCS_PATH, string(name))
 
-	port, err := Get(s, path+"/port", new(IntCodec))
+	port, err := s.getFile(path+"/port", new(IntCodec))
 	if err != nil {
 		return
 	}
