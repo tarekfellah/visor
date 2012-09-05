@@ -17,7 +17,7 @@ import (
 // all time-aware interfaces to the coordinator.
 type Snapshot struct {
 	Rev  int64
-	conn *Conn
+	conn *conn
 }
 
 // Snapshotable is implemented by any type which
@@ -40,7 +40,7 @@ func Dial(addr string, root string) (s Snapshot, err error) {
 		return
 	}
 
-	s = Snapshot{rev, &Conn{addr, root, dconn}}
+	s = Snapshot{rev, &conn{addr, root, dconn}}
 	return
 }
 
@@ -57,7 +57,7 @@ func DialUri(uri string, root string) (s Snapshot, err error) {
 		return
 	}
 
-	s = Snapshot{rev, &Conn{uri, root, dconn}}
+	s = Snapshot{rev, &conn{uri, root, dconn}}
 	return
 }
 

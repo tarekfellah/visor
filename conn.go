@@ -15,14 +15,14 @@ import (
 // Conn is a wrapper around doozer.Conn,
 // providing some additional and sometimes
 // higher-level methods.
-type Conn struct {
+type conn struct {
 	Addr string
 	Root string
 	conn *doozer.Conn
 }
 
 // Set calls (*doozer.Conn).Set with a prefixed path
-func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
+func (c *conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
 	path = c.prefixPath(path)
 	newrev, err = c.conn.Set(path, rev, value)
 	if err != nil {
@@ -35,17 +35,17 @@ func (c *Conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 }
 
 // Stat calls (*doozer.Conn).Stat with a prefixed path
-func (c *Conn) Stat(path string) (len int, pathrev int64, err error) {
+func (c *conn) Stat(path string) (len int, pathrev int64, err error) {
 	return c.conn.Stat(c.prefixPath(path), nil)
 }
 
 // Exists returns true or false depending on if the path exists
-func (c *Conn) Exists(path string) (exists bool, pathrev int64, err error) {
+func (c *conn) Exists(path string) (exists bool, pathrev int64, err error) {
 	return c.ExistsRev(path, nil)
 }
 
 // ExistsRev returns true or false depending on if the path exists
-func (c *Conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, err error) {
+func (c *conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, err error) {
 	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
 	if err != nil {
 		return
@@ -59,7 +59,7 @@ func (c *Conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, e
 }
 
 // Create is a wrapper around (*Conn).Set which returns an error if the file already exists.
-func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
+func (c *conn) Create(path string, value []byte) (newrev int64, err error) {
 	path = c.prefixPath(path)
 	exists, newrev, err := c.Exists(path)
 	if err != nil {
@@ -72,12 +72,12 @@ func (c *Conn) Create(path string, value []byte) (newrev int64, err error) {
 }
 
 // Rev is a wrapper around (*doozer.Conn).Rev.
-func (c *Conn) Rev() (int64, error) {
+func (c *conn) Rev() (int64, error) {
 	return c.conn.Rev()
 }
 
 // Get is a wrapper around (*doozer.Conn).Get with a prefixed path.
-func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
+func (c *conn) Get(path string, rev *int64) (value []byte, filerev int64, err error) {
 	value, filerev, err = c.conn.Get(c.prefixPath(path), rev)
 
 	// If the file revision is 0 and there is no error, set the error appropriately.
@@ -93,7 +93,7 @@ func (c *Conn) Get(path string, rev *int64) (value []byte, filerev int64, err er
 }
 
 // Getdir is a wrapper around (*doozer.Conn).Getdir with a prefixed path.
-func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
+func (c *conn) Getdir(path string, rev int64) (keys []string, err error) {
 	if rev < 0 {
 		return nil, fmt.Errorf("rev must be >= 0")
 	}
@@ -105,7 +105,7 @@ func (c *Conn) Getdir(path string, rev int64) (keys []string, err error) {
 }
 
 // Wait is a wrapper around (*doozer.Conn).Wait
-func (c *Conn) Wait(path string, rev int64) (event doozer.Event, err error) {
+func (c *conn) Wait(path string, rev int64) (event doozer.Event, err error) {
 	path = c.prefixPath(path)
 	event, err = c.conn.Wait(path, rev)
 	event.Path = strings.Replace(event.Path, c.Root, "", 1)
@@ -113,13 +113,13 @@ func (c *Conn) Wait(path string, rev int64) (event doozer.Event, err error) {
 }
 
 // Wait is a wrapper around (*doozer.Conn).Close
-func (c *Conn) Close() {
+func (c *conn) Close() {
 	c.conn.Close()
 }
 
 // Del is a wrapper around (*doozer.Conn).Del which also supports
 // deleting directories.
-func (c *Conn) Del(path string, rev int64) (err error) {
+func (c *conn) Del(path string, rev int64) (err error) {
 	path = c.prefixPath(path)
 
 	err = doozer.Walk(c.conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
@@ -141,7 +141,7 @@ func (c *Conn) Del(path string, rev int64) (err error) {
 }
 
 // GetMulti returns multiple key/value pairs organized in a map.
-func (c *Conn) GetMulti(path string, keys []string, rev int64) (values map[string][]byte, err error) {
+func (c *conn) GetMulti(path string, keys []string, rev int64) (values map[string][]byte, err error) {
 	if keys == nil {
 		keys, err = c.Getdir(path, rev)
 	}
@@ -161,7 +161,7 @@ func (c *Conn) GetMulti(path string, keys []string, rev int64) (values map[strin
 }
 
 // SetMulti stores mutliple key/value pairs under the given path.
-func (c *Conn) SetMulti(path string, kvs map[string][]byte, rev int64) (newrev int64, err error) {
+func (c *conn) SetMulti(path string, kvs map[string][]byte, rev int64) (newrev int64, err error) {
 	for k, v := range kvs {
 		newrev, err = c.Set(path+"/"+k, rev, v)
 		if err != nil {
@@ -171,7 +171,7 @@ func (c *Conn) SetMulti(path string, kvs map[string][]byte, rev int64) (newrev i
 	return
 }
 
-func (c *Conn) prefixPath(p string) (path string) {
+func (c *conn) prefixPath(p string) (path string) {
 	prefix := c.Root
 	path = p
 

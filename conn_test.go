@@ -7,7 +7,7 @@ package visor
 
 import "testing"
 
-func connSetup() (*Conn, int64) {
+func connSetup() (*conn, int64) {
 	s, err := Dial(DEFAULT_ADDR, "/conn-test")
 	if err != nil {
 		panic(err)
