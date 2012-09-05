@@ -48,7 +48,7 @@ func (s *Service) Register() (srv *Service, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := s.Set("registered", time.Now().UTC().String())
+	rev, err := s.set("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -60,7 +60,7 @@ func (s *Service) Register() (srv *Service, err error) {
 
 // Unregister removes the Service form the global process state.
 func (s *Service) Unregister() error {
-	return s.Del("/")
+	return s.del("/")
 }
 
 func (s *Service) String() string {
@@ -72,7 +72,7 @@ func (s *Service) Inspect() string {
 }
 
 func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
-	p := s.dir.Prefix(ENDPOINTS_PATH)
+	p := s.dir.prefix(ENDPOINTS_PATH)
 
 	exists, _, err := s.conn.Exists(p)
 	if err != nil || !exists {

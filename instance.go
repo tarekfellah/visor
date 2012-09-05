@@ -85,11 +85,11 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = i.Set("info", i.String())
+	_, err = i.set("info", i.String())
 	if err != nil {
 		return i, err
 	}
-	_, err = i.Set("state", string(i.State))
+	_, err = i.set("state", string(i.State))
 	if err != nil {
 		return i, err
 	}
@@ -107,14 +107,14 @@ func (i *Instance) Unregister() (err error) {
 	if err != nil {
 		return
 	}
-	err = i.Del("/")
+	err = i.del("/")
 	return
 }
 
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
 func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
-	newrev, err := i.Set("state", string(s))
+	newrev, err := i.set("state", string(s))
 	if err != nil {
 		return
 	}

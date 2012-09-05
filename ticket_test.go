@@ -63,7 +63,7 @@ func TestTicketCreateTicket(t *testing.T) {
 		t.Error(err)
 	}
 
-	b, _, err := s.conn.Get(ticket.dir.Prefix("op"), &ticket.Snapshot.Rev)
+	b, _, err := s.conn.Get(ticket.dir.prefix("op"), &ticket.Snapshot.Rev)
 	if err != nil {
 		t.Error(err)
 	}

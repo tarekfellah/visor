@@ -5,20 +5,20 @@ type dir struct {
 	Name string
 }
 
-func (p *dir) Get(key string) (string, int64, error) {
-	return p.Snapshot.get(p.Prefix(key))
+func (p *dir) get(key string) (string, int64, error) {
+	return p.Snapshot.get(p.prefix(key))
 }
 
-func (p *dir) Set(key string, val string) (int64, error) {
-	s, err := p.Snapshot.set(p.Prefix(key), val)
+func (p *dir) set(key string, val string) (int64, error) {
+	s, err := p.Snapshot.set(p.prefix(key), val)
 	return s.Rev, err
 }
 
-func (p *dir) Del(key string) error {
-	return p.Snapshot.del(p.Prefix(key))
+func (p *dir) del(key string) error {
+	return p.Snapshot.del(p.prefix(key))
 }
 
-func (p *dir) Prefix(path string, paths ...string) (result string) {
+func (p *dir) prefix(path string, paths ...string) (result string) {
 	if path == "/" {
 		result = p.Name
 	} else {

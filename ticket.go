@@ -110,11 +110,11 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	t.Id = id
 	t.dir.Name = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 
-	f, err := CreateFile(t.Snapshot, t.dir.Prefix("op"), t.Array(), new(ListCodec))
+	f, err := CreateFile(t.Snapshot, t.dir.prefix("op"), t.Array(), new(ListCodec))
 	if err != nil {
 		return
 	}
-	f, err = CreateFile(t.Snapshot, t.dir.Prefix("status"), string(t.Status), new(StringCodec))
+	f, err = CreateFile(t.Snapshot, t.dir.prefix("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.FileRev)
 	}
@@ -127,7 +127,7 @@ func (t *Ticket) Claims() (claims []string, err error) {
 	if err != nil {
 		return
 	}
-	claims, err = t.conn.Getdir(t.dir.Prefix("claims"), rev)
+	claims, err = t.conn.Getdir(t.dir.prefix("claims"), rev)
 	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
 		claims = []string{}
 		err = nil
@@ -137,7 +137,7 @@ func (t *Ticket) Claims() (claims []string, err error) {
 
 // Claim locks the Ticket to the specified host.
 func (t *Ticket) Claim(host string) (*Ticket, error) {
-	status, rev, err := t.conn.Get(t.dir.Prefix("status"), nil)
+	status, rev, err := t.conn.Get(t.dir.prefix("status"), nil)
 	if err != nil {
 		return t, err
 	}
@@ -145,7 +145,7 @@ func (t *Ticket) Claim(host string) (*Ticket, error) {
 		return t, fmt.Errorf("ticket status is '%s'", string(status))
 	}
 
-	_, err = t.conn.Set(t.dir.Prefix("status"), rev, []byte(TicketStatusClaimed))
+	_, err = t.conn.Set(t.dir.prefix("status"), rev, []byte(TicketStatusClaimed))
 	if err != nil {
 		return t, err
 	}
@@ -165,7 +165,7 @@ func (t *Ticket) Unclaim(host string) (t1 *Ticket, err error) {
 	if !exists {
 		return t, ErrUnauthorized
 	}
-	status, rev, err := t.conn.Get(t.dir.Prefix("status"), nil)
+	status, rev, err := t.conn.Get(t.dir.prefix("status"), nil)
 	if err != nil {
 		return t, err
 	}
@@ -173,7 +173,7 @@ func (t *Ticket) Unclaim(host string) (t1 *Ticket, err error) {
 		return t, fmt.Errorf("can't unclaim ticket, status is '%s'", status)
 	}
 
-	rev, err = t.conn.Set(t.dir.Prefix("status"), rev, []byte(TicketStatusUnClaimed))
+	rev, err = t.conn.Set(t.dir.prefix("status"), rev, []byte(TicketStatusUnClaimed))
 	if err != nil {
 		return t, err
 	}
@@ -190,7 +190,7 @@ func (t *Ticket) Dead(host string) (t1 *Ticket, err error) {
 		return t, ErrUnauthorized
 	}
 
-	rev, err := t.conn.Set(t.dir.Prefix("status"), -1, []byte(TicketStatusDead))
+	rev, err := t.conn.Set(t.dir.prefix("status"), -1, []byte(TicketStatusDead))
 	if err != nil {
 		return t, err
 	}
@@ -212,7 +212,7 @@ func (t *Ticket) Done(host string) (err error) {
 		rev = t.Rev
 	}
 
-	t.conn.Set(t.dir.Prefix("status"), rev, []byte(TicketStatusDone))
+	t.conn.Set(t.dir.prefix("status"), rev, []byte(TicketStatusDone))
 	if err == nil {
 		t.Status = TicketStatusDone
 	}
@@ -295,7 +295,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 }
 
 func (t *Ticket) claimPath(host string) string {
-	return t.dir.Prefix("claims", host)
+	return t.dir.prefix("claims", host)
 }
 
 func (t *Ticket) Fields() string {

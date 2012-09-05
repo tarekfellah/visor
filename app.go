@@ -64,7 +64,7 @@ func (a *App) Register() (app *App, err error) {
 	attrs := &File{
 		Snapshot: a.Snapshot,
 		Codec:    new(JSONCodec),
-		dir:      a.dir.Prefix("attrs"),
+		dir:      a.dir.prefix("attrs"),
 		Value: map[string]interface{}{
 			"repo-url":    a.RepoUrl,
 			"stack":       string(a.Stack),
@@ -84,7 +84,7 @@ func (a *App) Register() (app *App, err error) {
 		}
 	}
 
-	rev, err := a.Set("registered", time.Now().UTC().String())
+	rev, err := a.set("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -96,12 +96,12 @@ func (a *App) Register() (app *App, err error) {
 
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() error {
-	return a.Del("/")
+	return a.del("/")
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.getdir(a.dir.Prefix("env"))
+	varNames, err := a.getdir(a.dir.prefix("env"))
 
 	vars = Env{}
 
@@ -130,7 +130,7 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	k = strings.Replace(k, "_", "-", -1)
-	val, _, err := a.Get("env/" + k)
+	val, _, err := a.get("env/" + k)
 	if err != nil {
 		return
 	}
@@ -141,7 +141,7 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
-	rev, err := a.Set("env/"+strings.Replace(k, "_", "-", -1), v)
+	rev, err := a.set("env/"+strings.Replace(k, "_", "-", -1), v)
 	if err != nil {
 		return
 	}
@@ -154,7 +154,7 @@ func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
 
 // DelEnvironmentVar removes the env variable for the given key.
 func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
-	err = a.Del("env/" + strings.Replace(k, "_", "-", -1))
+	err = a.del("env/" + strings.Replace(k, "_", "-", -1))
 	if err != nil {
 		return
 	}
@@ -164,7 +164,7 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
-	p := a.dir.Prefix(PROCS_PATH)
+	p := a.dir.prefix(PROCS_PATH)
 
 	exists, _, err := a.conn.Exists(p)
 	if err != nil || !exists {
@@ -202,7 +202,7 @@ func (a *App) Inspect() string {
 func GetApp(s Snapshot, name string) (app *App, err error) {
 	app = NewApp(name, "", "", s)
 
-	f, err := s.getFile(app.dir.Prefix("attrs"), new(JSONCodec))
+	f, err := s.getFile(app.dir.prefix("attrs"), new(JSONCodec))
 	if err != nil {
 		return nil, err
 	}

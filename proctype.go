@@ -26,7 +26,7 @@ func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
 		Name: name,
 		App:  app,
 		dir: dir{
-			s, app.dir.Prefix(PROCS_PATH, string(name)),
+			s, app.dir.prefix(PROCS_PATH, string(name)),
 		},
 	}
 }
@@ -58,14 +58,14 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
-	port := &File{p.Snapshot, -1, p.dir.Prefix("port"), p.Port, new(IntCodec)}
+	port := &File{p.Snapshot, -1, p.dir.prefix("port"), p.Port, new(IntCodec)}
 
 	port, err = port.Create()
 	if err != nil {
 		return p, err
 	}
 
-	rev, err := p.Set("registered", time.Now().UTC().String())
+	rev, err := p.set("registered", time.Now().UTC().String())
 
 	if err != nil {
 		return p, err
@@ -77,11 +77,11 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 
 // Unregister unregisters a proctype from the registry.
 func (p *ProcType) Unregister() (err error) {
-	return p.Del("/")
+	return p.del("/")
 }
 
 func (p *ProcType) instancesPath() string {
-	return p.dir.Prefix(INSTANCES_PATH)
+	return p.dir.prefix(INSTANCES_PATH)
 }
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
@@ -120,7 +120,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
-	path := app.dir.Prefix(PROCS_PATH, string(name))
+	path := app.dir.prefix(PROCS_PATH, string(name))
 
 	port, err := s.getFile(path+"/port", new(IntCodec))
 	if err != nil {

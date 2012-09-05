@@ -24,7 +24,7 @@ const REVS_PATH = "revs"
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref}
-	rev.dir = dir{snapshot, app.dir.Prefix(REVS_PATH, ref)}
+	rev.dir = dir{snapshot, app.dir.prefix(REVS_PATH, ref)}
 
 	return
 }
@@ -51,11 +51,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := r.Set("archive-url", r.ArchiveUrl)
+	rev, err := r.set("archive-url", r.ArchiveUrl)
 	if err != nil {
 		return
 	}
-	rev, err = r.Set("registered", time.Now().UTC().String())
+	rev, err = r.set("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -67,11 +67,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister() (err error) {
-	return r.Del("/")
+	return r.del("/")
 }
 
 func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	rev, err := r.Set("archive-url", url)
+	rev, err := r.set("archive-url", url)
 	if err != nil {
 		return
 	}
@@ -88,7 +88,7 @@ func (r *Revision) Inspect() string {
 }
 
 func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.dir.Prefix(REVS_PATH, ref)
+	path := app.dir.prefix(REVS_PATH, ref)
 	codec := new(StringCodec)
 
 	f, err := s.getFile(path+"/archive-url", codec)
@@ -128,7 +128,7 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	refs, err := s.getdir(app.dir.Prefix("revs"))
+	refs, err := s.getdir(app.dir.prefix("revs"))
 	if err != nil {
 		return
 	}

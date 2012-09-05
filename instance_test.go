@@ -153,7 +153,7 @@ func TestInstanceUpdateState(t *testing.T) {
 		t.Error("Instance wasn't fast forwarded")
 	}
 
-	val, _, err := newIns.conn.Get(newIns.dir.Prefix("state"), &newIns.Rev)
+	val, _, err := newIns.conn.Get(newIns.dir.prefix("state"), &newIns.Rev)
 	if err != nil {
 		t.Error(err)
 	}

@@ -27,7 +27,7 @@ type Endpoint struct {
 
 func NewEndpoint(srv *Service, addr string, s Snapshot) (e *Endpoint) {
 	e = &Endpoint{Addr: addr, Target: addr}
-	e.dir = dir{s, srv.dir.Prefix(ENDPOINTS_PATH, addr)}
+	e.dir = dir{s, srv.dir.prefix(ENDPOINTS_PATH, addr)}
 
 	return
 }
@@ -77,7 +77,7 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 
 // Unregister the endpoint.
 func (e *Endpoint) Unregister() error {
-	return e.Del("/")
+	return e.del("/")
 }
 
 func (e *Endpoint) String() string {
@@ -91,7 +91,7 @@ func (e *Endpoint) Inspect() string {
 // GetEndpoint fetches the endpoint for the given service and addr from the global
 // registry.
 func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error) {
-	path := srv.dir.Prefix(ENDPOINTS_PATH, addr)
+	path := srv.dir.prefix(ENDPOINTS_PATH, addr)
 
 	f, err := s.getFile(path, new(ListCodec))
 	if err != nil {
@@ -100,7 +100,7 @@ func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error)
 	data := f.Value.([]string)
 
 	e = &Endpoint{Addr: addr}
-	e.dir = dir{s, srv.dir.Prefix(ENDPOINTS_PATH, addr)}
+	e.dir = dir{s, srv.dir.prefix(ENDPOINTS_PATH, addr)}
 
 	p, err := strconv.ParseInt(data[0], 10, 0)
 	if err != nil {
