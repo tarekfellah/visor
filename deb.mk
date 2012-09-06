@@ -67,7 +67,7 @@ debcheck:
 
 
 debclean:
-	rm -rf *.deb
+	rm -rf *.deb $(DEB_ROOT)
 
 bump_package_release:
 		echo $$(( $(RELEASE) + 1 )) > .release
