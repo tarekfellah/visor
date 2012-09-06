@@ -40,15 +40,17 @@ import (
 	"time"
 )
 
-const DefaultUri string = "doozer:?ca=localhost:8046"
-const DefaultAddr string = "localhost:8046"
-const DefaultRoot string = "/visor"
-const scalePath string = "scale"
-const startPort int = 8000
-const nextPortPath string = "/next-port"
-const uidPath string = "/uid"
-const proxyDir = "/proxies"
-const pmDir = "/pms"
+const (
+	DefaultUri   string = "doozer:?ca=localhost:8046"
+	DefaultAddr  string = "localhost:8046"
+	DefaultRoot  string = "/visor"
+	scalePath    string = "scale"
+	startPort    int    = 8000
+	nextPortPath string = "/next-port"
+	uidPath      string = "/uid"
+	proxyDir            = "/proxies"
+	pmDir               = "/pms"
+)
 
 type ProcessName string
 type Stack string
