@@ -10,13 +10,13 @@ import (
 )
 
 func serviceSetup(name string) (srv *Service) {
-	s, err := Dial(DEFAULT_ADDR, "/service-test")
+	s, err := Dial(DefaultAddr, "/service-test")
 	if err != nil {
 		panic(err)
 	}
 
 	r, _ := s.conn.Rev()
-	err = s.conn.Del(SERVICES_PATH, r)
+	err = s.conn.Del(servicesPath, r)
 	rev, err := Init(s)
 	if err != nil {
 		panic(err)
@@ -31,7 +31,7 @@ func serviceSetup(name string) (srv *Service) {
 func TestServiceRegistration(t *testing.T) {
 	srv := serviceSetup("fancydb")
 
-	check, _, err := srv.conn.Exists(srv.Path.Dir)
+	check, _, err := srv.conn.Exists(srv.dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,7 @@ func TestServiceRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = srv2.conn.Exists(srv2.Path.Dir)
+	check, _, err = srv2.conn.Exists(srv2.dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -80,7 +80,7 @@ func TestServiceUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := srv.conn.Exists(srv.Path.Dir)
+	check, _, err := srv.conn.Exists(srv.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}

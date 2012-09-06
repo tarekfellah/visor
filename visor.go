@@ -15,7 +15,7 @@
 //     import "soundcloud/visor"
 //
 //     func main() {
-//         client, err := visor.Dial("coordinator:8046", "/", new(visor.StringCodec))
+//         client, err := visor.Dial("coordinator:8046", "/")
 //         if err != nil {
 //           panic(err)
 //         }
@@ -41,13 +41,15 @@ import (
 )
 
 const (
-	DEFAULT_URI     string = "doozer:?ca=localhost:8046"
-	DEFAULT_ADDR    string = "localhost:8046"
-	DEFAULT_ROOT    string = "/visor"
-	SCALE_PATH      string = "scale"
-	START_PORT      int    = 8000
-	START_PORT_PATH string = "/next-port"
-	UID_PATH        string = "/uid"
+	DefaultUri   string = "doozer:?ca=localhost:8046"
+	DefaultAddr  string = "localhost:8046"
+	DefaultRoot  string = "/visor"
+	scalePath    string = "scale"
+	startPort    int    = 8000
+	nextPortPath string = "/next-port"
+	uidPath      string = "/uid"
+	proxyDir            = "/proxies"
+	pmDir               = "/pms"
 )
 
 type ProcessName string
@@ -57,13 +59,13 @@ type State string
 func Init(s Snapshot) (rev int64, err error) {
 	var s1 Snapshot
 
-	exists, _, err := s.conn.Exists(START_PORT_PATH)
+	exists, _, err := s.conn.Exists(nextPortPath)
 	if err != nil {
 		return
 	}
 
 	if !exists {
-		s1, err = s.Set(START_PORT_PATH, strconv.Itoa(START_PORT))
+		s1, err = s.set(nextPortPath, strconv.Itoa(startPort))
 		if err != nil {
 			return
 		}
@@ -75,7 +77,7 @@ func Init(s Snapshot) (rev int64, err error) {
 
 func ClaimNextPort(s Snapshot) (port int, err error) {
 	for {
-		f, err := GetLatest(s, START_PORT_PATH, new(IntCodec))
+		f, err := getLatest(s, nextPortPath, new(intCodec))
 		if err == nil {
 			port = f.Value.(int)
 
@@ -99,11 +101,11 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return errors.New("scaling factor needs to be a positive integer")
 	}
 
-	exists, _, err := s.conn.Exists(path.Join(APPS_PATH, app, REVS_PATH, revision))
+	exists, _, err := s.conn.Exists(path.Join(appsPath, app, revsPath, revision))
 	if !exists || err != nil {
 		return fmt.Errorf("%s@%s not found", app, revision)
 	}
-	exists, _, err = s.conn.Exists(path.Join(APPS_PATH, app, PROCS_PATH, processName))
+	exists, _, err = s.conn.Exists(path.Join(appsPath, app, procsPath, processName))
 	if !exists || err != nil {
 		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}

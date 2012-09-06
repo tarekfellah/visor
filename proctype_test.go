@@ -10,7 +10,7 @@ import (
 )
 
 func proctypeSetup(ref string) (s Snapshot, app *App) {
-	s, err := Dial(DEFAULT_ADDR, "/proctype-test")
+	s, err := Dial(DefaultAddr, "/proctype-test")
 	if err != nil {
 		panic(err)
 	}
@@ -41,7 +41,7 @@ func TestProcTypeRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(pty.Path.Dir)
+	check, _, err := s.conn.Exists(pty.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,7 +64,7 @@ func TestProcTypeUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.Exists(pty.Path.Dir)
+	check, _, err := s.exists(pty.dir.Name)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
 	}

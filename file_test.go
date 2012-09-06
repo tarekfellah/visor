@@ -9,8 +9,8 @@ import (
 	"testing"
 )
 
-func fileSetup(path string, value interface{}) *File {
-	s, err := Dial(DEFAULT_ADDR, "/file-test")
+func fileSetup(path string, value interface{}) *file {
+	s, err := Dial(DefaultAddr, "/file-test")
 	if err != nil {
 		panic(err)
 	}
@@ -18,7 +18,7 @@ func fileSetup(path string, value interface{}) *File {
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("/", r)
 
-	file := &File{Path: path, Value: value, Codec: new(ByteCodec), Snapshot: s.FastForward(-1)}
+	file := &file{dir: path, Value: value, codec: new(byteCodec), Snapshot: s.FastForward(-1)}
 
 	return file
 }
@@ -58,7 +58,7 @@ func TestFastForward(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	s, err := f.Snapshot.Set(path, value)
+	s, err := f.Snapshot.set(path, value)
 	if err != nil {
 		t.Error(err)
 		return
@@ -82,7 +82,7 @@ func TestSetConflict(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	s, _ := f.Snapshot.Set(path, value)
+	s, _ := f.Snapshot.set(path, value)
 	f = f.FastForward(s.Rev)
 
 	_, err := f.Set([]byte(value + "!"))
@@ -104,7 +104,7 @@ func TestDel(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	_, err := f.Snapshot.SetBytes(path, []byte{})
+	_, err := f.Snapshot.setBytes(path, []byte{})
 	if err != nil {
 		t.Error(err)
 	}
