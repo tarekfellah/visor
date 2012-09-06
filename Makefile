@@ -1,7 +1,7 @@
 VERSION := $$(cat VERSION)
 GOPATH  ?= $(PWD)
 GOBIN   ?= $(GOPATH)/bin
-GOFLAGS := -ldflags "-X main.VERSION_STRING $(VERSION)"
+GOFLAGS := -ldflags "-X main.VERSION $(VERSION)"
 
 # LOCAL #
 
