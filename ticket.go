@@ -110,7 +110,7 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	t.Id = id
 	t.dir.Name = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 
-	f, err := CreateFile(t.Snapshot, t.dir.prefix("op"), t.Array(), new(ListCodec))
+	f, err := CreateFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(ListCodec))
 	if err != nil {
 		return
 	}
@@ -302,7 +302,7 @@ func (t *Ticket) Fields() string {
 	return fmt.Sprintf("%d %s %s %s %s", t.Id, t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String())
 }
 
-func (t *Ticket) Array() []string {
+func (t *Ticket) array() []string {
 	return []string{t.AppName, t.RevisionName, string(t.ProcessName), t.Op.String()}
 }
 
