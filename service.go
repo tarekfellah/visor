@@ -79,15 +79,15 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 		return
 	}
 
-	addrs, err := s.getdir(p)
+	ids, err := s.getdir(p)
 	if err != nil {
 		return
 	}
 
-	for _, addr := range addrs {
+	for _, id := range ids {
 		var e *Endpoint
 
-		e, err = GetEndpoint(s.Snapshot, s, addr)
+		e, err = GetEndpoint(s.Snapshot, s, id)
 		if err != nil {
 			return
 		}
@@ -100,12 +100,14 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 
 // GetService fetches a service with the given name.
 func GetService(s Snapshot, name string) (srv *Service, err error) {
-	srv = NewService(name, s)
+	service := NewService(name, s)
 
-	exists, _, err := s.conn.Exists(srv.dir.Name)
+	exists, _, err := s.conn.Exists(service.dir.Name)
 	if err != nil && !exists {
 		return
 	}
+
+	srv = service
 
 	return
 }
