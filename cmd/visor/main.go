@@ -38,8 +38,8 @@ var Root string
 var Version bool
 
 func init() {
-	flag.StringVar(&Uri, "uri", visor.DEFAULT_URI, "doozer uri")
-	flag.StringVar(&Root, "root", visor.DEFAULT_ROOT, "doozer root")
+	flag.StringVar(&Uri, "uri", visor.DefaultUri, "doozer uri")
+	flag.StringVar(&Root, "root", visor.DefaultRoot, "doozer root")
 	flag.BoolVar(&Version, "version", false, "print version and exit")
 }
 
