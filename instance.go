@@ -175,3 +175,28 @@ func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
 
 	return
 }
+
+func Instances(s Snapshot) (ins []*Instance, err error) {
+	exists, _, err := s.conn.Exists(instancesPath)
+	if err != nil || !exists {
+		return
+	}
+
+	names, err := s.FastForward(-1).getdir(instancesPath)
+	if err != nil {
+		return
+	}
+
+	for i := range names {
+		var instance *Instance
+
+		instance, err = GetInstance(s, names[i])
+		if err != nil {
+			return
+		}
+
+		ins = append(ins, instance)
+	}
+
+	return
+}

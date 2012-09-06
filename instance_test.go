@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"strconv"
 	"testing"
 )
 
@@ -160,5 +161,42 @@ func TestInstanceUpdateState(t *testing.T) {
 
 	if State(val) != InsStateStarted {
 		t.Error("Instance state wasn't persisted in the coordinator")
+	}
+}
+
+func TestInstances(t *testing.T) {
+	addrs := []string{
+		"10.20.3.215:21078",
+		"10.20.3.215:21079",
+		"10.20.3.215:21080",
+	}
+	s, err := Dial(DefaultAddr, DefaultRoot)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	for i := range addrs {
+		instance, err := NewInstance("web", "12345", "test-app", addrs[i], s)
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		instance.Register()
+	}
+
+	instances, err := Instances(s)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(instances) != len(addrs) {
+		t.Errorf("expected length %d returned length %d", len(addrs), len(instances))
+	} else {
+		for i := range instances {
+			addr := instances[i].Host + ":" + strconv.Itoa(instances[i].Port)
+			if addr != addrs[i] {
+				t.Errorf("expected %s got %s", addrs[i], addr)
+			}
+		}
 	}
 }
