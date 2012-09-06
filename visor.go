@@ -12,10 +12,10 @@
 //
 //     package main
 //
-//     import "soundcloud/visor"
+//     import "visor"
 //
 //     func main() {
-//         client, err := visor.Dial("coordinator:8046", "/")
+//         snapshot, err := visor.Dial("coordinator:8046", "/")
 //         if err != nil {
 //           panic(err)
 //         }
@@ -23,7 +23,7 @@
 //         l := make(chan *visor.Event)
 //
 //         // Watch for changes in the global process state
-//         go visor.WatchEvent(client.Snapshot, l)
+//         go visor.WatchEvent(snapshot, l)
 //
 //         for {
 //             fmt.Println(<-l)
