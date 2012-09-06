@@ -110,11 +110,11 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	t.Id = id
 	t.dir.Name = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
 
-	f, err := CreateFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(ListCodec))
+	f, err := createFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(ListCodec))
 	if err != nil {
 		return
 	}
-	f, err = CreateFile(t.Snapshot, t.dir.prefix("status"), string(t.Status), new(StringCodec))
+	f, err = createFile(t.Snapshot, t.dir.prefix("status"), string(t.Status), new(StringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.FileRev)
 	}

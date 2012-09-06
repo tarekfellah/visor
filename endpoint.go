@@ -65,7 +65,7 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 		e.Addr,
 	}
 
-	f, err := CreateFile(e.Snapshot, e.dir.String(), data, new(ListCodec))
+	f, err := createFile(e.Snapshot, e.dir.String(), data, new(ListCodec))
 	if err != nil {
 		return
 	}

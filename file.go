@@ -19,7 +19,7 @@ type file struct {
 	Codec   Codec
 }
 
-func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*file, error) {
+func createFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*file, error) {
 	file := &file{dir: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
 	return file.Create()
 }
