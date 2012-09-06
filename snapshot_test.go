@@ -10,11 +10,11 @@ import (
 )
 
 func snapshotSetup() (s Snapshot) {
-	s, err := Dial(DEFAULT_ADDR, "/snapshot-test")
+	s, err := Dial(DefaultAddr, "/snapshot-test")
 	if err != nil {
 		panic(err)
 	}
-	err = s.Del("/")
+	err = s.del("/")
 	Init(s)
 	s = s.FastForward(-1)
 
@@ -32,12 +32,12 @@ func TestSnapshotExists(t *testing.T) {
 		panic(err)
 	}
 
-	exists, _, err := s.Exists(k)
+	exists, _, err := s.exists(k)
 	if exists {
 		t.Errorf("path %s shouldn't exist yet", k)
 	}
 
-	exists, rev1, err := s.FastForward(rev).Exists(k)
+	exists, rev1, err := s.FastForward(rev).exists(k)
 	if !exists {
 		t.Errorf("path %s should exist", k)
 	}
@@ -51,17 +51,17 @@ func TestSnapshotSetGet(t *testing.T) {
 	k := "key"
 	v := "value"
 
-	s1, err := s.Set(k, v)
+	s1, err := s.set(k, v)
 	if err != nil {
 		t.Error(err)
 	}
 
-	_, _, err = s.Get(k)
+	_, _, err = s.get(k)
 	if !IsErrNoEnt(err) {
 		t.Error("expected NoEnt error")
 	}
 
-	val, rev, err := s1.Get(k)
+	val, rev, err := s1.get(k)
 	if err != nil {
 		t.Error(err)
 	}
@@ -74,7 +74,7 @@ func TestSnapshotSetGet(t *testing.T) {
 
 	// REV_MISMATCH
 
-	s2, err := s.Set(k, v)
+	s2, err := s.set(k, v)
 	if err == nil {
 		t.Error("expected REV_MISMATCH")
 	}
@@ -86,7 +86,7 @@ func TestSnapshotSetGet(t *testing.T) {
 func TestSnapshotIsNoEnt(t *testing.T) {
 	s := snapshotSetup()
 
-	_, _, err := s.Get("/does-not-exist")
+	_, _, err := s.get("/does-not-exist")
 	if !IsErrNoEnt(err) {
 		t.Error("expected NoEnt error")
 	}
@@ -97,22 +97,22 @@ func TestSnapshotUpdate(t *testing.T) {
 	k := "key"
 	v := "value"
 
-	s1, err := s.Set(k, v)
+	s1, err := s.set(k, v)
 	if err != nil {
 		panic(err)
 	}
 
-	_, err = s.Update(k, "#")
+	_, err = s.update(k, "#")
 	if !IsErrNoEnt(err) {
 		t.Error("expected NoEnt error")
 	}
 
-	s2, err := s1.Update(k, "#")
+	s2, err := s1.update(k, "#")
 	if err != nil {
 		t.Error(err)
 	}
 
-	s3, err := s2.Update(k, "*")
+	s3, err := s2.update(k, "*")
 	if err != nil {
 		t.Error(err)
 	}

@@ -22,11 +22,11 @@ const (
 	InsStateExited        = "exited"
 )
 
-const INSTANCES_PATH = "instances"
+const instancesPath = "instances"
 
 // An Instance represents a running process of a specific type.
 type Instance struct {
-	Path
+	dir
 	Name         string
 	AppName      string
 	RevisionName string
@@ -53,7 +53,7 @@ func NewInstance(pty string, rev string, app string, addr string, snapshot Snaps
 		RevisionName: rev,
 		State:        InsStateInitial,
 	}
-	ins.Path = Path{snapshot, "/instances/" + ins.Id()}
+	ins.dir = dir{snapshot, "/instances/" + ins.Id()}
 	ins.Name = ins.Id()
 
 	return
@@ -65,19 +65,19 @@ func (i *Instance) FastForward(rev int64) *Instance {
 	return i.Snapshot.fastForward(i, rev).(*Instance)
 }
 
-func (i *Instance) createSnapshot(rev int64) Snapshotable {
+func (i *Instance) createSnapshot(rev int64) snapshotable {
 	tmp := *i
 	tmp.Snapshot = Snapshot{rev, i.conn}
 	return &tmp
 }
 
-func (i *Instance) ProctypePath() string {
-	return path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Id())
+func (i *Instance) proctypePath() string {
+	return path.Join(appsPath, i.AppName, procsPath, string(i.ProcessName), instancesPath, i.Id())
 }
 
 // Register registers an instance with the registry.
 func (i *Instance) Register() (instance *Instance, err error) {
-	exists, _, err := i.conn.Exists(i.Path.Dir)
+	exists, _, err := i.conn.Exists(i.dir.Name)
 	if err != nil {
 		return
 	}
@@ -85,17 +85,17 @@ func (i *Instance) Register() (instance *Instance, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	_, err = i.Set("info", i.String())
+	_, err = i.set("info", i.String())
 	if err != nil {
 		return i, err
 	}
-	_, err = i.Set("state", string(i.State))
+	_, err = i.set("state", string(i.State))
 	if err != nil {
 		return i, err
 	}
 	now := time.Now().UTC().String()
 
-	s, err := i.Snapshot.Set(i.ProctypePath(), now)
+	s, err := i.Snapshot.set(i.proctypePath(), now)
 	instance = i.FastForward(s.Rev)
 
 	return
@@ -103,18 +103,18 @@ func (i *Instance) Register() (instance *Instance, err error) {
 
 // Unregister unregisters an instance with the registry.
 func (i *Instance) Unregister() (err error) {
-	err = i.Snapshot.Del(i.ProctypePath())
+	err = i.Snapshot.del(i.proctypePath())
 	if err != nil {
 		return
 	}
-	err = i.Del("/")
+	err = i.del("/")
 	return
 }
 
 // UpdateState updates the instance's state file in
 // the coordinator to the given value.
 func (i *Instance) UpdateState(s State) (ins *Instance, err error) {
-	newrev, err := i.Set("state", string(s))
+	newrev, err := i.set("state", string(s))
 	if err != nil {
 		return
 	}
@@ -152,7 +152,7 @@ func (i *Instance) LogString() string {
 
 // GetInstance returns an Instance from the given app, rev, proc and instance ids.
 func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
-	p := path.Join(INSTANCES_PATH, insName)
+	p := path.Join(instancesPath, insName)
 
 	state, _, err := s.conn.Get(p+"/state", nil)
 	if err != nil {
@@ -172,6 +172,31 @@ func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
 		return
 	}
 	ins.State = State(state)
+
+	return
+}
+
+func Instances(s Snapshot) (ins []*Instance, err error) {
+	exists, _, err := s.conn.Exists(instancesPath)
+	if err != nil || !exists {
+		return
+	}
+
+	names, err := s.FastForward(-1).getdir(instancesPath)
+	if err != nil {
+		return
+	}
+
+	for i := range names {
+		var instance *Instance
+
+		instance, err = GetInstance(s, names[i])
+		if err != nil {
+			return
+		}
+
+		ins = append(ins, instance)
+	}
 
 	return
 }

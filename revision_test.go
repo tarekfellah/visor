@@ -10,7 +10,7 @@ import (
 )
 
 func revSetup() (s Snapshot, app *App) {
-	s, err := Dial(DEFAULT_ADDR, "/revision-test")
+	s, err := Dial(DefaultAddr, "/revision-test")
 	if err != nil {
 		panic(err)
 	}
@@ -34,7 +34,7 @@ func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
 	rev := NewRevision(app, "stable", app.Snapshot)
 
-	check, _, err := s.conn.Exists(rev.Path.Dir)
+	check, _, err := s.conn.Exists(rev.dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -50,7 +50,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = s.conn.Exists(rev.Path.Dir)
+	check, _, err = s.conn.Exists(rev.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Path.Dir)
+	check, _, err := s.conn.Exists(rev.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}

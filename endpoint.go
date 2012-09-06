@@ -12,12 +12,12 @@ import (
 	"strings"
 )
 
-const ENDPOINTS_PATH = "endpoints"
+const endpointsPath = "endpoints"
 
 // Endpoint represents an entry of a Service and supports all fields to be used
 // as SRV record.
 type Endpoint struct {
-	Path
+	dir
 	Service  *Service
 	Addr     string
 	IP       string
@@ -38,12 +38,12 @@ func NewEndpoint(srv *Service, addr string, port int, s Snapshot) (e *Endpoint, 
 		IP:   tcpAddr.IP.String(),
 		Port: tcpAddr.Port,
 	}
-	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
+	e.dir = dir{s, srv.dir.prefix(endpointsPath, e.Id())}
 
 	return
 }
 
-func (e *Endpoint) createSnapshot(rev int64) Snapshotable {
+func (e *Endpoint) createSnapshot(rev int64) snapshotable {
 	tmp := *e
 	tmp.Snapshot = Snapshot{rev, e.conn}
 	return &tmp
@@ -57,7 +57,7 @@ func (e *Endpoint) FastForward(rev int64) *Endpoint {
 
 // Register the endpoint.
 func (e *Endpoint) Register() (ep *Endpoint, err error) {
-	exists, _, err := e.conn.Exists(e.Path.String())
+	exists, _, err := e.conn.Exists(e.dir.String())
 	if err != nil {
 		return
 	}
@@ -73,7 +73,7 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 		strconv.Itoa(e.Weight),
 	}
 
-	f, err := CreateFile(e.Snapshot, e.Path.String(), data, new(ListCodec))
+	f, err := createFile(e.Snapshot, e.dir.String(), data, new(listCodec))
 	if err != nil {
 		return
 	}
@@ -85,7 +85,7 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 
 // Unregister the endpoint.
 func (e *Endpoint) Unregister() error {
-	return e.Del("/")
+	return e.del("/")
 }
 
 func (e *Endpoint) Id() string {
@@ -103,15 +103,16 @@ func (e *Endpoint) Inspect() string {
 // GetEndpoint fetches the endpoint for the given service and id from the global
 // registry.
 func GetEndpoint(s Snapshot, srv *Service, id string) (e *Endpoint, err error) {
-	path := srv.Path.Prefix(ENDPOINTS_PATH, id)
+	path := srv.dir.prefix(endpointsPath, id)
 
-	f, err := s.GetFile(path, new(ListCodec))
+	f, err := s.getFile(path, new(listCodec))
 	if err != nil {
 		return
 	}
 	data := f.Value.([]string)
 
 	e = &Endpoint{Addr: data[0], IP: data[1]}
+	e.dir = dir{s, srv.dir.prefix(endpointsPath, id)}
 
 	p, err := strconv.ParseInt(data[2], 10, 0)
 	if err != nil {
@@ -130,8 +131,6 @@ func GetEndpoint(s Snapshot, srv *Service, id string) (e *Endpoint, err error) {
 		return
 	}
 	e.Weight = int(w)
-
-	e.Path = Path{s, srv.Path.Prefix(ENDPOINTS_PATH, e.Id())}
 
 	e = e.FastForward(f.FileRev)
 

@@ -126,7 +126,7 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 		if event.Type == -1 {
 			continue
 		}
-		event.Info, err = GetEventInfo(s.FastForward(rev), event)
+		event.Info, err = getEventInfo(s.FastForward(rev), event)
 		if err != nil {
 			continue
 		}
@@ -136,7 +136,7 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 	return nil
 }
 
-func GetEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
+func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	switch ev.Type {
 	case EvAppReg:
 		e := ev.Emitter

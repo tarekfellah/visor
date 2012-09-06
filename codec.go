@@ -14,26 +14,26 @@ import (
 
 // A Codec represents a protocol for encoding and
 // decoding file values in the coordinator.
-type Codec interface {
+type codec interface {
 	Encode(input interface{}) ([]byte, error)
 	Decode(input []byte) (interface{}, error)
 }
 
 // ByteCodec is a transparent Codec which doesn't
 // perform any serialization or deserialization.
-type ByteCodec struct{}
+type byteCodec struct{}
 
-func (*ByteCodec) Encode(input interface{}) ([]byte, error) {
+func (*byteCodec) Encode(input interface{}) ([]byte, error) {
 	return input.([]byte), nil
 }
-func (*ByteCodec) Decode(input []byte) (interface{}, error) {
+func (*byteCodec) Decode(input []byte) (interface{}, error) {
 	return input, nil
 }
 
 // StringCodec is a Codec which converts data to and from the Go *string* type.
-type StringCodec struct{}
+type stringCodec struct{}
 
-func (*StringCodec) Encode(input interface{}) (output []byte, err error) {
+func (*stringCodec) Encode(input interface{}) (output []byte, err error) {
 	switch i := input.(type) {
 	case string:
 		output = []byte(i)
@@ -44,34 +44,34 @@ func (*StringCodec) Encode(input interface{}) (output []byte, err error) {
 	}
 	return
 }
-func (*StringCodec) Decode(input []byte) (interface{}, error) {
+func (*stringCodec) Decode(input []byte) (interface{}, error) {
 	return string(input), nil
 }
 
-type JSONCodec struct{}
+type jsonCodec struct{}
 
-func (*JSONCodec) Encode(input interface{}) ([]byte, error) {
+func (*jsonCodec) Encode(input interface{}) ([]byte, error) {
 	return json.Marshal(input)
 }
-func (*JSONCodec) Decode(input []byte) (val interface{}, err error) {
+func (*jsonCodec) Decode(input []byte) (val interface{}, err error) {
 	err = json.Unmarshal(input, &val)
 	return
 }
 
-type IntCodec struct{}
+type intCodec struct{}
 
-func (*IntCodec) Encode(input interface{}) ([]byte, error) {
+func (*intCodec) Encode(input interface{}) ([]byte, error) {
 	return []byte(strconv.Itoa(input.(int))), nil
 }
-func (*IntCodec) Decode(input []byte) (interface{}, error) {
+func (*intCodec) Decode(input []byte) (interface{}, error) {
 	return strconv.Atoi(string(input))
 }
 
-type ListCodec struct{}
+type listCodec struct{}
 
-func (*ListCodec) Encode(input interface{}) ([]byte, error) {
+func (*listCodec) Encode(input interface{}) ([]byte, error) {
 	return []byte(strings.Join(input.([]string), " ")), nil
 }
-func (*ListCodec) Decode(input []byte) (interface{}, error) {
+func (*listCodec) Decode(input []byte) (interface{}, error) {
 	return strings.Fields(string(input)), nil
 }

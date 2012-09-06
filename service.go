@@ -11,22 +11,22 @@ import (
 	"time"
 )
 
-const SERVICES_PATH = "services"
+const servicesPath = "services"
 
 type Service struct {
-	Path
+	dir
 	Name string
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
 	srv = &Service{Name: name}
-	srv.Path = Path{snapshot, path.Join(SERVICES_PATH, srv.Name)}
+	srv.dir = dir{snapshot, path.Join(servicesPath, srv.Name)}
 
 	return
 }
 
-func (s *Service) createSnapshot(rev int64) Snapshotable {
+func (s *Service) createSnapshot(rev int64) snapshotable {
 	tmp := *s
 	tmp.Snapshot = Snapshot{rev, s.conn}
 	return &tmp
@@ -40,7 +40,7 @@ func (s *Service) FastForward(rev int64) *Service {
 
 // Register adds the Service to the global process state.
 func (s *Service) Register() (srv *Service, err error) {
-	exists, _, err := s.conn.Exists(s.Path.Dir)
+	exists, _, err := s.conn.Exists(s.dir.Name)
 	if err != nil {
 		return
 	}
@@ -48,7 +48,7 @@ func (s *Service) Register() (srv *Service, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := s.Set("registered", time.Now().UTC().String())
+	rev, err := s.set("registered", time.Now().UTC().String())
 	if err != nil {
 		return
 	}
@@ -60,7 +60,7 @@ func (s *Service) Register() (srv *Service, err error) {
 
 // Unregister removes the Service form the global process state.
 func (s *Service) Unregister() error {
-	return s.Del("/")
+	return s.del("/")
 }
 
 func (s *Service) String() string {
@@ -72,14 +72,14 @@ func (s *Service) Inspect() string {
 }
 
 func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
-	p := s.Path.Prefix(ENDPOINTS_PATH)
+	p := s.dir.prefix(endpointsPath)
 
 	exists, _, err := s.conn.Exists(p)
 	if err != nil || !exists {
 		return
 	}
 
-	ids, err := s.Getdir(p)
+	ids, err := s.getdir(p)
 	if err != nil {
 		return
 	}
@@ -102,8 +102,8 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 func GetService(s Snapshot, name string) (srv *Service, err error) {
 	service := NewService(name, s)
 
-	exists, _, err := s.conn.Exists(service.Path.Dir)
-	if err != nil || !exists {
+	exists, _, err := s.conn.Exists(service.dir.Name)
+	if err != nil && !exists {
 		return
 	}
 
@@ -114,12 +114,12 @@ func GetService(s Snapshot, name string) (srv *Service, err error) {
 
 // Services returns the list of all registered Services.
 func Services(s Snapshot) (srvs []*Service, err error) {
-	exists, _, err := s.conn.Exists(SERVICES_PATH)
+	exists, _, err := s.conn.Exists(servicesPath)
 	if err != nil || !exists {
 		return
 	}
 
-	names, err := s.Getdir(SERVICES_PATH)
+	names, err := s.getdir(servicesPath)
 	if err != nil {
 		return
 	}

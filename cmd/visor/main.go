@@ -15,7 +15,10 @@ import (
 	"text/template"
 )
 
-var VERSION_STRING string
+//
+// Set *automatically* at link stage (see Makefile)
+//
+var VERSION string
 
 type Command struct {
 	Run       func(cmd *Command, args []string)
@@ -38,8 +41,8 @@ var Root string
 var Version bool
 
 func init() {
-	flag.StringVar(&Uri, "uri", visor.DEFAULT_URI, "doozer uri")
-	flag.StringVar(&Root, "root", visor.DEFAULT_ROOT, "doozer root")
+	flag.StringVar(&Uri, "uri", visor.DefaultUri, "doozer uri")
+	flag.StringVar(&Root, "root", visor.DefaultRoot, "doozer root")
 	flag.BoolVar(&Version, "version", false, "print version and exit")
 }
 
@@ -77,7 +80,7 @@ func main() {
 	args := flag.Args()
 
 	if Version == true {
-		fmt.Println(VERSION_STRING)
+		fmt.Println(VERSION)
 		os.Exit(0)
 	}
 
