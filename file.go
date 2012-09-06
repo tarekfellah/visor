@@ -16,11 +16,11 @@ type file struct {
 	FileRev int64 // File rev, or 0 if path doesn't exist
 	dir     string
 	Value   interface{}
-	Codec   Codec
+	codec   codec
 }
 
-func createFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*file, error) {
-	file := &file{dir: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
+func createFile(snapshot Snapshot, path string, value interface{}, codec codec) (*file, error) {
+	file := &file{dir: path, Value: value, codec: codec, Snapshot: snapshot, FileRev: -1}
 	return file.Create()
 }
 
@@ -55,7 +55,7 @@ func (f *file) Create() (*file, error) {
 
 // Set sets the value at this file's path to a new value.
 func (f *file) Set(value interface{}) (file *file, err error) {
-	bytes, err := f.Codec.Encode(value)
+	bytes, err := f.codec.Encode(value)
 	if err != nil {
 		return
 	}

@@ -62,7 +62,7 @@ func (a *App) Register() (app *App, err error) {
 
 	attrs := &file{
 		Snapshot: a.Snapshot,
-		Codec:    new(JSONCodec),
+		codec:    new(jsonCodec),
 		dir:      a.dir.prefix("attrs"),
 		Value: map[string]interface{}{
 			"repo-url":    a.RepoUrl,
@@ -201,7 +201,7 @@ func (a *App) Inspect() string {
 func GetApp(s Snapshot, name string) (app *App, err error) {
 	app = NewApp(name, "", "", s)
 
-	f, err := s.getFile(app.dir.prefix("attrs"), new(JSONCodec))
+	f, err := s.getFile(app.dir.prefix("attrs"), new(jsonCodec))
 	if err != nil {
 		return nil, err
 	}

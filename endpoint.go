@@ -65,7 +65,7 @@ func (e *Endpoint) Register() (ep *Endpoint, err error) {
 		e.Addr,
 	}
 
-	f, err := createFile(e.Snapshot, e.dir.String(), data, new(ListCodec))
+	f, err := createFile(e.Snapshot, e.dir.String(), data, new(listCodec))
 	if err != nil {
 		return
 	}
@@ -93,7 +93,7 @@ func (e *Endpoint) Inspect() string {
 func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error) {
 	path := srv.dir.prefix(endpointsPath, addr)
 
-	f, err := s.getFile(path, new(ListCodec))
+	f, err := s.getFile(path, new(listCodec))
 	if err != nil {
 		return
 	}

@@ -58,7 +58,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
-	port := &file{p.Snapshot, -1, p.dir.prefix("port"), p.Port, new(IntCodec)}
+	port := &file{p.Snapshot, -1, p.dir.prefix("port"), p.Port, new(intCodec)}
 
 	port, err = port.Create()
 	if err != nil {
@@ -122,7 +122,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
 	path := app.dir.prefix(procsPath, string(name))
 
-	port, err := s.getFile(path+"/port", new(IntCodec))
+	port, err := s.getFile(path+"/port", new(intCodec))
 	if err != nil {
 		return
 	}

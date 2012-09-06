@@ -18,7 +18,7 @@ func fileSetup(path string, value interface{}) *file {
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("/", r)
 
-	file := &file{dir: path, Value: value, Codec: new(ByteCodec), Snapshot: s.FastForward(-1)}
+	file := &file{dir: path, Value: value, codec: new(byteCodec), Snapshot: s.FastForward(-1)}
 
 	return file
 }

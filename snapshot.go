@@ -68,7 +68,7 @@ func (s Snapshot) GetScale(app string, revision string, processName string) (sca
 	// This is to avoid having to set the /apps/<app>/revs/<rev>/scale/<proc> paths to 0
 	// when registering revisions.
 	path := path.Join(appsPath, app, revsPath, revision, scalePath, processName)
-	f, err := s.getFile(path, new(IntCodec))
+	f, err := s.getFile(path, new(intCodec))
 
 	// File doesn't exist, assume scale = 0
 	if IsErrNoEnt(err) {
@@ -121,7 +121,7 @@ func (s Snapshot) get(path string) (string, int64, error) {
 }
 
 // getFile returns the value at the specified path as a file, at this snapshot's revision
-func (s Snapshot) getFile(path string, codec Codec) (f *file, err error) {
+func (s Snapshot) getFile(path string, codec codec) (f *file, err error) {
 	bytes, rev, err := s.getBytes(path)
 	if err != nil {
 		return
@@ -132,7 +132,7 @@ func (s Snapshot) getFile(path string, codec Codec) (f *file, err error) {
 		return
 	}
 
-	f = &file{dir: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
+	f = &file{dir: path, Value: value, FileRev: rev, codec: codec, Snapshot: s}
 
 	return
 }
@@ -203,7 +203,7 @@ func (s *Snapshot) fastForward(obj snapshotable, rev int64) snapshotable {
 }
 
 // getLatest returns the latest value for the given path
-func getLatest(s Snapshot, path string, codec Codec) (f *file, err error) {
+func getLatest(s Snapshot, path string, codec codec) (f *file, err error) {
 	evalue, rev, err := s.conn.Get(path, nil)
 	if err != nil {
 		return
@@ -214,7 +214,7 @@ func getLatest(s Snapshot, path string, codec Codec) (f *file, err error) {
 		return
 	}
 
-	f = &file{dir: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
+	f = &file{dir: path, Value: value, codec: codec, Snapshot: s.FastForward(rev)}
 
 	return
 }

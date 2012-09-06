@@ -110,11 +110,11 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 	t.Id = id
 	t.dir.Name = path.Join(ticketsPath, strconv.FormatInt(t.Id, 10))
 
-	f, err := createFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(ListCodec))
+	f, err := createFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(listCodec))
 	if err != nil {
 		return
 	}
-	f, err = createFile(t.Snapshot, t.dir.prefix("status"), string(t.Status), new(StringCodec))
+	f, err = createFile(t.Snapshot, t.dir.prefix("status"), string(t.Status), new(stringCodec))
 	if err == nil {
 		t.Snapshot = t.Snapshot.FastForward(f.FileRev)
 	}
@@ -277,7 +277,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 
 	p := path.Join(ticketsPath, idStr)
 
-	f, err := snapshot.getFile(path.Join(p, "op"), new(ListCodec))
+	f, err := snapshot.getFile(path.Join(p, "op"), new(listCodec))
 	if err != nil {
 		return t, err
 	}

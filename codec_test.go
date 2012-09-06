@@ -10,7 +10,7 @@ import (
 )
 
 func TestListCodecEncoding(t *testing.T) {
-	codec := new(ListCodec)
+	codec := new(listCodec)
 	encoded, _ := codec.Encode([]string{"a", "bb", "ccc"})
 	if string(encoded) != "a bb ccc" {
 		t.Errorf("expected '%s' got '%s'", []byte("a bb ccc"), encoded)
@@ -19,7 +19,7 @@ func TestListCodecEncoding(t *testing.T) {
 }
 
 func TestListCodecDecoding(t *testing.T) {
-	codec := new(ListCodec)
+	codec := new(listCodec)
 	decoded, _ := codec.Decode([]byte("xxx yy z"))
 	d := decoded.([]string)
 	if (d[0] != "xxx") || (d[1] != "yy") || (d[2] != "z") {

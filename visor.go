@@ -15,7 +15,7 @@
 //     import "soundcloud/visor"
 //
 //     func main() {
-//         client, err := visor.Dial("coordinator:8046", "/", new(visor.StringCodec))
+//         client, err := visor.Dial("coordinator:8046", "/")
 //         if err != nil {
 //           panic(err)
 //         }
@@ -77,7 +77,7 @@ func Init(s Snapshot) (rev int64, err error) {
 
 func ClaimNextPort(s Snapshot) (port int, err error) {
 	for {
-		f, err := getLatest(s, nextPortPath, new(IntCodec))
+		f, err := getLatest(s, nextPortPath, new(intCodec))
 		if err == nil {
 			port = f.Value.(int)
 
