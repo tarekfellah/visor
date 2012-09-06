@@ -61,7 +61,7 @@ func (a *App) Register() (app *App, err error) {
 		a.DeployType = DEPLOY_LXC
 	}
 
-	attrs := &File{
+	attrs := &file{
 		Snapshot: a.Snapshot,
 		Codec:    new(JSONCodec),
 		dir:      a.dir.prefix("attrs"),

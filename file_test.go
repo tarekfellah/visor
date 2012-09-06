@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func fileSetup(path string, value interface{}) *File {
+func fileSetup(path string, value interface{}) *file {
 	s, err := Dial(DEFAULT_ADDR, "/file-test")
 	if err != nil {
 		panic(err)
@@ -18,7 +18,7 @@ func fileSetup(path string, value interface{}) *File {
 	r, _ := s.conn.Rev()
 	err = s.conn.Del("/", r)
 
-	file := &File{dir: path, Value: value, Codec: new(ByteCodec), Snapshot: s.FastForward(-1)}
+	file := &file{dir: path, Value: value, Codec: new(ByteCodec), Snapshot: s.FastForward(-1)}
 
 	return file
 }

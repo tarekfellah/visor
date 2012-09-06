@@ -11,7 +11,7 @@ import (
 
 // File represents a coordinator file
 // at a specific point in time.
-type File struct {
+type file struct {
 	Snapshot
 	FileRev int64 // File rev, or 0 if path doesn't exist
 	dir     string
@@ -19,12 +19,12 @@ type File struct {
 	Codec   Codec
 }
 
-func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*File, error) {
-	file := &File{dir: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
+func CreateFile(snapshot Snapshot, path string, value interface{}, codec Codec) (*file, error) {
+	file := &file{dir: path, Value: value, Codec: codec, Snapshot: snapshot, FileRev: -1}
 	return file.Create()
 }
 
-func (f *File) createSnapshot(rev int64) (file snapshotable) {
+func (f *file) createSnapshot(rev int64) (file snapshotable) {
 	tmp := *f
 	tmp.Snapshot = Snapshot{rev, f.conn}
 	return &tmp
@@ -32,7 +32,7 @@ func (f *File) createSnapshot(rev int64) (file snapshotable) {
 
 // FastForward advances the file in time. It returns
 // a new instance of File with the supplied revision.
-func (f *File) FastForward(rev int64) *File {
+func (f *file) FastForward(rev int64) *file {
 	if rev == -1 {
 		var err error
 		_, rev, err = f.conn.Stat(f.dir)
@@ -40,21 +40,21 @@ func (f *File) FastForward(rev int64) *File {
 			return f
 		}
 	}
-	return f.Snapshot.fastForward(f, rev).(*File)
+	return f.Snapshot.fastForward(f, rev).(*file)
 }
 
 // Del deletes a file
-func (f *File) Del() error {
+func (f *file) Del() error {
 	return f.Snapshot.del(f.dir)
 }
 
 // Create creates a file from its Value attribute
-func (f *File) Create() (*File, error) {
+func (f *file) Create() (*file, error) {
 	return f.Set(f.Value)
 }
 
 // Set sets the value at this file's path to a new value.
-func (f *File) Set(value interface{}) (file *File, err error) {
+func (f *file) Set(value interface{}) (file *file, err error) {
 	bytes, err := f.Codec.Encode(value)
 	if err != nil {
 		return
@@ -77,6 +77,6 @@ func (f *File) Set(value interface{}) (file *File, err error) {
 	return
 }
 
-func (f *File) String() string {
+func (f *file) String() string {
 	return fmt.Sprintf("%#v", f)
 }

@@ -121,7 +121,7 @@ func (s Snapshot) get(path string) (string, int64, error) {
 }
 
 // getFile returns the value at the specified path as a file, at this snapshot's revision
-func (s Snapshot) getFile(path string, codec Codec) (file *File, err error) {
+func (s Snapshot) getFile(path string, codec Codec) (f *file, err error) {
 	bytes, rev, err := s.getBytes(path)
 	if err != nil {
 		return
@@ -132,7 +132,7 @@ func (s Snapshot) getFile(path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = &File{dir: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
+	f = &file{dir: path, Value: value, FileRev: rev, Codec: codec, Snapshot: s}
 
 	return
 }
@@ -203,7 +203,7 @@ func (s *Snapshot) fastForward(obj snapshotable, rev int64) snapshotable {
 }
 
 // getLatest returns the latest value for the given path
-func getLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
+func getLatest(s Snapshot, path string, codec Codec) (f *file, err error) {
 	evalue, rev, err := s.conn.Get(path, nil)
 	if err != nil {
 		return
@@ -214,7 +214,7 @@ func getLatest(s Snapshot, path string, codec Codec) (file *File, err error) {
 		return
 	}
 
-	file = &File{dir: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
+	f = &file{dir: path, Value: value, Codec: codec, Snapshot: s.FastForward(rev)}
 
 	return
 }
