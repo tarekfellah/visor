@@ -113,6 +113,14 @@ func (s Snapshot) UnregisterPm(host string) error {
 	return s.del(path.Join(pmDir, host))
 }
 
+func (s Snapshot) RegisterProxy(host string) (Snapshot, error) {
+	return s.set(path.Join(proxyDir, host), time.Now().UTC().String())
+}
+
+func (s Snapshot) UnregisterProxy(host string) error {
+	return s.del(path.Join(proxyDir, host))
+}
+
 func (s Snapshot) ResetCoordinator() error {
 	return s.del("/")
 }
