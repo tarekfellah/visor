@@ -12,9 +12,8 @@ import (
 	"time"
 )
 
-const APPS_PATH = "apps"
-const DEPLOY_LXC = "lxc"
-const SERVICE_PROC_DEFAULT = "web"
+const appsPath = "apps"
+const DeployLXC = "lxc"
 
 type Env map[string]string
 
@@ -30,7 +29,7 @@ type App struct {
 // NewApp returns a new App given a name, repository url and stack.
 func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
-	app.dir = dir{snapshot, path.Join(APPS_PATH, app.Name)}
+	app.dir = dir{snapshot, path.Join(appsPath, app.Name)}
 
 	return
 }
@@ -58,7 +57,7 @@ func (a *App) Register() (app *App, err error) {
 	}
 
 	if a.DeployType == "" {
-		a.DeployType = DEPLOY_LXC
+		a.DeployType = DeployLXC
 	}
 
 	attrs := &file{
@@ -164,7 +163,7 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
-	p := a.dir.prefix(PROCS_PATH)
+	p := a.dir.prefix(procsPath)
 
 	exists, _, err := a.conn.Exists(p)
 	if err != nil || !exists {
@@ -218,12 +217,12 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 
 // Apps returns the list of all registered Apps.
 func Apps(s Snapshot) (apps []*App, err error) {
-	exists, _, err := s.conn.Exists(APPS_PATH)
+	exists, _, err := s.conn.Exists(appsPath)
 	if err != nil || !exists {
 		return
 	}
 
-	names, err := s.FastForward(-1).getdir(APPS_PATH)
+	names, err := s.FastForward(-1).getdir(appsPath)
 	if err != nil {
 		return
 	}

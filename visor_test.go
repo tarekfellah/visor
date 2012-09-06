@@ -13,7 +13,7 @@ import (
 const SCALE_PATH_FMT = "apps/%s/revs/%s/scale/%s"
 
 func TestDialWithDefaultAddrAndRoot(t *testing.T) {
-	_, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	_, err := Dial(DefaultAddr, DefaultRoot)
 	if err != nil {
 		t.Error(err)
 	}
@@ -27,7 +27,7 @@ func TestDialWithInvalidAddr(t *testing.T) {
 }
 
 func TestScaleUp(t *testing.T) {
-	s, err := Dial(DEFAULT_ADDR, "/scale-test")
+	s, err := Dial(DefaultAddr, "/scale-test")
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +50,7 @@ func TestScaleUp(t *testing.T) {
 		t.Errorf("scaling factor expected %s, got %s", "5", factor)
 	}
 
-	tickets, err := s.conn.Getdir(TICKETS_PATH, s.FastForward(-1).Rev)
+	tickets, err := s.conn.Getdir(ticketsPath, s.FastForward(-1).Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -60,7 +60,7 @@ func TestScaleUp(t *testing.T) {
 }
 
 func TestScaleDown(t *testing.T) {
-	s, err := Dial(DEFAULT_ADDR, "/scale-test")
+	s, err := Dial(DefaultAddr, "/scale-test")
 	if err != nil {
 		panic(err)
 	}
@@ -91,7 +91,7 @@ func TestScaleDown(t *testing.T) {
 		t.Errorf("Scaling factor expected %s, got %s", "2", factor)
 	}
 
-	tickets, err := s.FastForward(-1).getdir(TICKETS_PATH)
+	tickets, err := s.FastForward(-1).getdir(ticketsPath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -101,7 +101,7 @@ func TestScaleDown(t *testing.T) {
 }
 
 func TestGetuid(t *testing.T) {
-	s, err := Dial(DEFAULT_ADDR, "/scale-test")
+	s, err := Dial(DefaultAddr, "/scale-test")
 	if err != nil {
 		panic(err)
 	}

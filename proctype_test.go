@@ -10,7 +10,7 @@ import (
 )
 
 func proctypeSetup(ref string) (s Snapshot, app *App) {
-	s, err := Dial(DEFAULT_ADDR, "/proctype-test")
+	s, err := Dial(DefaultAddr, "/proctype-test")
 	if err != nil {
 		panic(err)
 	}

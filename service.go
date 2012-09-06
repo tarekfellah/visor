@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-const SERVICES_PATH = "services"
+const servicesPath = "services"
 
 type Service struct {
 	dir
@@ -21,7 +21,7 @@ type Service struct {
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
 	srv = &Service{Name: name}
-	srv.dir = dir{snapshot, path.Join(SERVICES_PATH, srv.Name)}
+	srv.dir = dir{snapshot, path.Join(servicesPath, srv.Name)}
 
 	return
 }
@@ -72,7 +72,7 @@ func (s *Service) Inspect() string {
 }
 
 func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
-	p := s.dir.prefix(ENDPOINTS_PATH)
+	p := s.dir.prefix(endpointsPath)
 
 	exists, _, err := s.conn.Exists(p)
 	if err != nil || !exists {
@@ -112,12 +112,12 @@ func GetService(s Snapshot, name string) (srv *Service, err error) {
 
 // Services returns the list of all registered Services.
 func Services(s Snapshot) (srvs []*Service, err error) {
-	exists, _, err := s.conn.Exists(SERVICES_PATH)
+	exists, _, err := s.conn.Exists(servicesPath)
 	if err != nil || !exists {
 		return
 	}
 
-	names, err := s.getdir(SERVICES_PATH)
+	names, err := s.getdir(servicesPath)
 	if err != nil {
 		return
 	}

@@ -19,12 +19,12 @@ type Revision struct {
 	ArchiveUrl string
 }
 
-const REVS_PATH = "revs"
+const revsPath = "revs"
 
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref}
-	rev.dir = dir{snapshot, app.dir.prefix(REVS_PATH, ref)}
+	rev.dir = dir{snapshot, app.dir.prefix(revsPath, ref)}
 
 	return
 }
@@ -88,7 +88,7 @@ func (r *Revision) Inspect() string {
 }
 
 func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.dir.prefix(REVS_PATH, ref)
+	path := app.dir.prefix(revsPath, ref)
 	codec := new(StringCodec)
 
 	f, err := s.getFile(path+"/archive-url", codec)

@@ -10,7 +10,7 @@ import (
 )
 
 func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
-	s, err := Dial(DEFAULT_ADDR, "/instance-test")
+	s, err := Dial(DefaultAddr, "/instance-test")
 	if err != nil {
 		panic(err)
 	}

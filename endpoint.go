@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-const ENDPOINTS_PATH = "endpoints"
+const endpointsPath = "endpoints"
 
 // Endpoint represents an entry of a Service and supports all fields to be used
 // as SRV record.
@@ -27,7 +27,7 @@ type Endpoint struct {
 
 func NewEndpoint(srv *Service, addr string, s Snapshot) (e *Endpoint) {
 	e = &Endpoint{Addr: addr, Target: addr}
-	e.dir = dir{s, srv.dir.prefix(ENDPOINTS_PATH, addr)}
+	e.dir = dir{s, srv.dir.prefix(endpointsPath, addr)}
 
 	return
 }
@@ -91,7 +91,7 @@ func (e *Endpoint) Inspect() string {
 // GetEndpoint fetches the endpoint for the given service and addr from the global
 // registry.
 func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error) {
-	path := srv.dir.prefix(ENDPOINTS_PATH, addr)
+	path := srv.dir.prefix(endpointsPath, addr)
 
 	f, err := s.getFile(path, new(ListCodec))
 	if err != nil {
@@ -100,7 +100,7 @@ func GetEndpoint(s Snapshot, srv *Service, addr string) (e *Endpoint, err error)
 	data := f.Value.([]string)
 
 	e = &Endpoint{Addr: addr}
-	e.dir = dir{s, srv.dir.prefix(ENDPOINTS_PATH, addr)}
+	e.dir = dir{s, srv.dir.prefix(endpointsPath, addr)}
 
 	p, err := strconv.ParseInt(data[0], 10, 0)
 	if err != nil {

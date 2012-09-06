@@ -10,13 +10,13 @@ import (
 )
 
 func serviceSetup(name string) (srv *Service) {
-	s, err := Dial(DEFAULT_ADDR, "/service-test")
+	s, err := Dial(DefaultAddr, "/service-test")
 	if err != nil {
 		panic(err)
 	}
 
 	r, _ := s.conn.Rev()
-	err = s.conn.Del(SERVICES_PATH, r)
+	err = s.conn.Del(servicesPath, r)
 	rev, err := Init(s)
 	if err != nil {
 		panic(err)

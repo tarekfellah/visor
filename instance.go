@@ -22,7 +22,7 @@ const (
 	InsStateExited        = "exited"
 )
 
-const INSTANCES_PATH = "instances"
+const instancesPath = "instances"
 
 // An Instance represents a running process of a specific type.
 type Instance struct {
@@ -72,7 +72,7 @@ func (i *Instance) createSnapshot(rev int64) snapshotable {
 }
 
 func (i *Instance) proctypePath() string {
-	return path.Join(APPS_PATH, i.AppName, PROCS_PATH, string(i.ProcessName), INSTANCES_PATH, i.Id())
+	return path.Join(appsPath, i.AppName, procsPath, string(i.ProcessName), instancesPath, i.Id())
 }
 
 // Register registers an instance with the registry.
@@ -152,7 +152,7 @@ func (i *Instance) LogString() string {
 
 // GetInstance returns an Instance from the given app, rev, proc and instance ids.
 func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
-	p := path.Join(INSTANCES_PATH, insName)
+	p := path.Join(instancesPath, insName)
 
 	state, _, err := s.conn.Get(p+"/state", nil)
 	if err != nil {

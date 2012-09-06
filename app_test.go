@@ -10,7 +10,7 @@ import (
 )
 
 func appSetup(name string) (app *App) {
-	s, err := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, err := Dial(DefaultAddr, DefaultRoot)
 	if err != nil {
 		panic(err)
 	}
@@ -223,7 +223,7 @@ func TestApps(t *testing.T) {
 	}
 	app = app.FastForward(-1)
 
-	s, _ := Dial(DEFAULT_ADDR, DEFAULT_ROOT)
+	s, _ := Dial(DefaultAddr, DefaultRoot)
 
 	apps, err := Apps(s)
 	if err != nil {

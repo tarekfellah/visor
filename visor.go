@@ -40,15 +40,15 @@ import (
 	"time"
 )
 
-const DEFAULT_URI string = "doozer:?ca=localhost:8046"
-const DEFAULT_ADDR string = "localhost:8046"
-const DEFAULT_ROOT string = "/visor"
-const SCALE_PATH string = "scale"
-const START_PORT int = 8000
-const START_PORT_PATH string = "/next-port"
-const UID_PATH string = "/uid"
-const PROXY_DIR = "/proxies"
-const PM_DIR = "/pms"
+const DefaultUri string = "doozer:?ca=localhost:8046"
+const DefaultAddr string = "localhost:8046"
+const DefaultRoot string = "/visor"
+const scalePath string = "scale"
+const startPort int = 8000
+const nextPortPath string = "/next-port"
+const uidPath string = "/uid"
+const proxyDir = "/proxies"
+const pmDir = "/pms"
 
 type ProcessName string
 type Stack string
@@ -57,13 +57,13 @@ type State string
 func Init(s Snapshot) (rev int64, err error) {
 	var s1 Snapshot
 
-	exists, _, err := s.conn.Exists(START_PORT_PATH)
+	exists, _, err := s.conn.Exists(nextPortPath)
 	if err != nil {
 		return
 	}
 
 	if !exists {
-		s1, err = s.set(START_PORT_PATH, strconv.Itoa(START_PORT))
+		s1, err = s.set(nextPortPath, strconv.Itoa(startPort))
 		if err != nil {
 			return
 		}
@@ -75,7 +75,7 @@ func Init(s Snapshot) (rev int64, err error) {
 
 func ClaimNextPort(s Snapshot) (port int, err error) {
 	for {
-		f, err := getLatest(s, START_PORT_PATH, new(IntCodec))
+		f, err := getLatest(s, nextPortPath, new(IntCodec))
 		if err == nil {
 			port = f.Value.(int)
 
@@ -99,11 +99,11 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return errors.New("scaling factor needs to be a positive integer")
 	}
 
-	exists, _, err := s.conn.Exists(path.Join(APPS_PATH, app, REVS_PATH, revision))
+	exists, _, err := s.conn.Exists(path.Join(appsPath, app, revsPath, revision))
 	if !exists || err != nil {
 		return fmt.Errorf("%s@%s not found", app, revision)
 	}
-	exists, _, err = s.conn.Exists(path.Join(APPS_PATH, app, PROCS_PATH, processName))
+	exists, _, err = s.conn.Exists(path.Join(appsPath, app, procsPath, processName))
 	if !exists || err != nil {
 		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}

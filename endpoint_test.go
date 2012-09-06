@@ -10,7 +10,7 @@ import (
 )
 
 func endpointSetup(srvName string) (s Snapshot, srv *Service) {
-	s, err := Dial(DEFAULT_ADDR, "/endpoint-test")
+	s, err := Dial(DefaultAddr, "/endpoint-test")
 	if err != nil {
 		panic(err)
 	}

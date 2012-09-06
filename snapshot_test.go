@@ -10,7 +10,7 @@ import (
 )
 
 func snapshotSetup() (s Snapshot) {
-	s, err := Dial(DEFAULT_ADDR, "/snapshot-test")
+	s, err := Dial(DefaultAddr, "/snapshot-test")
 	if err != nil {
 		panic(err)
 	}

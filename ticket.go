@@ -58,7 +58,7 @@ func (op OperationType) String() string {
 	return o
 }
 
-const TICKETS_PATH = "tickets"
+const ticketsPath = "tickets"
 
 const (
 	OpInvalid               = -1
@@ -108,7 +108,7 @@ func (t *Ticket) Create() (tt *Ticket, err error) {
 		return
 	}
 	t.Id = id
-	t.dir.Name = path.Join(TICKETS_PATH, strconv.FormatInt(t.Id, 10))
+	t.dir.Name = path.Join(ticketsPath, strconv.FormatInt(t.Id, 10))
 
 	f, err := createFile(t.Snapshot, t.dir.prefix("op"), t.array(), new(ListCodec))
 	if err != nil {
@@ -223,7 +223,7 @@ func WatchTicket(s Snapshot, listener chan *Ticket, errors chan error) {
 	rev := s.Rev
 
 	for {
-		ev, err := s.conn.Wait(path.Join(TICKETS_PATH, "*", "status"), rev+1)
+		ev, err := s.conn.Wait(path.Join(ticketsPath, "*", "status"), rev+1)
 		if err != nil {
 			errors <- err
 			return
@@ -248,7 +248,7 @@ func WaitTicketProcessed(s Snapshot, id int64) (status TicketStatus, s1 Snapshot
 	rev := s.Rev
 
 	for {
-		ev, err = s.conn.Wait(fmt.Sprintf("/%s/%d/status", TICKETS_PATH, id), rev+1)
+		ev, err = s.conn.Wait(fmt.Sprintf("/%s/%d/status", ticketsPath, id), rev+1)
 		if err != nil {
 			return
 		}
@@ -275,7 +275,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 		return nil, fmt.Errorf("ticket id %s can't be parsed as an int64", idStr)
 	}
 
-	p := path.Join(TICKETS_PATH, idStr)
+	p := path.Join(ticketsPath, idStr)
 
 	f, err := snapshot.getFile(path.Join(p, "op"), new(ListCodec))
 	if err != nil {

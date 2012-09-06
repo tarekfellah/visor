@@ -19,14 +19,14 @@ type ProcType struct {
 	Port int
 }
 
-const PROCS_PATH = "procs"
+const procsPath = "procs"
 
 func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
 	return &ProcType{
 		Name: name,
 		App:  app,
 		dir: dir{
-			s, app.dir.prefix(PROCS_PATH, string(name)),
+			s, app.dir.prefix(procsPath, string(name)),
 		},
 	}
 }
@@ -81,7 +81,7 @@ func (p *ProcType) Unregister() (err error) {
 }
 
 func (p *ProcType) instancesPath() string {
-	return p.dir.prefix(INSTANCES_PATH)
+	return p.dir.prefix(instancesPath)
 }
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
@@ -120,7 +120,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
-	path := app.dir.prefix(PROCS_PATH, string(name))
+	path := app.dir.prefix(procsPath, string(name))
 
 	port, err := s.getFile(path+"/port", new(IntCodec))
 	if err != nil {

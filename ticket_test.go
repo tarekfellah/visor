@@ -14,7 +14,7 @@ import (
 )
 
 func ticketSetup() (s Snapshot, hostname string) {
-	s, err := Dial(DEFAULT_ADDR, "/ticket-test")
+	s, err := Dial(DefaultAddr, "/ticket-test")
 	if err != nil {
 		panic(err)
 	}

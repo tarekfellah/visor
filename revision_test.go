@@ -10,7 +10,7 @@ import (
 )
 
 func revSetup() (s Snapshot, app *App) {
-	s, err := Dial(DEFAULT_ADDR, "/revision-test")
+	s, err := Dial(DefaultAddr, "/revision-test")
 	if err != nil {
 		panic(err)
 	}

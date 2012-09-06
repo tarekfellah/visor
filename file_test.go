@@ -10,7 +10,7 @@ import (
 )
 
 func fileSetup(path string, value interface{}) *file {
-	s, err := Dial(DEFAULT_ADDR, "/file-test")
+	s, err := Dial(DefaultAddr, "/file-test")
 	if err != nil {
 		panic(err)
 	}

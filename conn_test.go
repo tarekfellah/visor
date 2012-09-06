@@ -8,7 +8,7 @@ package visor
 import "testing"
 
 func connSetup() (*conn, int64) {
-	s, err := Dial(DEFAULT_ADDR, "/conn-test")
+	s, err := Dial(DefaultAddr, "/conn-test")
 	if err != nil {
 		panic(err)
 	}
@@ -25,7 +25,7 @@ func connSetup() (*conn, int64) {
 func TestConnDifferentRoot(t *testing.T) {
 	body := "test"
 
-	s, _ := Dial(DEFAULT_ADDR, "/not-conn-test")
+	s, _ := Dial(DefaultAddr, "/not-conn-test")
 
 	_, err := s.conn.Set("root", s.Rev, []byte(body))
 	if err != nil {
