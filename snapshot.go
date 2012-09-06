@@ -10,6 +10,7 @@ import (
 	"github.com/soundcloud/doozer"
 	"path"
 	"strconv"
+	"time"
 )
 
 // Snapshot represents a specific point in time
@@ -102,6 +103,18 @@ func (s Snapshot) GetProxies() ([]string, error) {
 // GetPms gets the list of bazooka-pm service IPs
 func (s Snapshot) GetPms() ([]string, error) {
 	return s.getdir(pmDir)
+}
+
+func (s Snapshot) RegisterPm(host string) (Snapshot, error) {
+	return s.set(path.Join(pmDir, host), time.Now().UTC().String())
+}
+
+func (s Snapshot) UnregisterPm(host string) error {
+	return s.del(path.Join(pmDir, host))
+}
+
+func (s Snapshot) ResetCoordinator() error {
+	return s.del("/")
 }
 
 // Getuid returns a unique ID from the coordinator
