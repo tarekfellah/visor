@@ -15,7 +15,10 @@ import (
 	"text/template"
 )
 
-var VERSION_STRING string
+//
+// Set *automatically* at link stage (see Makefile)
+//
+var VERSION string
 
 type Command struct {
 	Run       func(cmd *Command, args []string)
@@ -73,7 +76,7 @@ func main() {
 	args := flag.Args()
 
 	if Version == true {
-		fmt.Println(VERSION_STRING)
+		fmt.Println(VERSION)
 		os.Exit(0)
 	}
 
