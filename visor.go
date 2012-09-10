@@ -52,7 +52,6 @@ const (
 	pmDir               = "/pms"
 )
 
-type ProcessName string
 type Stack string
 type State string
 
@@ -136,7 +135,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 	for i := 0; i < tickets; i++ {
 		var ticket *Ticket
 
-		ticket, err = CreateTicket(app, revision, ProcessName(processName), op, s)
+		ticket, err = CreateTicket(app, revision, processName, op, s)
 		if err != nil {
 			return
 		}

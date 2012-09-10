@@ -178,7 +178,7 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	for _, processName := range pNames {
 		var pty *ProcType
 
-		pty, err = GetProcType(a.Snapshot, a, ProcessName(processName))
+		pty, err = GetProcType(a.Snapshot, a, processName)
 		if err != nil {
 			return
 		}

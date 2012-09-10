@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func instanceSetup(addr string, pType ProcessName) (ins *Instance) {
+func instanceSetup(addr string, pType string) (ins *Instance) {
 	s, err := Dial(DefaultAddr, "/instance-test")
 	if err != nil {
 		panic(err)

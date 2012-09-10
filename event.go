@@ -171,7 +171,7 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			return
 		}
 
-		info, err = GetProcType(s, app, ProcessName(e["proctype"]))
+		info, err = GetProcType(s, app, e["proctype"])
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}

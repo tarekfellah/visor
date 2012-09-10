@@ -21,7 +21,7 @@ type Ticket struct {
 	Id           int64
 	AppName      string
 	RevisionName string
-	ProcessName  ProcessName
+	ProcessName  string
 	Op           OperationType
 	Addr         net.TCPAddr
 	Status       TicketStatus
@@ -73,8 +73,7 @@ const (
 	TicketStatusDone      TicketStatus = "done"
 )
 
-//                                                      procType        
-func CreateTicket(appName string, revName string, pName ProcessName, op OperationType, s Snapshot) (t *Ticket, err error) {
+func CreateTicket(appName string, revName string, pName string, op OperationType, s Snapshot) (t *Ticket, err error) {
 	t = &Ticket{
 		Id:           -1,
 		AppName:      appName,
@@ -287,7 +286,7 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Ticket, e
 		Id:           id,
 		AppName:      data[0],
 		RevisionName: data[1],
-		ProcessName:  ProcessName(data[2]),
+		ProcessName:  data[2],
 		Op:           NewOperationType(data[3]),
 		dir:          dir{snapshot, p},
 		source:       ev}

@@ -30,7 +30,7 @@ type Instance struct {
 	Name         string
 	AppName      string
 	RevisionName string
-	ProcessName  ProcessName
+	ProcessName  string
 	ServiceName  string
 	Host         string
 	Port         int
@@ -49,7 +49,7 @@ func NewInstance(pty string, rev string, app string, addr string, snapshot Snaps
 		Port:         tcpAddr.Port,
 		ServiceName:  app + "-" + pty,
 		AppName:      app,
-		ProcessName:  ProcessName(pty),
+		ProcessName:  pty,
 		RevisionName: rev,
 		State:        InsStateInitial,
 	}

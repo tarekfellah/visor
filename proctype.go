@@ -14,14 +14,14 @@ import (
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
 	dir
-	Name ProcessName
+	Name string
 	App  *App
 	Port int
 }
 
 const procsPath = "procs"
 
-func NewProcType(app *App, name ProcessName, s Snapshot) *ProcType {
+func NewProcType(app *App, name string, s Snapshot) *ProcType {
 	return &ProcType{
 		Name: name,
 		App:  app,
@@ -119,7 +119,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 }
 
 // GetProcType fetches a ProcType from the coordinator
-func GetProcType(s Snapshot, app *App, name ProcessName) (p *ProcType, err error) {
+func GetProcType(s Snapshot, app *App, name string) (p *ProcType, err error) {
 	path := app.dir.prefix(procsPath, string(name))
 
 	port, err := s.getFile(path+"/port", new(intCodec))
