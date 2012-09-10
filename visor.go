@@ -52,7 +52,6 @@ const (
 	pmDir               = "/pms"
 )
 
-type Stack string
 type State string
 
 func Init(s Snapshot) (rev int64, err error) {

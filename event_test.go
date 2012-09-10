@@ -33,7 +33,7 @@ func eventSetup() (s Snapshot, l chan *Event) {
 }
 
 func eventAppSetup(name string, s Snapshot) *App {
-	return NewApp(name, "git://"+name, Stack(name+"stack"), s)
+	return NewApp(name, "git://"+name, name+"stack", s)
 }
 
 func TestEventAppRegistered(t *testing.T) {

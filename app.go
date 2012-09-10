@@ -21,13 +21,13 @@ type App struct {
 	dir
 	Name       string
 	RepoUrl    string
-	Stack      Stack
+	Stack      string
 	Env        Env
 	DeployType string
 }
 
 // NewApp returns a new App given a name, repository url and stack.
-func NewApp(name string, repourl string, stack Stack, snapshot Snapshot) (app *App) {
+func NewApp(name string, repourl string, stack string, snapshot Snapshot) (app *App) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
 	app.dir = dir{snapshot, path.Join(appsPath, app.Name)}
 
@@ -66,7 +66,7 @@ func (a *App) Register() (app *App, err error) {
 		dir:      a.dir.prefix("attrs"),
 		Value: map[string]interface{}{
 			"repo-url":    a.RepoUrl,
-			"stack":       string(a.Stack),
+			"stack":       a.Stack,
 			"deploy-type": a.DeployType,
 		},
 	}
@@ -209,7 +209,7 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	value := f.Value.(map[string]interface{})
 
 	app.RepoUrl = value["repo-url"].(string)
-	app.Stack = Stack(value["stack"].(string))
+	app.Stack = value["stack"].(string)
 	app.DeployType = value["deploy-type"].(string)
 
 	return
