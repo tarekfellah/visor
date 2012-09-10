@@ -50,7 +50,7 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 			purgeProctypeInstances(pty, revname)
 		}
 	case 3:
-		pty, err := visor.GetProcType(s, app, visor.ProcessName(args[2]))
+		pty, err := visor.GetProcType(s, app, args[2])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching proctype: %s\n", err.Error())
 			os.Exit(2)

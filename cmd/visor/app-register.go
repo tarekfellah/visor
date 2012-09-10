@@ -46,7 +46,7 @@ func runAppRegister(cmd *Command, args []string) {
 		repo = "https://github.com/foo/" + name
 	}
 
-	app := visor.NewApp(name, repo, visor.Stack(stack), cmdAppRegister.Snapshot)
+	app := visor.NewApp(name, repo, stack, cmdAppRegister.Snapshot)
 	app.DeployType = *t
 
 	_, err := app.Register()

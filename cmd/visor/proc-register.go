@@ -29,7 +29,7 @@ func runProcRegister(cmd *Command, args []string) {
 		cmd.Flag.Usage()
 	}
 
-	name := visor.ProcessName(args[1])
+	name := args[1]
 	s := cmdProcRegister.Snapshot
 
 	app, err := visor.GetApp(s, args[0])
