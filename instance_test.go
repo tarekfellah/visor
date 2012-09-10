@@ -92,11 +92,11 @@ func TestInstanceRegister(t *testing.T) {
 
 func TestGetInstance(t *testing.T) {
 	ins := instanceSetup("localhost:9494", "web")
-	_, err := ins.Register()
+	ins1, err := ins.Register()
 	if err != nil {
 		t.Errorf("Instance registration failed: %s", err)
 	}
-	i, err := GetInstance(ins.Snapshot, ins.Id())
+	i, err := GetInstance(ins1.Snapshot, ins.Id())
 	if err != nil {
 		t.Error(err)
 	}
@@ -172,17 +172,23 @@ func TestInstances(t *testing.T) {
 	}
 	s, err := Dial(DefaultAddr, DefaultRoot)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
+	}
+	err = s.ResetCoordinator()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	for i := range addrs {
 		instance, err := NewInstance("web", "12345", "test-app", addrs[i], s)
 		if err != nil {
-			t.Error(err)
-			return
+			t.Fatal(err)
 		}
-		instance.Register()
+		instance, err = instance.Register()
+		if err != nil {
+			t.Fatal(err)
+		}
+		s = instance.Snapshot
 	}
 
 	instances, err := Instances(s)

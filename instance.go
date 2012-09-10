@@ -154,16 +154,16 @@ func (i *Instance) LogString() string {
 func GetInstance(s Snapshot, insName string) (ins *Instance, err error) {
 	p := path.Join(instancesPath, insName)
 
-	state, _, err := s.conn.Get(p+"/state", nil)
+	state, _, err := s.get(p + "/state")
 	if err != nil {
 		return
 	}
 
-	info, _, err := s.conn.Get(p+"/info", nil)
+	info, _, err := s.get(p + "/info")
 	if err != nil {
 		return
 	}
-	fields := strings.Fields(string(info))
+	fields := strings.Fields(info)
 
 	addr := fields[3] + ":" + fields[4]
 
