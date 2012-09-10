@@ -1,33 +1,56 @@
 # Visor
 
-Visor is a library which provides an abstract interface over a global process state.
+Visor is a library which provides an abstraction over a global process state.
+
+Visor uses [doozerd](http://github.com/soundcloud/doozerd).
 
 ## Usage
 
 To understand how Visor works, we need to understand how it works with *time*. Each
-of the Visor data-types *File*, *App*, *Revision* and *Instance* are snapshots of
+of the Visor data-types *App*, *Revision*, *Proctype* and *Instance* are snapshots of
 a specific point in time in the coordinator. When a mutating operation is successfully
 performed on one of these data-types, a **new snapshot** is returned, representing the state
 of the coordinator *after* the operation. If the operation would fail, the old snapshot is
 returned with an error.
 
 With the new snapshot, we can perform an operation on this new state, and so on with
-every new snapshot. Here's an example to illustrate:
+every new snapshot.
 
 ```go
-snapshot, err := visor.Dial("localhost:8046", "/") // snapshot.Rev == 42
+package main
 
-file1, err := visor.Get(snapshot, "/path", codec)  // file1.Value == "billy",    file1.Rev == 42
-file2, err := file1.Update("bob")                  // file2.Value == "bob",      file2.Rev == 43
-file3, err := file2.Update("thornton")             // file3.Value == "thornton", file3.Rev == 44
-...
+import "github.com/soundcloud/visor"
+import "log"
+
+func main() {
+    snapshot, err := visor.DialUri("doozer:?ca=localhost:8046", "/")
+
+    name  := "rocket"
+    stack := "HEAD" // Runtime stack revision
+    repo  := "http://github.com/bazooka/rocket"
+
+    app   := visor.NewApp(name, repo, stack, snapshot)
+
+    _, err := app.Register()
+    if err != nil {
+        log.Fatalf("error registering app: %s", err)
+    }
+
+    rev := visor.NewRevision(app, "f84e19", snapshot)
+    rev.ArchiveUrl = "http://artifacts/rocket/f84e19.img"
+
+    _, err = rev.Register()
+    if err != nil {
+        log.Fatalf("error registering revision: %s", err)
+    }
+}
 ```
 
 ### Working with snapshots
 
 ```go
 // Get a snapshot of the latest coordinator state
-snapshot, err := visor.Dial("coordinator:8046", "/")
+snapshot, err := visor.DialUri("doozer:?ca=localhost:8046", "/")
 
 // Get the list of applications at snapshot
 apps, _ := visor.Apps(snapshot)
@@ -46,27 +69,6 @@ app.GetEnvironmentVar("cat")     // "meow", nil
 
 ```
 
-### Advancing in time
-
-```go
-// Get a snapshot of the latest coordinator state
-snapshot, err := visor.Dial("coordinator:8046", "/")
-
-apps, _ := visor.Apps(snapshot) // len(apps) == 0
-
-app, _ := NewApp("soundcloud.com", "git://github.com/sc/soundcloud.com", "mystack", snapshot)
-app.Register()
-
-// *snapshot* still refers to the old state, so apps is still empty
-apps, _ := visor.Apps(snapshot) // len(apps) == 0
-
-// Get a snapshot of the latest coordinator state
-snapshot = snapshot.FastForward(-1)
-
-// Now that snapshot reflects the latest state, apps contains our registered app
-apps, _ := visor.Apps(snapshot) // len(apps) == 1
-```
-
 ### Watching for events
 
 ``` go
@@ -75,7 +77,7 @@ package main
 import "soundcloud/visor"
 
 func main() {
-  snapshot, err := visor.Dial("coordinator:8046", "/")
+  snapshot, err := visor.DialUri("doozer:?ca=localhost:8046", "/")
   if err != nil {
     panic(err)
   }
@@ -95,23 +97,9 @@ func main() {
 
 #### Dependencies
 
-  - [Go](http://golang.org) (weekly)
-    execute this and add it to your `~/.bashrc`:
-
-        export GOROOT=<somepath>                 
-        export PATH=$PATH:$GOROOT/bin
-        alias updatego="cd $GOROOT; hg pull; hg update weekly; cd src; ./all.bash"
-
-    then do the following:
- 
-        hg clone -u weekly https://go.googlecode.com/hg/ go
-        hg update weekly
-        cd src
-        ./all.bash
-
-    the alias `updatego` will update your go version to weekly when you call it.
+  - [Go](http://golang.org) (go1)
     
-  - [doozer](https://github.com/ha/doozer) (implicit)
+  - [doozer](https://github.com/soundcloud/doozer) (implicit)
 
         go get github.com/ha/doozer
    
@@ -122,13 +110,13 @@ func main() {
         hg update 
         make install
 
-  - [Doozerd](https://github.com/ha/doozerd) (testing)
+  - [doozerd](https://github.com/soundcloud/doozerd) (testing)
 
         go get github.com/ha/doozerd
 
     if this fails, do the following
 
-        cd $GOROOT/src/pkg/github.com/ha/doozerd 
+        cd $GOROOT/src/pkg/github.com/soundcloud/doozerd
         git remote add soundcloud git@github.com:soundcloud/doozerd
         git pull soundcloud master
         ./make.sh
@@ -136,7 +124,7 @@ func main() {
 
 #### Installation
 
-Mac Os X:
+MacOS X:
 
     brew install https://raw.github.com/soundcloud/visor/master/visor.rb
 
@@ -154,7 +142,7 @@ Compile yourself:
 
 ### Testing
 
-First start `doozerd` with default configuration. If listening run:
+First start `doozerd` with default configuration. Then run:
 
 ```
 go test
