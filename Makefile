@@ -2,13 +2,21 @@ VERSION  := $(shell cat VERSION)
 GOPATH   ?= $(PWD)
 GOBIN    ?= $(GOPATH)/bin
 GOFLAGS  := -ldflags "-X main.VERSION $(VERSION)"
-PKG_PATH := $(GOPATH)/src/github.com/soundcloud/visor
+PKGPATH  := $(GOPATH)/src/github.com/soundcloud/visor
 
 # LOCAL #
+
 default:
+	go build ./cmd/visor
+
+install: $(PKGPATH)
 	@GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
 	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./cmd/visor
 	@echo "built $(GOBIN)/visor v$(VERSION)"
+
+$(PKGPATH):
+	mkdir -p $(shell dirname $(PKGPATH))
+	ln -sf $(PWD) $(PKGPATH)
 
 # DEBIAN PACKAGING #
 
@@ -28,5 +36,5 @@ debroot:
 build: clean debroot debbuild
 
 clean: debclean
-	go clean
+	GOPATH=$(GOPATH) go clean
 	rm -rf bin src pkg
