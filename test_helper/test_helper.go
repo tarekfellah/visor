@@ -51,7 +51,7 @@ func ExpectEvent(c chan interface{}, evs string, timeout time.Duration, t *testi
 
 func App(s visor.Snapshot) (app *visor.App) {
 	name := randItem(appNames)
-	app = visor.NewApp(name, "git://"+name+".git", visor.Stack("my-stack"), s)
+	app = visor.NewApp(name, "git://"+name+".git", "my-stack", s)
 	return
 }
 
@@ -68,7 +68,7 @@ func ProcType(app *visor.App, s visor.Snapshot, name string) (pty *visor.ProcTyp
 	if app == nil {
 		app = App(s)
 	}
-	pty = visor.NewProcType(app, visor.ProcessName(name), s)
+	pty = visor.NewProcType(app, name, s)
 	return
 }
 
