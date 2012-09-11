@@ -182,7 +182,7 @@ func Instances(s Snapshot) (ins []*Instance, err error) {
 		return
 	}
 
-	names, err := s.FastForward(-1).getdir(instancesPath)
+	names, err := s.getdir(instancesPath)
 	if err != nil {
 		return
 	}
