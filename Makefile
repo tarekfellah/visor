@@ -1,4 +1,7 @@
-VERSION := $$(cat VERSION)
+MAJOR   := 0
+MINOR   := 5
+PATCH   := 9
+VERSION := $(MAJOR).$(MINOR).$(PATCH)
 GOPATH  ?= $(PWD)
 GOBIN   ?= $(GOPATH)/bin
 GOFLAGS := -ldflags "-X main.VERSION $(VERSION)"
