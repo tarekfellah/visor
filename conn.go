@@ -24,6 +24,10 @@ type conn struct {
 // Set calls (*doozer.Conn).Set with a prefixed path
 func (c *conn) Set(path string, rev int64, value []byte) (newrev int64, err error) {
 	path = c.prefixPath(path)
+	if !pathRe.MatchString(path) {
+		return rev, NewError(ErrBadPath, fmt.Sprintf("%s, got path: %s", ErrBadPath.Error(), path))
+	}
+
 	newrev, err = c.conn.Set(path, rev, value)
 	if err != nil {
 		if newrev == 0 { // err + newrev == 0: REV MISMATCH

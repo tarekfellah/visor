@@ -83,13 +83,13 @@ const (
 )
 
 var eventPatterns = map[*regexp.Regexp]eventPath{
-	regexp.MustCompile("^/apps/([-.[:alnum:]]+)/registered$"):                                      pathApp,
-	regexp.MustCompile("^/apps/([-.[:alnum:]]+)/revs/([-.[:alnum]]+)/registered$"):                 pathRev,
-	regexp.MustCompile("^/apps/([-.[:alnum:]]+)/procs/([-.[:alnum]]+)/registered$"):                pathProc,
-	regexp.MustCompile("^/apps/([-.[:alnum:]]+)/procs/([-.[:alnum]]+)/instances/([-[:digit:]]+)$"): pathIns,
-	regexp.MustCompile("^/instances/([-[:digit:]]+)/state$"):                                       pathInsState,
-	regexp.MustCompile("^/services/([-.[:alnum:]]+)/registered$"):                                  pathSrv,
-	regexp.MustCompile("^/services/([-.[:alnum:]]+)/endpoints/([-[:digit:]]+)$"):                   pathEp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/registered$"):                                         pathApp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/revs/(" + charPat + "+)/registered$"):                 pathRev,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/registered$"):                pathProc,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/instances/([-[:digit:]]+)$"): pathIns,
+	regexp.MustCompile("^/instances/([-[:digit:]]+)/state$"):                                            pathInsState,
+	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                                     pathSrv,
+	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-[:digit:]]+)$"):                      pathEp,
 }
 
 func (ev *Event) String() string {
