@@ -91,7 +91,7 @@ func TestTicketClaim(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if TicketStatus(status) != TicketStatusClaimed {
+	if InsStatus(status) != TicketStatusClaimed {
 		t.Error("Ticket not claimed")
 	}
 
@@ -118,7 +118,7 @@ func TestTicketUnclaim(t *testing.T) {
 	s, host := ticketSetup()
 	id := s.Rev
 	p := fmt.Sprintf("tickets/%d", id)
-	ticket := &Ticket{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
+	ticket := &Instance{Id: id, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
 
 	rev, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
@@ -147,7 +147,7 @@ func TestTicketUnclaim(t *testing.T) {
 func TestTicketUnclaimWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := fmt.Sprintf("tickets/%d/claims/%s", s.Rev, host)
-	ticket := &Ticket{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
+	ticket := &Instance{Id: s.Rev, AppName: "unclaim", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
 
 	rev, err := s.conn.Set(p, s.Rev, []byte(host))
 	if err != nil {
@@ -164,7 +164,7 @@ func TestTicketUnclaimWithWrongLock(t *testing.T) {
 func TestTicketDone(t *testing.T) {
 	s, host := ticketSetup()
 	p := fmt.Sprintf("tickets/%d", s.Rev)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
+	ticket := &Instance{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
 
 	rev, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
@@ -181,7 +181,7 @@ func TestTicketDone(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if TicketStatus(val) != TicketStatusDone {
+	if InsStatus(val) != InsStatusDone {
 		t.Error("ticket not resolved")
 	}
 }
@@ -189,7 +189,7 @@ func TestTicketDone(t *testing.T) {
 func TestTicketDoneWithWrongLock(t *testing.T) {
 	s, host := ticketSetup()
 	p := fmt.Sprintf("tickets/%d", s.Rev)
-	ticket := &Ticket{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
+	ticket := &Instance{Id: s.Rev, AppName: "done", RevisionName: "abcd123", ProcessName: "test", Op: OpStart, dir: dir{s, p}}
 
 	_, err := s.conn.Set(p+"/claims/"+host, s.Rev, []byte(host))
 	if err != nil {
@@ -205,7 +205,7 @@ func TestTicketDoneWithWrongLock(t *testing.T) {
 
 func TestTicketWatchCreate(t *testing.T) {
 	s, _ := ticketSetup()
-	l := make(chan *Ticket)
+	l := make(chan *Instance)
 
 	go WatchTicket(s, l, make(chan error))
 
@@ -219,7 +219,7 @@ func TestTicketWatchCreate(t *testing.T) {
 
 func TestTicketWatchUnclaim(t *testing.T) {
 	s, _ := ticketSetup()
-	l := make(chan *Ticket)
+	l := make(chan *Instance)
 
 	ticket, err := CreateTicket("lol", "cat", "app", OpStart, s)
 	if err != nil {
@@ -268,12 +268,12 @@ func TestTicketWaitTicketProcessed(t *testing.T) {
 	if s1.Rev <= s.Rev {
 		t.Error("revision didn't increase")
 	}
-	if status != TicketStatusDone {
+	if status != InsStatusDone {
 		t.Error("ticket status != 'done'")
 	}
 }
 
-func expectTicket(appName, revName, pName string, op OperationType, l chan *Ticket, t *testing.T) {
+func expectTicket(appName, revName, pName string, op OperationType, l chan *Instance, t *testing.T) {
 	for {
 		select {
 		case ticket := <-l:

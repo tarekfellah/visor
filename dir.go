@@ -30,6 +30,10 @@ func (p *dir) prefix(path string, paths ...string) (result string) {
 	return
 }
 
+func (p *dir) fastForward(rev int64) *dir {
+	return &dir{p.Snapshot.FastForward(rev), p.Name}
+}
+
 func (p *dir) String() (dir string) {
 	return p.Name
 }

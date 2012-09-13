@@ -70,7 +70,7 @@ func (*intCodec) Decode(input []byte) (interface{}, error) {
 type listCodec struct{}
 
 func (*listCodec) Encode(input interface{}) ([]byte, error) {
-	return []byte(strings.Join(input.([]string), " ")), nil
+	return []byte(strings.TrimSpace(strings.Join(input.([]string), " "))), nil
 }
 func (*listCodec) Decode(input []byte) (interface{}, error) {
 	return strings.Fields(string(input)), nil

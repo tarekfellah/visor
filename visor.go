@@ -52,7 +52,7 @@ const (
 	pmDir               = "/pms"
 )
 
-type State string
+type InsStatus string
 
 func Init(s Snapshot) (rev int64, err error) {
 	var s1 Snapshot
@@ -108,39 +108,35 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
-	op := OpStart
-	tickets := factor
-
-	current, _, err := s.GetScale(app, revision, processName)
+	list, err := s.getdir(path.Join(appsPath, app, procsPath, processName, instancesPath))
 	if err != nil {
 		return
 	}
+	current := len(list)
 
-	// Check response isn't empty
-	if current > 0 {
-		tickets = factor - current
+	if factor > current {
+		// Scale up
+		tickets := factor - current
 
-		if tickets < 0 {
-			op = OpStop
-			tickets = -tickets
+		for i := 0; i < tickets; i++ {
+			var ticket *Instance
+
+			ticket, err = CreateInstance(app, revision, processName, s)
+			if err != nil {
+				return
+			}
+			s = s.FastForward(ticket.Rev)
+		}
+	} else if factor < current {
+		var s Snapshot
+		// Scale down
+		stops := current - factor
+		for i := 0; i < stops; i++ {
+			s, err = StopInstance(list[i], s)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
-
-	s, err = s.SetScale(app, revision, processName, factor)
-	if err != nil {
-		return
-	}
-
-	for i := 0; i < tickets; i++ {
-		var ticket *Ticket
-
-		ticket, err = CreateTicket(app, revision, processName, op, s)
-		if err != nil {
-			return
-		}
-
-		s = s.FastForward(ticket.Rev)
-	}
-
 	return
 }

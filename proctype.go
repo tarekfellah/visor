@@ -8,6 +8,7 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 )
 
@@ -84,30 +85,37 @@ func (p *ProcType) instancesPath() string {
 	return p.dir.prefix(instancesPath)
 }
 
-func (p *ProcType) GetInstanceNames() (ins []string, err error) {
+func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
 	exists, _, err := p.conn.Exists(p.instancesPath())
 	if err != nil || !exists {
 		return
 	}
 
-	ins, err = p.FastForward(-1).getdir(p.instancesPath())
+	dir, err := p.FastForward(-1).getdir(p.instancesPath())
 	if err != nil {
 		return
 	}
-
+	ids = []int64{}
+	for _, f := range dir {
+		id, e := strconv.ParseInt(f, 10, 64)
+		if e != nil {
+			return nil, e
+		}
+		ids = append(ids, id)
+	}
 	return
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
-	insNames, err := p.GetInstanceNames()
+	ids, err := p.GetInstanceIds()
 	if err != nil {
 		return
 	}
 
-	for _, insName := range insNames {
+	for _, id := range ids {
 		var i *Instance
 
-		i, err = GetInstance(p.Snapshot, insName)
+		i, err = GetInstance(p.Snapshot, id)
 		if err != nil {
 			return
 		}

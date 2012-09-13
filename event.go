@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"regexp"
+	"strconv"
 )
 
 // An Event represents a change to a file in the registry.
@@ -177,9 +178,16 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		}
 	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
 		var i *Instance
+		var id int64
 
 		e := ev.Emitter
-		i, err = GetInstance(s, e["instance"])
+
+		id, err = strconv.ParseInt(e["instance"], 10, 64)
+		if err != nil {
+			return
+		}
+
+		i, err = GetInstance(s, id)
 		if err != nil {
 			fmt.Printf("error getting instance: %s\n", err)
 			return
@@ -272,14 +280,14 @@ func parseEvent(src *doozer.Event) *Event {
 					break
 				}
 
-				switch State(src.Body) {
-				case InsStateStarted:
+				switch InsStatus(src.Body) {
+				case InsStatusStarted:
 					etype = EvInsStart
-				case InsStateExited:
+				case InsStatusExited:
 					etype = EvInsExit
-				case InsStateFailed:
+				case InsStatusFailed:
 					etype = EvInsFail
-				case InsStateDead:
+				case InsStatusDead:
 					etype = EvInsDead
 				}
 			case pathSrv:
