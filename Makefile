@@ -1,17 +1,19 @@
-MAJOR   := 0
-MINOR   := 5
-PATCH   := 9
-VERSION := $(MAJOR).$(MINOR).$(PATCH)
-GOPATH  ?= $(PWD)
-GOBIN   ?= $(GOPATH)/bin
-GOFLAGS := -ldflags "-X main.VERSION $(VERSION)"
+VERSION := $$(cat VERSION)
+
+GOPATH   := $(PWD)
+GOBIN    ?= $(GOPATH)/bin
+GOFLAGS  := -ldflags "-X main.VERSION $(VERSION)"
+PKG_PATH := $(GOPATH)/src/github.com/soundcloud/visor
 
 # LOCAL #
+default: $(PKG_PATH)
+	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
+	GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./cmd/visor
+	echo "built $(GOBIN)/visor v$(VERSION)"
 
-default:
-	@GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
-	@GOPATH=$(GOPATH) GOBIN=$(GOBIN) go install $(GOFLAGS) ./cmd/visor
-	@echo "built $(GOBIN)/visor v$(VERSION)"
+$(PKG_PATH):
+	mkdir -p $$(dirname $(PKG_PATH))
+	ln -sf $(PWD) $(PKG_PATH)
 
 # DEBIAN PACKAGING #
 
