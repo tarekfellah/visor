@@ -165,27 +165,39 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	p := a.dir.prefix(procsPath)
 
-	exists, _, err := a.conn.Exists(p)
-	if err != nil || !exists {
-		return
-	}
-
-	pNames, err := a.FastForward(-1).getdir(p)
+	names, err := a.getdir(p)
 	if err != nil {
+		if IsErrNoEnt(err) {
+			err = nil
+		}
 		return
 	}
 
-	for _, processName := range pNames {
-		var pty *ProcType
+	ptych := make(chan *ProcType, 1)
+	errch := make(chan error, 1)
 
-		pty, err = GetProcType(a.Snapshot, a, processName)
-		if err != nil {
+	for _, name := range names {
+		go func(name string) {
+			pty, err := GetProcType(a.Snapshot, a, name)
+			if err != nil {
+				errch <- err
+			} else {
+				ptych <- pty
+			}
+		}(name)
+	}
+	for {
+		select {
+		case pty := <-ptych:
+			ptys = append(ptys, pty)
+
+			if len(ptys) == len(names) {
+				return
+			}
+		case err = <-errch:
 			return
 		}
-
-		ptys = append(ptys, pty)
 	}
-
 	return
 }
 
