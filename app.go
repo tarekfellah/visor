@@ -234,7 +234,7 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	names, err := s.FastForward(-1).getdir(appsPath)
+	names, err := s.getdir(appsPath)
 	if err != nil {
 		return
 	}

@@ -14,6 +14,7 @@ var (
 	ErrUnauthorized = errors.New("operation is not permitted")
 	ErrInvalidState = errors.New("invalid state")
 	ErrNoEnt        = errors.New("file not found")
+	ErrBadPath      = errors.New("invalid path: only ASCII letters, numbers, '.', or '-' are allowed")
 )
 
 type Error struct {

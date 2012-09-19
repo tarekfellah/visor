@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"github.com/soundcloud/doozer"
 	"path"
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -20,6 +21,11 @@ type Snapshot struct {
 	Rev  int64
 	conn *conn
 }
+
+// regular expressions to validate paths
+const charPat = `[-.[:alnum:]]`
+
+var pathRe = regexp.MustCompile(`^/$|^(/` + charPat + `+)+$`)
 
 // Snapshotable is implemented by any type which
 // is time-aware, and can be moved forward in time
