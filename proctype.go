@@ -86,9 +86,9 @@ func (p *ProcType) instancesPath() string {
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
 	ins, err = p.getdir(p.instancesPath())
-    if IsErrNoEnt(err) {
-        err = nil
-    }
+	if IsErrNoEnt(err) {
+		err = nil
+	}
 	return
 }
 
