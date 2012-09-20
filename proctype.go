@@ -85,36 +85,44 @@ func (p *ProcType) instancesPath() string {
 }
 
 func (p *ProcType) GetInstanceNames() (ins []string, err error) {
-	exists, _, err := p.conn.Exists(p.instancesPath())
-	if err != nil || !exists {
-		return
-	}
-
 	ins, err = p.getdir(p.instancesPath())
-	if err != nil {
-		return
+	if IsErrNoEnt(err) {
+		err = nil
 	}
-
 	return
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
-	insNames, err := p.GetInstanceNames()
-	if err != nil {
+	names, err := p.GetInstanceNames()
+	if err != nil || len(names) == 0 {
 		return
 	}
 
-	for _, insName := range insNames {
-		var i *Instance
+	insch := make(chan *Instance, 1)
+	errch := make(chan error, 1)
 
-		i, err = GetInstance(p.Snapshot, insName)
-		if err != nil {
+	for _, name := range names {
+		go func(name string) {
+			i, err := GetInstance(p.Snapshot, name)
+			if err != nil {
+				errch <- err
+			} else {
+				insch <- i
+			}
+		}(name)
+	}
+	for {
+		select {
+		case i := <-insch:
+			ins = append(ins, i)
+
+			if len(ins) == len(names) {
+				return
+			}
+		case err = <-errch:
 			return
 		}
-
-		ins = append(ins, i)
 	}
-
 	return
 }
 

@@ -97,13 +97,42 @@ func (c *conn) Get(path string, rev *int64) (value []byte, filerev int64, err er
 }
 
 // Getdir is a wrapper around (*doozer.Conn).Getdir with a prefixed path.
-func (c *conn) Getdir(path string, rev int64) (keys []string, err error) {
+func (c *conn) Getdir(path string, rev int64) (names []string, err error) {
+	type reply struct {
+		name  string
+		err   error
+		index int
+	}
+
 	if rev < 0 {
 		return nil, fmt.Errorf("rev must be >= 0")
 	}
-	keys, err = c.conn.Getdir(c.prefixPath(path), rev, 0, -1)
+	path = c.prefixPath(path)
+	size, _, err := c.conn.Stat(path, &rev)
+
 	if err == doozer.ErrNoEnt || (err != nil && err.Error() == "NOENT") {
-		err = NewError(ErrNoEnt, fmt.Sprintf(`dir "%s" not found at %d`, path, rev))
+		return nil, NewError(ErrNoEnt, fmt.Sprintf(`dir "%s" not found at %d`, path, rev))
+	}
+	names = make([]string, size)
+	replies := make(chan reply)
+
+	for i := 0; i < size; i++ {
+		go func(index int) {
+			names, err := c.conn.Getdir(path, rev, index, 1)
+			if err != nil {
+				replies <- reply{err: err}
+				return
+			}
+			replies <- reply{name: names[0], index: index}
+		}(i)
+	}
+	for i := 0; i < size; i++ {
+		res := <-replies
+		if res.err == nil {
+			names[res.index] = res.name
+		} else {
+			return nil, err
+		}
 	}
 	return
 }
