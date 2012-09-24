@@ -131,7 +131,7 @@ func (c *conn) Getdir(path string, rev int64) (names []string, err error) {
 		if res.err == nil {
 			names[res.index] = res.name
 		} else {
-			return nil, err
+			return nil, res.err
 		}
 	}
 	return
