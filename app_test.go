@@ -260,12 +260,11 @@ func TestApps(t *testing.T) {
 		t.Error(err)
 	}
 	if len(apps) != len(names) {
-		t.Errorf("expected length %d returned length %d", len(names), len(apps))
-	} else {
-		for i := range apps {
-			if apps[i].Name != names[i] {
-				t.Errorf("expected %s got %s", names[i], apps[i].Name)
-			}
+		t.Fatal("expected length %d returned length %d", len(names), len(apps))
+	}
+	for i := range apps {
+		if apps[i].Name != names[i] {
+			t.Errorf("expected %s got %s", names[i], apps[i].Name)
 		}
 	}
 }

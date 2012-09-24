@@ -235,16 +235,15 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	for i := range names {
-		var app *App
-
-		app, err = GetApp(s, names[i])
-		if err != nil {
-			return
-		}
-
-		apps = append(apps, app)
+	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+		return GetApp(s, name)
+	})
+	if err != nil {
+		return nil, err
 	}
 
+	for _, r := range results {
+		apps = append(apps, r.(*App))
+	}
 	return
 }
