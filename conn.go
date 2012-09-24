@@ -114,7 +114,7 @@ func (c *conn) Getdir(path string, rev int64) (names []string, err error) {
 		return nil, NewError(ErrNoEnt, fmt.Sprintf(`dir "%s" not found at %d`, path, rev))
 	}
 	names = make([]string, size)
-	replies := make(chan reply)
+	replies := make(chan reply, size)
 
 	for i := 0; i < size; i++ {
 		go func(index int) {

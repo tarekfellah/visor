@@ -173,7 +173,7 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 		return
 	}
 
-	ptych := make(chan *ProcType, 1)
+	ptych := make(chan *ProcType, len(names))
 	errch := make(chan error, 1)
 
 	for _, name := range names {

@@ -43,8 +43,8 @@ func runAppInstances(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	insch := make(chan []*visor.Instance, 1)
 	total := len(ptys)
+	insch := make(chan []*visor.Instance, total)
 
 	for _, pty := range ptys {
 		if len(args) >= 2 && string(pty.Name) != args[1] {

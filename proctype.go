@@ -98,7 +98,7 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 		return
 	}
 
-	insch := make(chan *Instance, 1)
+	insch := make(chan *Instance, len(names))
 	errch := make(chan error, 1)
 
 	for _, name := range names {
