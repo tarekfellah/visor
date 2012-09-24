@@ -34,6 +34,6 @@ func runServiceRegister(cmd *Command, args []string) {
 	_, err := srv.Register()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error registering service %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }

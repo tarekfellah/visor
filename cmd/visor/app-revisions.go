@@ -34,13 +34,13 @@ func runAppRevisions(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	revs, err := visor.AppRevisions(s, app)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching revisions %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	for _, rev := range revs {

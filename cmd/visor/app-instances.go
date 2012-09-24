@@ -34,13 +34,13 @@ func runAppInstances(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	ptys, err := app.GetProcTypes()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching proctypes %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	total := len(ptys)
@@ -55,7 +55,7 @@ func runAppInstances(cmd *Command, args []string) {
 			ins, err := pty.GetInstances()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error fetching instances for %s %s\n", pty.Name, err)
-				os.Exit(2)
+				os.Exit(1)
 			} else {
 				insch <- ins
 			}

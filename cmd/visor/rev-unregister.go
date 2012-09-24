@@ -35,18 +35,18 @@ func runRevUnregister(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	rev, err := visor.GetRevision(s, app, name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching rev %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	err = rev.Unregister()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error unregistering rev %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }

@@ -30,7 +30,7 @@ func runAppList(cmd *Command, args []string) {
 	apps, err := visor.Apps(s)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching apps %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	for _, app := range apps {

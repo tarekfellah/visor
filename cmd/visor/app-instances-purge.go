@@ -36,7 +36,7 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, *appname)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app: %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	switch len(args) {
@@ -44,7 +44,7 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 		ptys, err := app.GetProcTypes()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching proctypes: %s\n", err.Error())
-			os.Exit(2)
+			os.Exit(1)
 		}
 		for _, pty := range ptys {
 			purgeProctypeInstances(pty, revname)
@@ -53,7 +53,7 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 		pty, err := visor.GetProcType(s, app, args[2])
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching proctype: %s\n", err.Error())
-			os.Exit(2)
+			os.Exit(1)
 		}
 		purgeProctypeInstances(pty, revname)
 		return
@@ -67,7 +67,7 @@ func purgeProctypeInstances(pty *visor.ProcType, revname *string) {
 	ins, err := pty.GetInstances()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching instances for %s: %s\n", pty.Name, err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	for _, i := range ins {

@@ -32,12 +32,12 @@ func runServiceUnregister(cmd *Command, args []string) {
 	service, err := visor.GetService(cmdServiceUnregister.Snapshot, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching service %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	err = service.Unregister()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error unregistering service %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }

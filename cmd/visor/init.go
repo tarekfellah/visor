@@ -28,6 +28,6 @@ func runInit(cmd *Command, args []string) {
 	_, err := visor.Init(cmdInit.Snapshot)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error initializing %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }
