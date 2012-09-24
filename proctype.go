@@ -97,31 +97,14 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 	if err != nil || len(names) == 0 {
 		return
 	}
-
-	insch := make(chan *Instance, len(names))
-	errch := make(chan error, 1)
-
-	for _, name := range names {
-		go func(name string) {
-			i, err := GetInstance(p.Snapshot, name)
-			if err != nil {
-				errch <- err
-			} else {
-				insch <- i
-			}
-		}(name)
+	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+		return GetInstance(p.Snapshot, name)
+	})
+	if err != nil {
+		return nil, err
 	}
-	for {
-		select {
-		case i := <-insch:
-			ins = append(ins, i)
-
-			if len(ins) == len(names) {
-				return
-			}
-		case err = <-errch:
-			return
-		}
+	for _, r := range results {
+		ins = append(ins, r.(*Instance))
 	}
 	return
 }

@@ -245,3 +245,31 @@ func getLatest(s Snapshot, path string, codec codec) (f *file, err error) {
 
 	return
 }
+
+func getSnapshotables(list []string, fn func(string) (snapshotable, error)) (result []snapshotable, err error) {
+	type resp struct {
+		value snapshotable
+		err   error
+	}
+	ch := make(chan resp, len(list))
+
+	for _, item := range list {
+		go func(i string) {
+			r, err := fn(i)
+			if err != nil {
+				ch <- resp{err: err}
+			} else {
+				ch <- resp{value: r}
+			}
+		}(item)
+	}
+	for i := 0; i < len(list); i++ {
+		s := <-ch
+		if s.err != nil {
+			return nil, s.err
+		} else {
+			result = append(result, s.value)
+		}
+	}
+	return
+}

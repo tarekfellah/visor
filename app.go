@@ -179,37 +179,20 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	p := a.dir.prefix(procsPath)
 
 	names, err := a.getdir(p)
-	if err != nil {
+	if err != nil || len(names) == 0 {
 		if IsErrNoEnt(err) {
 			err = nil
 		}
 		return
 	}
-
-	ptych := make(chan *ProcType, len(names))
-	errch := make(chan error, 1)
-
-	for _, name := range names {
-		go func(name string) {
-			pty, err := GetProcType(a.Snapshot, a, name)
-			if err != nil {
-				errch <- err
-			} else {
-				ptych <- pty
-			}
-		}(name)
+	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+		return GetProcType(a.Snapshot, a, name)
+	})
+	if err != nil {
+		return nil, err
 	}
-	for {
-		select {
-		case pty := <-ptych:
-			ptys = append(ptys, pty)
-
-			if len(ptys) == len(names) {
-				return
-			}
-		case err = <-errch:
-			return
-		}
+	for _, r := range results {
+		ptys = append(ptys, r.(*ProcType))
 	}
 	return
 }
