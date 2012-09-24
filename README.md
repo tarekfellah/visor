@@ -101,7 +101,7 @@ func main() {
     
   - [doozer](https://github.com/soundcloud/doozer) (implicit)
 
-        go get github.com/ha/doozer
+        go get github.com/soundcloud/doozer
    
     if you run in trouble with the protobuf, do a:
 
