@@ -100,9 +100,15 @@ func (a *App) Unregister() error {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.getdir(a.dir.prefix("env"))
+	names, err := a.getdir(a.dir.prefix("env"))
 
 	vars = Env{}
+
+	type resp struct {
+		key, val string
+		err      error
+	}
+	ch := make(chan resp, len(names))
 
 	if err != nil {
 		if IsErrNoEnt(err) {
@@ -112,17 +118,24 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 		}
 	}
 
-	var v string
-
-	for i := range varNames {
-		v, err = a.GetEnvironmentVar(varNames[i])
-		if err != nil {
-			return
-		}
-
-		vars[strings.Replace(varNames[i], "-", "_", -1)] = v
+	for _, name := range names {
+		go func(name string) {
+			v, err := a.GetEnvironmentVar(name)
+			if err != nil {
+				ch <- resp{err: err}
+			} else {
+				ch <- resp{key: name, val: v}
+			}
+		}(name)
 	}
-
+	for i := 0; i < len(names); i++ {
+		r := <-ch
+		if r.err != nil {
+			return nil, err
+		} else {
+			vars[strings.Replace(r.key, "-", "_", -1)] = r.val
+		}
+	}
 	return
 }
 
