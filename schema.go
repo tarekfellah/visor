@@ -1,7 +1,7 @@
 package visor
 
-import(
-  "strconv"
+import (
+	"strconv"
 )
 
 const schemaPath = "/internal/schema"
@@ -43,36 +43,36 @@ func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
 // using the WatchSchema function and not write anymore if the schema
 // version is incremented.
 func EnsureSchemaCompat(s Snapshot, version Schema) (Snapshot, error) {
-  exists, _, err := s.exists(schemaPath)
-  if err != nil {
-    return s, err
-  }
+	exists, _, err := s.exists(schemaPath)
+	if err != nil {
+		return s, err
+	}
 
-  strVersion := strconv.Itoa(version.Version)
+	strVersion := strconv.Itoa(version.Version)
 
-  if !exists {
-    s, err = s.set(schemaPath, strVersion)
-    return s, err
-  } else {
-    value, _, err := s.get(schemaPath)
-    if err != nil {
-      return s, err
-    }
+	if !exists {
+		s, err = s.set(schemaPath, strVersion)
+		return s, err
+	} else {
+		value, _, err := s.get(schemaPath)
+		if err != nil {
+			return s, err
+		}
 
-    intValue, err := strconv.Atoi(value)
-    if err != nil {
-      return s, err
-    }
+		intValue, err := strconv.Atoi(value)
+		if err != nil {
+			return s, err
+		}
 
-    if intValue > version.Version {
-      return s, ErrSchemaMism
-    }
+		if intValue > version.Version {
+			return s, ErrSchemaMism
+		}
 
-    if intValue < version.Version {
-      s, err = s.set(schemaPath, strVersion)
-      return s, err
-    }
-  }
+		if intValue < version.Version {
+			s, err = s.set(schemaPath, strVersion)
+			return s, err
+		}
+	}
 
-  return s, nil
+	return s, nil
 }
