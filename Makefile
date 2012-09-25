@@ -37,6 +37,11 @@ debroot:
 
 build: clean debroot debbuild
 
+test:
+	go test ./...
+
 clean: debclean
 	GOPATH=$(GOPATH) go clean
 	rm -rf bin src pkg
+
+.PHONY: test
