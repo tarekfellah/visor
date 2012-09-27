@@ -3,6 +3,7 @@ GOPATH   ?= $(PWD)
 GOBIN    ?= $(GOPATH)/bin
 GOFLAGS  := -x -ldflags "-X main.VERSION $(VERSION)"
 PKGPATH  := $(GOPATH)/src/github.com/soundcloud/visor
+_PWD     := $(PWD)
 
 # LOCAL #
 
@@ -16,7 +17,7 @@ install: $(PKGPATH)
 
 $(PKGPATH):
 	mkdir -p $(shell dirname $(PKGPATH))
-	ln -sf $(PWD) $(PKGPATH)
+	ln -sf $(_PWD) $(PKGPATH)
 
 # DEBIAN PACKAGING #
 
