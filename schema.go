@@ -26,7 +26,8 @@ func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
 
 		v, err := strconv.Atoi(string(ev.Body))
 		if err != nil {
-			continue
+			errch <- err
+			return
 		}
 		ch <- Schema{v}
 	}
