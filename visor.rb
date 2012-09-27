@@ -51,7 +51,7 @@ and reinstall with brew by executing:
     end
     ENV['GOPATH'] = buildpath
     ENV['GOBIN'] = "#{prefix}/bin"
-    system "make"
+    system "make install"
   end
 
   def test
