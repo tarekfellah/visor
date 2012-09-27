@@ -1,13 +1,15 @@
 VERSION  := $(shell cat VERSION)
 GOPATH   ?= $(PWD)
 GOBIN    ?= $(GOPATH)/bin
-GOFLAGS  := -x -ldflags "-X main.VERSION $(VERSION)"
+LDFLAGS  := -ldflags "-X main.VERSION $(VERSION)"
+GOFLAGS  := -x $(LDFLAGS)
 PKGPATH  := $(GOPATH)/src/github.com/soundcloud/visor
 
 # LOCAL #
 
 default:
-	go build ./cmd/visor
+	@go build $(LDFLAGS) ./cmd/visor
+	@echo built ./visor v$(VERSION)
 
 install: $(PKGPATH)
 	GOPATH=$(GOPATH) go get $(GOFLAGS) -d ./cmd/visor
