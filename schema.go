@@ -12,8 +12,8 @@ type Schema struct {
 
 // WatchSchema watches for schema changes. Use it to react on schema updates
 //
-// If an event occurs, client can simply call EnsureSchemaCompat again to check
-// whether they are still up to date
+// If an event occurs, call VerifySchemaVersion again to check whether you
+// still support the current coordinator schema version
 func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
 	rev := s.Rev
 	for {
@@ -33,47 +33,43 @@ func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
 	}
 }
 
-// EnsureSchemaCompat makes sure that the schema in the coordinator is equal to
-// or smaller than the passed in version.
+// VerifySchemaVersion makes sure that the given schema version is compatible
+// with the current coordinator schema; if this is not the case ErrSchemaMism is
+// returned
 //
-// If the current schema is smaller than version, the schema version
-// is updated, if the current schema is greater than version, ErrSchemaMism
-// is returned
-//
-// After a successful call, clients should watch out for schema changes
-// using the WatchSchema function and not write anymore if the schema
-// version is incremented.
-func EnsureSchemaCompat(s Snapshot, version Schema) (Snapshot, error) {
+// Once the schema version is verified, make sure to use WatchSchema for schema
+// changes and act accordingly
+func VerifySchemaVersion(s Snapshot, version Schema) error {
 	exists, _, err := s.exists(schemaPath)
 	if err != nil {
-		return s, err
+		return err
 	}
-
-	strVersion := strconv.Itoa(version.Version)
 
 	if !exists {
-		s, err = s.set(schemaPath, strVersion)
-		return s, err
-	} else {
-		value, _, err := s.get(schemaPath)
-		if err != nil {
-			return s, err
-		}
-
-		intValue, err := strconv.Atoi(value)
-		if err != nil {
-			return s, err
-		}
-
-		if intValue > version.Version {
-			return s, ErrSchemaMism
-		}
-
-		if intValue < version.Version {
-			s, err = s.set(schemaPath, strVersion)
-			return s, err
-		}
+		return ErrSchemaMism
 	}
 
-	return s, nil
+	value, _, err := s.get(schemaPath)
+	if err != nil {
+		return err
+	}
+
+	intValue, err := strconv.Atoi(value)
+	if err != nil {
+		return err
+	}
+
+	if intValue != version.Version {
+		return ErrSchemaMism
+	}
+
+	return nil
+}
+
+func SetSchemaVersion(s Snapshot, version Schema) (newSnapshot Snapshot, err error) {
+	strVersion := strconv.Itoa(version.Version)
+
+	newSnapshot, err = s.set(schemaPath, strVersion)
+
+	return
 }

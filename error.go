@@ -15,7 +15,7 @@ var (
 	ErrInvalidState = errors.New("invalid state")
 	ErrNoEnt        = errors.New("file not found")
 	ErrBadPath      = errors.New("invalid path: only ASCII letters, numbers, '.', or '-' are allowed")
-	ErrSchemaMism   = errors.New("global schema to new for this visor version")
+	ErrSchemaMism   = errors.New("visor version not compatible with current coordinator schema")
 )
 
 type Error struct {

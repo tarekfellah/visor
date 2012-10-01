@@ -6,7 +6,6 @@
 package visor
 
 import (
-	"strconv"
 	"testing"
 	"time"
 )
@@ -29,7 +28,7 @@ func cleanSchemaVersion(s Snapshot, t *testing.T) Snapshot {
 	return s
 }
 
-func TestEnsureSchemaOnInitialRun(t *testing.T) {
+func TestSchemaMissing(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
 	version := Schema{1}
 
@@ -39,28 +38,16 @@ func TestEnsureSchemaOnInitialRun(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
+	if err := VerifySchemaVersion(s, version); err != ErrSchemaMism {
+		if err == nil {
+			t.Error("missing schema version did not error out")
+		} else {
+			t.Error("missing schema version returned incorrect error: " + err.Error())
+		}
 	}
-
-	value, _, err := s.get(schemaPath)
-	if err != nil {
-		t.Fatal("error calling get on '" + schemaPath + "': " + err.Error())
-	}
-
-	intValue, err := strconv.Atoi(value)
-	if err != nil {
-		t.Fatal("error converting '" + value + "' to an integer")
-	}
-
-	if intValue != version.Version {
-		t.Error("Wrong schema version was written to coordinator: expected '" + strconv.Itoa(version.Version) + "', got: '" + value + "'")
-	}
-
-	return
 }
 
-func TestEnsureSchemaNormal(t *testing.T) {
+func TestSetVersion(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
 	version := Schema{1}
 
@@ -70,57 +57,19 @@ func TestEnsureSchemaNormal(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
+	if s, err = SetSchemaVersion(s, version); err != nil {
+		t.Fatal("setting schema version failed")
 	}
 
-	value, _, err := s.get(schemaPath)
-	if err != nil {
-		t.Fatal("error calling get on '" + schemaPath + "': " + err.Error())
+	if err := VerifySchemaVersion(s, version); err != nil {
+    t.Error("setting new version failed: " + err.Error())
 	}
-
-	intValue, err := strconv.Atoi(value)
-	if err != nil {
-		t.Fatal("error converting '" + value + "' to an integer")
-	}
-
-	if intValue != version.Version {
-		t.Error("Wrong schema version was written to coordinator: expected '" + strconv.Itoa(version.Version) + "', got: '" + value + "'")
-	}
-
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring equal version: " + err.Error())
-	}
-
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring equal version (2): " + err.Error())
-	}
-
-	version.Version += 1
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
-	}
-
-	value, _, err = s.get(schemaPath)
-	if err != nil {
-		t.Fatal("error calling get on '" + schemaPath + "': " + err.Error())
-	}
-
-	intValue, err = strconv.Atoi(value)
-	if err != nil {
-		t.Fatal("error converting '" + value + "' to an integer")
-	}
-
-	if intValue != version.Version {
-		t.Error("Wrong schema version was written to coordinator: expected '" + strconv.Itoa(version.Version) + "', got: '" + value + "'")
-	}
-
-	return
 }
 
-func TestProvokeSchemaMismatch(t *testing.T) {
+func TestVersionTooNew(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	version := Schema{2}
+	coordinatorVersion := Schema{1}
+	clientVersion := Schema{2}
 
 	if err != nil {
 		panic(err)
@@ -128,21 +77,47 @@ func TestProvokeSchemaMismatch(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
+	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+		t.Fatal("setting schema version failed")
 	}
 
-	version.Version -= 1
-	if _, err = EnsureSchemaCompat(s, version); err != ErrSchemaMism {
-		t.Error("Lower error schema version did not trigger error")
+	if err := VerifySchemaVersion(s, clientVersion); err != ErrSchemaMism {
+		if err == nil {
+			t.Error("newer schema version did not error out")
+		} else {
+			t.Error("newer schema version returned incorrect error: " + err.Error())
+		}
+	}
+}
+
+func TestVersionTooOld(t *testing.T) {
+	s, err := Dial(DefaultAddr, DefaultRoot)
+	coordinatorVersion := Schema{2}
+	clientVersion := Schema{1}
+
+	if err != nil {
+		panic(err)
 	}
 
-	return
+	s = cleanSchemaVersion(s, t)
+
+	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+		t.Fatal("setting schema version failed")
+	}
+
+	if err := VerifySchemaVersion(s, clientVersion); err != ErrSchemaMism {
+		if err == nil {
+			t.Error("older schema version did not error out")
+		} else {
+			t.Error("older schema version returned incorrect error: " + err.Error())
+		}
+	}
+
 }
 
 func TestSchemaWatcher(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	version := Schema{2}
+	coordinatorVersion := Schema{2}
 
 	if err != nil {
 		panic(err)
@@ -150,8 +125,8 @@ func TestSchemaWatcher(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
+	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+		t.Fatal("setting schema version failed")
 	}
 
 	schemaEvents := make(chan Schema, 1)
@@ -165,60 +140,18 @@ func TestSchemaWatcher(t *testing.T) {
 	go func() {
 		select {
 		case <-time.After(1 * time.Second):
-			t.Error("Error watching for a schema update event")
+			t.Error("error watching for a schema update event")
 		case e := <-errch:
-			t.Error("SchemaWatch returned error: " + e.Error())
+			t.Error("schemaWatch returned error: " + e.Error())
 		case <-schemaEvents:
 		}
 
 		finished <- true
 	}()
 
-	version.Version += 1
-	if _, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Fatal(err.Error())
-	}
-
-	<-finished
-}
-
-func TestSchemaWatcherMismatch(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
-	version := Schema{2}
-
-	if err != nil {
-		panic(err)
-	}
-
-	s = cleanSchemaVersion(s, t)
-
-	if s, err = EnsureSchemaCompat(s, version); err != nil {
-		t.Error("Error ensuring version on a clean tree: " + err.Error())
-	}
-
-	schemaEvents := make(chan Schema, 1)
-	errch := make(chan error, 1)
-	finished := make(chan bool)
-
-	go func() {
-		WatchSchema(s, schemaEvents, errch)
-	}()
-
-	go func() {
-		select {
-		case <-time.After(1 * time.Second):
-		case e := <-errch:
-			t.Error("SchemaWatch returned error: " + e.Error())
-		case <-schemaEvents:
-			t.Error("Version mismatch triggered event!")
-		}
-
-		finished <- true
-	}()
-
-	version.Version -= 1
-	if _, err = EnsureSchemaCompat(s, version); err != ErrSchemaMism {
-		t.Fatal(err.Error())
+	coordinatorVersion.Version += 1
+	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+		t.Fatal("setting schema version failed: " + err.Error())
 	}
 
 	<-finished
