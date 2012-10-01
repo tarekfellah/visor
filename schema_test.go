@@ -62,7 +62,7 @@ func TestSetVersion(t *testing.T) {
 	}
 
 	if err := VerifySchemaVersion(s, version); err != nil {
-    t.Error("setting new version failed: " + err.Error())
+		t.Error("setting new version failed: " + err.Error())
 	}
 }
 
