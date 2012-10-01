@@ -33,7 +33,7 @@ type Command struct {
 func (c *Command) Usage() {
 	fmt.Fprintf(os.Stderr, "Usage: %s\n\n", c.UsageLine)
 	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(c.Long))
-	os.Exit(2)
+	os.Exit(1)
 }
 
 var Uri string
@@ -93,7 +93,7 @@ func main() {
 			s, err := visor.DialUri(Uri, Root)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error connection %s\n", err.Error())
-				os.Exit(2)
+				os.Exit(1)
 			}
 
 			cmd.Snapshot = s
@@ -124,7 +124,7 @@ func usage() {
 		panic(err)
 	}
 
-	os.Exit(2)
+	os.Exit(1)
 }
 
 var usageTmpl = `Usage: visor [globals] command [arguments]

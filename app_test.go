@@ -210,6 +210,36 @@ func TestEnvironmentVars(t *testing.T) {
 	}
 }
 
+func TestAppGetProcTypes(t *testing.T) {
+	app := appSetup("apps-test")
+	names := []string{"api", "web", "worker"}
+
+	var pty *ProcType
+	var err error
+
+	for _, name := range names {
+		pty = NewProcType(app, name, app.Snapshot)
+		pty, err = pty.Register()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	ptys, err := app.FastForward(pty.Rev).GetProcTypes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(ptys) != len(names) {
+		t.Errorf("expected length %d returned length %d", len(names), len(ptys))
+	} else {
+		for i := range ptys {
+			if ptys[i].Name != names[i] {
+				t.Errorf("expected %s got %s", names[i], ptys[i].Name)
+			}
+		}
+	}
+}
+
 func TestApps(t *testing.T) {
 	app := appSetup("apps-test")
 	names := []string{"cat", "dog", "lol"}
@@ -230,12 +260,11 @@ func TestApps(t *testing.T) {
 		t.Error(err)
 	}
 	if len(apps) != len(names) {
-		t.Errorf("expected length %d returned length %d", len(names), len(apps))
-	} else {
-		for i := range apps {
-			if apps[i].Name != names[i] {
-				t.Errorf("expected %s got %s", names[i], apps[i].Name)
-			}
+		t.Fatal("expected length %d returned length %d", len(names), len(apps))
+	}
+	for i := range apps {
+		if apps[i].Name != names[i] {
+			t.Errorf("expected %s got %s", names[i], apps[i].Name)
 		}
 	}
 }

@@ -35,7 +35,7 @@ func runAppEnvGet(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	if len(args) == 2 {
@@ -43,7 +43,7 @@ func runAppEnvGet(cmd *Command, args []string) {
 		val, err := app.GetEnvironmentVar(key)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching app env %s\n", err.Error())
-			os.Exit(2)
+			os.Exit(1)
 		}
 
 		fmt.Fprintf(os.Stdout, "%s=%s\n", key, val)
@@ -51,7 +51,7 @@ func runAppEnvGet(cmd *Command, args []string) {
 		env, err := app.EnvironmentVars()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching app env %s\n", err.Error())
-			os.Exit(2)
+			os.Exit(1)
 		}
 
 		for key, val := range env {

@@ -100,9 +100,15 @@ func (a *App) Unregister() error {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	varNames, err := a.getdir(a.dir.prefix("env"))
+	names, err := a.getdir(a.dir.prefix("env"))
 
 	vars = Env{}
+
+	type resp struct {
+		key, val string
+		err      error
+	}
+	ch := make(chan resp, len(names))
 
 	if err != nil {
 		if IsErrNoEnt(err) {
@@ -112,17 +118,24 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 		}
 	}
 
-	var v string
-
-	for i := range varNames {
-		v, err = a.GetEnvironmentVar(varNames[i])
-		if err != nil {
-			return
-		}
-
-		vars[strings.Replace(varNames[i], "-", "_", -1)] = v
+	for _, name := range names {
+		go func(name string) {
+			v, err := a.GetEnvironmentVar(name)
+			if err != nil {
+				ch <- resp{err: err}
+			} else {
+				ch <- resp{key: name, val: v}
+			}
+		}(name)
 	}
-
+	for i := 0; i < len(names); i++ {
+		r := <-ch
+		if r.err != nil {
+			return nil, err
+		} else {
+			vars[strings.Replace(r.key, "-", "_", -1)] = r.val
+		}
+	}
 	return
 }
 
@@ -165,27 +178,22 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	p := a.dir.prefix(procsPath)
 
-	exists, _, err := a.conn.Exists(p)
-	if err != nil || !exists {
-		return
-	}
-
-	pNames, err := a.FastForward(-1).getdir(p)
-	if err != nil {
-		return
-	}
-
-	for _, processName := range pNames {
-		var pty *ProcType
-
-		pty, err = GetProcType(a.Snapshot, a, processName)
-		if err != nil {
-			return
+	names, err := a.getdir(p)
+	if err != nil || len(names) == 0 {
+		if IsErrNoEnt(err) {
+			err = nil
 		}
-
-		ptys = append(ptys, pty)
+		return
 	}
-
+	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+		return GetProcType(a.Snapshot, a, name)
+	})
+	if err != nil {
+		return nil, err
+	}
+	for _, r := range results {
+		ptys = append(ptys, r.(*ProcType))
+	}
 	return
 }
 
@@ -222,21 +230,20 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	names, err := s.FastForward(-1).getdir(appsPath)
+	names, err := s.getdir(appsPath)
 	if err != nil {
 		return
 	}
 
-	for i := range names {
-		var app *App
-
-		app, err = GetApp(s, names[i])
-		if err != nil {
-			return
-		}
-
-		apps = append(apps, app)
+	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+		return GetApp(s, name)
+	})
+	if err != nil {
+		return nil, err
 	}
 
+	for _, r := range results {
+		apps = append(apps, r.(*App))
+	}
 	return
 }

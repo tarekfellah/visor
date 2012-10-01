@@ -52,6 +52,6 @@ func runAppRegister(cmd *Command, args []string) {
 	_, err := app.Register()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error registering app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }

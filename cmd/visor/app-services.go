@@ -34,13 +34,13 @@ func runAppServices(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, args[0])
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	proxies, err := s.GetProxies()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching proxy addresses %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	proxy := ""
@@ -51,14 +51,14 @@ func runAppServices(cmd *Command, args []string) {
 	ptys, err := app.GetProcTypes()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching proctypes %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	for _, pty := range ptys {
 		ins, err := pty.GetInstanceNames()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching instances for %s %s\n", pty.Name, err.Error())
-			os.Exit(2)
+			os.Exit(1)
 		}
 
 		fmt.Fprintf(os.Stdout, "%s-%s %s %d %d\n", pty.App.Name, pty.Name, proxy, pty.Port, len(ins))

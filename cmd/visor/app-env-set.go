@@ -37,12 +37,12 @@ func runAppEnvSet(cmd *Command, args []string) {
 	app, err := visor.GetApp(s, name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching app %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	_, err = app.SetEnvironmentVar(key, val)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error setting env var %s\n", err.Error())
-		os.Exit(2)
+		os.Exit(1)
 	}
 }

@@ -91,7 +91,7 @@ func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
 		return
 	}
 
-	dir, err := p.FastForward(-1).getdir(p.instancesPath())
+	dir, err := p.getdir(p.instancesPath())
 	if err != nil {
 		return
 	}
@@ -107,22 +107,23 @@ func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
-	ids, err := p.GetInstanceIds()
+	ids, err := p.getdir(p.instancesPath())
 	if err != nil {
 		return
 	}
-
-	for _, id := range ids {
-		var i *Instance
-
-		i, err = GetInstance(p.Snapshot, id)
+	results, err := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
+		id, err := strconv.ParseInt(idstr, 10, 64)
 		if err != nil {
-			return
+			return nil, err
 		}
-
-		ins = append(ins, i)
+		return GetInstance(p.Snapshot, id)
+	})
+	if err != nil {
+		return nil, err
 	}
-
+	for _, r := range results {
+		ins = append(ins, r.(*Instance))
+	}
 	return
 }
 

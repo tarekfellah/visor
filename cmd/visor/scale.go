@@ -34,7 +34,7 @@ func runScale(cmd *Command, args []string) {
 	f, err := strconv.Atoi(string(args[3]))
 	if err != nil {
 		fmt.Fprint(os.Stderr, "Error 'factor' needs to be a positive integer\n")
-		os.Exit(2)
+		os.Exit(1)
 	}
 
 	err = visor.Scale(args[0], args[1], args[2], f, cmdScale.Snapshot)
