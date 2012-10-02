@@ -1,8 +1,7 @@
 .release
 fakeroot/
 pkg/
-bin/
 src/
 tags
 visor.rb-e
-visor
+./visor
