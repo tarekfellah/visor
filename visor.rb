@@ -25,7 +25,7 @@ and try again
       exit 1
     end
 
-    ENV['PATH'] = "/tmp:/usr/local/bin:#{ENV['PATH']}"
+    ENV['PATH'] = "/usr/local/bin:#{ENV['PATH']}"
     begin
       system("which hg")
     rescue
