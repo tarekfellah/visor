@@ -107,6 +107,14 @@ func TestInstanceClaiming(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	claimer, err := ins2.getClaimer()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if claimer != nil {
+		t.Error("ticket wasn't unclaimed properly")
+	}
+
 	_, err = ins1.Unclaim("9.9.9.9") // Wrong host
 	if err != ErrUnauthorized {
 		t.Error("expected unclaim to fail")
