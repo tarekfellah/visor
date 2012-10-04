@@ -51,6 +51,27 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 		host   string
 	)
 
+	f, err := s.getFile(p+"/start", new(listCodec))
+	if err != nil && !IsErrNoEnt(err) {
+		return
+	} else {
+		fields := f.Value.([]string)
+
+		if len(fields) > 0 { // IP
+			ip = fields[0]
+		}
+		if len(fields) > 1 { // Port
+			status = InsStatusStarted
+			port, err = strconv.Atoi(fields[1])
+			if err != nil {
+				panic("invalid port number: " + fields[1])
+			}
+		}
+		if len(fields) > 2 { // Hostname
+			host = fields[2]
+		}
+	}
+
 	statusStr, _, err := s.get(p + "/status")
 	if IsErrNoEnt(err) {
 		err = nil
@@ -61,24 +82,11 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 		return
 	}
 
-	f, err := s.getFile(p+"/object", new(listCodec))
+	f, err = s.getFile(p+"/object", new(listCodec))
 	if err != nil {
 		return
 	}
 	fields := f.Value.([]string)
-
-	if len(fields) > 3 {
-		ip = fields[3]
-	}
-	if len(fields) > 4 {
-		port, err = strconv.Atoi(fields[4])
-		if err != nil {
-			panic("invalid port number: " + fields[4])
-		}
-	}
-	if len(fields) > 5 {
-		host = fields[5]
-	}
 
 	ins = &Instance{
 		Id:           id,
@@ -116,13 +124,13 @@ func getInstanceIds(s Snapshot, app, pty string) (ids []int64, err error) {
 	return
 }
 
-//
-//   instances/
-//       6868/
-// +         object = <app> <rev> <proc>
-// +         start  =
-//
 func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Instance, err error) {
+	//
+	//   instances/
+	//       6868/
+	// +         object = <app> <rev> <proc>
+	// +         start  =
+	//
 	id, err := Getuid(s)
 	if err != nil {
 		return
@@ -136,7 +144,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		dir:          dir{s, instancePath(id)},
 	}
 
-	f, err := createFile(s, ins.dir.prefix("object"), ins.array(), new(listCodec))
+	f, err := createFile(s, ins.dir.prefix("object"), ins.objectArray(), new(listCodec))
 	if err != nil {
 		return nil, err
 	}
@@ -261,10 +269,9 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	//
 	//   instances/
 	//       6868/
-	// -         object = <app> <rev> <proc>
-	// +         object = <app> <rev> <proc> 10.0.0.1 24690 localhost
-	//           start  = 10.0.0.1
-	// +         status = started
+	//           object = <app> <rev> <proc>
+	// -         start  = 10.0.0.1
+	// +         start  = 10.0.0.1 24690 localhost
 	//
 	//   apps/<app>/revs/<rev>/procs/<proc>/instances/
 	// +     6868 = 2012-07-19 16:41 UTC
@@ -272,15 +279,12 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	if err = i.verifyClaimer(ip); err != nil {
 		return
 	}
-	i1, err = i.updateStatus(InsStatusStarted)
-	if err != nil {
-		return
-	}
-	i1.Ip = ip
-	i1.Port = port
-	i1.Host = host
+	i.Ip = ip
+	i.Port = port
+	i.Host = host
+	i.Status = InsStatusStarted
 
-	_, err = createFile(i.Snapshot, i.dir.prefix("object"), i1.array(), new(listCodec))
+	_, err = createFile(i.Snapshot, i.dir.prefix("start"), i.startArray(), new(listCodec))
 	if err != nil {
 		return
 	}
@@ -288,7 +292,7 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	if err != nil {
 		return
 	}
-	i1 = i1.FastForward(s.Rev)
+	i1 = i.FastForward(s.Rev)
 
 	return
 }
@@ -304,13 +308,20 @@ func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
 }
 
 func (i *Instance) getClaimer() (*string, error) {
-	claimer, _, err := i.get("start")
+	f, err := i.getFile(i.dir.prefix("start"), new(listCodec))
 
 	if IsErrNoEnt(err) {
 		return nil, nil
 	} else if err != nil {
 		return nil, err
 	}
+	fields := f.Value.([]string)
+
+	if len(fields) == 0 {
+		return nil, nil
+	}
+	claimer := f.Value.([]string)[0]
+
 	return &claimer, nil
 }
 
@@ -490,8 +501,12 @@ func (i *Instance) Fields() string {
 	return fmt.Sprintf("%d %s %s %s %s %d", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
 }
 
-func (i *Instance) array() []string {
-	return []string{i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.portString(), i.Host}
+func (i *Instance) objectArray() []string {
+	return []string{i.AppName, i.RevisionName, i.ProcessName}
+}
+
+func (i *Instance) startArray() []string {
+	return []string{i.Ip, i.portString(), i.Host}
 }
 
 func (i *Instance) portString() string {
