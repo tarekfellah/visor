@@ -80,6 +80,16 @@ func TestInstanceClaiming(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	_, err = ins.Claim(host) // Already claimed
+	if err.(*Error).Err != ErrRevMismatch {
+		t.Error("expected re-claim to fail")
+	}
+
+	_, err = ins1.Claim(host) // Already claimed
+	if err != ErrInsClaimed {
+		t.Error("expected re-claim to fail")
+	}
+
 	claims, err := ins1.Claims()
 	if err != nil {
 		t.Fatal(err)
