@@ -320,9 +320,7 @@ func (i *Instance) getClaimer() (*string, error) {
 	if len(fields) == 0 {
 		return nil, nil
 	}
-	claimer := f.Value.([]string)[0]
-
-	return &claimer, nil
+	return &fields[0], nil
 }
 
 func (i *Instance) setClaimer(claimer string) (rev int64, err error) {
