@@ -52,7 +52,8 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	)
 
 	f, err := s.getFile(p+"/start", new(listCodec))
-	if err != nil && !IsErrNoEnt(err) {
+	if IsErrNoEnt(err) {
+	} else if err != nil {
 		return
 	} else {
 		fields := f.Value.([]string)
@@ -236,11 +237,25 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	return i.FastForward(rev), err
 }
 
+func (i *Instance) Unregister() (err error) {
+	err = i.Snapshot.del(i.ptyInstancesPath())
+	if err != nil {
+		println(IsErrNoEnt(err))
+		println(err.Error())
+		if IsErrNoEnt(err) {
+			err = nil
+		} else {
+			return
+		}
+	}
+	err = i.del("/")
+	return
+}
+
 // Exited tells the coordinator that the instance has exited.
-func (i *Instance) Exited() (i1 *Instance, err error) {
-	exists, _, err := i.Snapshot.exists(i.dir.prefix("stop"))
-	if !exists {
-		return nil, ErrUnauthorized
+func (i *Instance) Exited(host string) (i1 *Instance, err error) {
+	if err = i.verifyClaimer(host); err != nil {
+		return
 	}
 	i1, err = i.updateStatus(InsStatusExited)
 	if err != nil {

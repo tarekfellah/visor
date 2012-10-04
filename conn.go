@@ -162,6 +162,9 @@ func (c *conn) Del(path string, rev int64) (err error) {
 
 		if !f.IsDir {
 			e = c.conn.Del(path, rev)
+			if e == doozer.ErrNoEnt || (e != nil && e.Error() == "NOENT") {
+				return NewError(ErrNoEnt, fmt.Sprintf(`path "%s" not found @ %d`, path, rev))
+			}
 			if e != nil {
 				return e
 			}
@@ -169,6 +172,9 @@ func (c *conn) Del(path string, rev int64) (err error) {
 
 		return nil
 	})
+	if err == doozer.ErrNoEnt || (err != nil && err.Error() == "NOENT") {
+		return NewError(ErrNoEnt, fmt.Sprintf(`path "%s" not found @ %d`, path, rev))
+	}
 
 	return
 }

@@ -10,6 +10,7 @@ import (
 	"github.com/soundcloud/doozer"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 // An Event represents a change to a file in the registry.
@@ -53,22 +54,24 @@ func (e EventType) String() string {
 
 // Event types
 const (
-	EvAppReg    EventType = iota // App register
-	EvAppUnreg                   // App unregister
-	EvRevReg                     // Revision register
-	EvRevUnreg                   // Revision unregister
-	EvProcReg                    // ProcType register
-	EvProcUnreg                  // ProcType unregister
-	EvInsReg                     // Instance register
-	EvInsUnreg                   // Instance unregister
-	EvInsStart                   // Instance state changed to 'started'
-	EvInsFail                    // Instance state changed to 'failed'
-	EvInsDead                    // Instance state changed to 'dead'
-	EvInsExit                    // Instance state changed to 'exited'
-	EvSrvReg                     // Service register
-	EvSrvUnreg                   // Service unregister
-	EvEpReg                      // Endpoint register
-	EvEpUnreg                    // Endpoint unregister
+	EvAppReg      EventType = iota // App register
+	EvAppUnreg                     // App unregister
+	EvRevReg                       // Revision register
+	EvRevUnreg                     // Revision unregister
+	EvProcReg                      // ProcType register
+	EvProcUnreg                    // ProcType unregister
+	EvInsReg                       // Instance register
+	EvInsStartReq                  // Instance start request
+	EvInsStopReq                   // Instance stop request
+	EvInsUnreg                     // Instance unregister
+	EvInsStart                     // Instance state changed to 'started'
+	EvInsFail                      // Instance state changed to 'failed'
+	EvInsDead                      // Instance state changed to 'dead'
+	EvInsExit                      // Instance state changed to 'exited'
+	EvSrvReg                       // Service register
+	EvSrvUnreg                     // Service unregister
+	EvEpReg                        // Endpoint register
+	EvEpUnreg                      // Endpoint unregister
 )
 
 type eventPath int
@@ -78,19 +81,23 @@ const (
 	pathRev
 	pathProc
 	pathIns
-	pathInsState
+	pathInsStatus
+	pathInsStart
+	pathInsStop
 	pathSrv
 	pathEp
 )
 
 var eventPatterns = map[*regexp.Regexp]eventPath{
-	regexp.MustCompile("^/apps/(" + charPat + "+)/registered$"):                                         pathApp,
-	regexp.MustCompile("^/apps/(" + charPat + "+)/revs/(" + charPat + "+)/registered$"):                 pathRev,
-	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/registered$"):                pathProc,
-	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/instances/([-[:digit:]]+)$"): pathIns,
-	regexp.MustCompile("^/instances/([-[:digit:]]+)/state$"):                                            pathInsState,
-	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                                     pathSrv,
-	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-[:digit:]]+)$"):                      pathEp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/registered$"):                          pathApp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/revs/(" + charPat + "+)/registered$"):  pathRev,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/registered$"): pathProc,
+	regexp.MustCompile("^/instances/([-0-9]+)/object$"):                                  pathIns,
+	regexp.MustCompile("^/instances/([-0-9]+)/status$"):                                  pathInsStatus,
+	regexp.MustCompile("^/instances/([-0-9]+)/start$"):                                   pathInsStart,
+	regexp.MustCompile("^/instances/([-0-9]+)/stop$"):                                    pathInsStop,
+	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                      pathSrv,
+	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-0-9]+)$"):             pathEp,
 }
 
 func (ev *Event) String() string {
@@ -264,16 +271,33 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvProcUnreg
 				}
 			case pathIns:
-				emitter["app"] = match[1]
-				emitter["proctype"] = match[2]
-				emitter["instance"] = match[3]
+				emitter["instance"] = match[1]
 
 				if src.IsSet() {
+					fields := strings.Fields(string(src.Body))
+					emitter["app"] = fields[0]
+					emitter["rev"] = fields[1]
+					emitter["proctype"] = fields[2]
 					etype = EvInsReg
 				} else if src.IsDel() {
 					etype = EvInsUnreg
 				}
-			case pathInsState:
+			case pathInsStart:
+				emitter["instance"] = match[1]
+
+				if !src.IsSet() {
+					break
+				}
+				body := string(src.Body)
+				if body == "" {
+					etype = EvInsStartReq
+				} else {
+					fields := strings.Fields(body)
+					if len(fields) > 1 {
+						etype = EvInsStart
+					}
+				}
+			case pathInsStatus:
 				emitter["instance"] = match[1]
 
 				if !src.IsSet() {

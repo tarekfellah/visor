@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"errors"
 	"testing"
 	"time"
 )
@@ -185,14 +186,13 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 func TestEventInstanceRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regmouse", s)
-	ins, _ := NewInstance("web", "stable", app.Name, "127.0.0.1:8080", s)
 	emitter := map[string]string{"app": "regmouse", "proctype": "web", "rev": "stable"}
 
 	go WatchEvent(s, l)
 
-	_, err := ins.Register()
+	_, err := RegisterInstance(app.Name, "stable", "web", s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	expectEvent(EvInsReg, emitter, l, t)
@@ -200,12 +200,11 @@ func TestEventInstanceRegistered(t *testing.T) {
 
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	ins, _ := NewInstance("web", "stable", "unregmouse", "127.0.0.1:8080", s)
-	emitter := map[string]string{"app": "unregmouse", "proctype": "web"}
+	emitter := map[string]string{}
 
-	ins, err := ins.Register()
+	ins, err := RegisterInstance("unregmouse", "stable", "web", s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	s = s.FastForward(ins.Rev)
 
@@ -213,45 +212,51 @@ func TestEventInstanceUnregistered(t *testing.T) {
 
 	err = ins.Unregister()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	expectEvent(EvInsUnreg, emitter, l, t)
 }
 
 func TestEventInstanceStateChange(t *testing.T) {
+	ip := "10.0.0.1"
+	port := 9999
+	host := "mouse.org"
 	s, l := eventSetup()
-	ins, _ := NewInstance("web-state", "stable-state", "statemouse", "127.0.0.1:8081", s)
 	emitter := map[string]string{"app": "statemouse", "proctype": "web-state", "rev": "stable-state"}
 
-	ins, err := ins.Register()
+	ins, err := RegisterInstance("statemouse", "stable-state", "web-state", s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-
 	s = s.FastForward(ins.Rev)
+
+	ins, err = ins.Claim(ip)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	go WatchEvent(s, l)
 
-	ins, err = ins.UpdateState(InsStateStarted)
+	ins, err = ins.Started(ip, port, host)
 	if err != nil {
 		t.Error(err)
 	}
 	expectEvent(EvInsStart, emitter, l, t)
 
-	ins, err = ins.UpdateState(InsStateFailed)
+	ins, err = ins.Failed(ip, errors.New("no reason."))
 	if err != nil {
 		t.Error(err)
 	}
 	expectEvent(EvInsFail, emitter, l, t)
 
-	ins, err = ins.UpdateState(InsStateExited)
+	ins, err = ins.Exited(ip)
 	if err != nil {
 		t.Error(err)
 	}
 	expectEvent(EvInsExit, emitter, l, t)
 
-	_, err = ins.UpdateState(InsStateDead)
+	_, err = ins.Dead(ip, errors.New("no reason."))
 	if err != nil {
 		t.Error(err)
 	}
