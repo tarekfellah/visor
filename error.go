@@ -11,6 +11,7 @@ import (
 
 var (
 	ErrKeyConflict  = errors.New("key is already set")
+	ErrRevMismatch  = errors.New("revision mismatch")
 	ErrInsClaimed   = errors.New("instance is already claimed")
 	ErrUnauthorized = errors.New("operation is not permitted")
 	ErrInvalidState = errors.New("invalid state")

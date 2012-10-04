@@ -33,7 +33,7 @@ func (c *conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 		if newrev == 0 { // err + newrev == 0: REV MISMATCH
 			_, newrev, _ = c.Stat(path)
 		}
-		err = errors.New(fmt.Sprintf("error setting file '%s' to '%s': %s", path, string(value), err.Error()))
+		err = NewError(ErrRevMismatch, fmt.Sprintf("error setting file '%s' to '%s': %s", path, string(value), err.Error()))
 	}
 	return
 }
