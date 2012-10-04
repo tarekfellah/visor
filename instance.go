@@ -40,40 +40,24 @@ type Instance struct {
 	Status       InsStatus
 }
 
-func newInstanceStub(app, rev, pty string, s Snapshot) (ins *Instance) {
-	ins = &Instance{
-		Id:           -1,
-		AppName:      app,
-		RevisionName: rev,
-		ProcessName:  pty,
-		Status:       InsStatusInitial,
-		dir:          dir{s, "<invalid-path>"},
-	}
-	return
-}
-
-func newInstance(id int64, fields []string, status string, s Snapshot) (ins *Instance) {
-	ins = newInstanceStub(fields[0], fields[1], fields[2], s)
-
-	ins.Id = id
-	ins.Status = InsStatus(status)
-	ins.Ip = fields[3]
-	port, err := strconv.Atoi(fields[4])
-	if err != nil {
-		panic("invalid port number: " + fields[4])
-	}
-	ins.Port = port
-	ins.Host = fields[5]
-
-	return
-}
-
-// GetInstance returns an Instance from the given app, rev, proc and instance ids.
+// GetInstance returns an Instance from the given id
 func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
-	p := fmt.Sprintf("%s/%d", instancesPath, id)
+	p := instancePath(id)
 
-	status, _, err := s.get(p + "/status")
-	if err != nil {
+	var (
+		status InsStatus
+		ip     string
+		port   int
+		host   string
+	)
+
+	statusStr, _, err := s.get(p + "/status")
+	if IsErrNoEnt(err) {
+		err = nil
+		status = InsStatusInitial
+	} else if err == nil {
+		status = InsStatus(statusStr)
+	} else {
 		return
 	}
 
@@ -83,17 +67,98 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	}
 	fields := f.Value.([]string)
 
-	ins = newInstance(id, fields, status, s)
+	if len(fields) > 3 {
+		ip = fields[3]
+	}
+	if len(fields) > 4 {
+		port, err = strconv.Atoi(fields[4])
+		if err != nil {
+			panic("invalid port number: " + fields[4])
+		}
+	}
+	if len(fields) > 5 {
+		host = fields[5]
+	}
+
+	ins = &Instance{
+		Id:           id,
+		AppName:      fields[0],
+		RevisionName: fields[1],
+		ProcessName:  fields[2],
+		Status:       status,
+		Ip:           ip,
+		Port:         port,
+		Host:         host,
+		dir:          dir{s, instancePath(id)},
+	}
+	return
+}
+
+func getInstanceIds(s Snapshot, app, pty string) (ids []int64, err error) {
+	p := path.Join(appsPath, app, procsPath, pty, instancesPath)
+	exists, _, err := s.conn.Exists(p)
+	if err != nil || !exists {
+		return
+	}
+
+	dir, err := s.getdir(p)
+	if err != nil {
+		return
+	}
+	ids = []int64{}
+	for _, f := range dir {
+		id, e := strconv.ParseInt(f, 10, 64)
+		if e != nil {
+			return nil, e
+		}
+		ids = append(ids, id)
+	}
+	return
+}
+
+//
+//   instances/
+//       6868/
+// +         object = <app> <rev> <proc>
+// +         start  =
+//
+func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Instance, err error) {
+	id, err := Getuid(s)
+	if err != nil {
+		return
+	}
+	ins = &Instance{
+		Id:           id,
+		AppName:      app,
+		RevisionName: rev,
+		ProcessName:  pty,
+		Status:       InsStatusInitial,
+		dir:          dir{s, instancePath(id)},
+	}
+
+	f, err := createFile(s, ins.dir.prefix("object"), ins.array(), new(listCodec))
+	if err != nil {
+		return nil, err
+	}
+
+	f, err = createFile(s, ins.dir.prefix("start"), "", new(stringCodec))
+	if err != nil {
+		return nil, err
+	}
+	ins = ins.FastForward(f.FileRev)
 
 	return
 }
 
-func CreateInstance(app string, rev string, pty string, s Snapshot) (i *Instance, err error) {
-	return newInstanceStub(app, rev, pty, s).Create()
-}
-
-func StopInstance(id string, s Snapshot) (s1 Snapshot, err error) {
-	d := dir{s, path.Join(instancesPath, id)}
+func StopInstance(id int64, s Snapshot) (s1 Snapshot, err error) {
+	//
+	//   instances/
+	//       6868/
+	//           ...
+	// +         stop =
+	//
+	// TODO Check that instance is started
+	d := dir{s, instancePath(id)}
 	rev, err := d.set("stop", "")
 	if err != nil {
 		return
@@ -101,6 +166,10 @@ func StopInstance(id string, s Snapshot) (s1 Snapshot, err error) {
 	s1 = s.FastForward(rev)
 
 	return
+}
+
+func instancePath(id int64) string {
+	return path.Join(instancesPath, strconv.FormatInt(id, 10))
 }
 
 // FastForward advances the ticket in time. It returns
@@ -115,28 +184,7 @@ func (i *Instance) createSnapshot(rev int64) snapshotable {
 	return &tmp
 }
 
-func (i *Instance) Create() (i1 *Instance, err error) {
-	i1 = i
-
-	id, err := Getuid(i.Snapshot)
-	if err != nil {
-		return
-	}
-	i.Id = id
-	i.dir.Name = fmt.Sprintf("%s/%d", instancesPath, i.Id)
-
-	f, err := createFile(i.Snapshot, i.dir.prefix("object"), i.array(), new(listCodec))
-	if err != nil {
-		return
-	}
-	f, err = createFile(i.Snapshot, i.dir.prefix("start"), "", new(stringCodec))
-	if err == nil {
-		i1 = i.FastForward(f.FileRev)
-	}
-	return
-}
-
-// Claims returns the list of claimers
+// Claims returns the list of claimers.
 func (i *Instance) Claims() (claims []string, err error) {
 	rev, err := i.conn.Rev()
 	if err != nil {
@@ -150,11 +198,21 @@ func (i *Instance) Claims() (claims []string, err error) {
 	return
 }
 
-// Claim locks the Ticket to the specified host.
+// Claim locks the instance to the specified host.
 func (i *Instance) Claim(host string) (*Instance, error) {
-	exists, rev, err := i.Snapshot.exists(i.dir.prefix("start"))
-	if !exists {
-		return i, fmt.Errorf("instance start field missing")
+	//
+	//   instances/
+	//       6868/
+	//           object = <app> <rev> <proc>
+	// -         start  =
+	// +         start  = 10.0.0.1
+	//
+	val, rev, err := i.dir.get("start")
+	if err != nil {
+		return nil, err
+	}
+	if val != "" {
+		return nil, ErrInsClaimed
 	}
 	d := i.dir.fastForward(rev)
 
@@ -170,32 +228,54 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	return i.FastForward(rev), err
 }
 
-func (i *Instance) Exit() (err error) {
+// Exited tells the coordinator that the instance has exited.
+func (i *Instance) Exited() (i1 *Instance, err error) {
 	exists, _, err := i.Snapshot.exists(i.dir.prefix("stop"))
 	if !exists {
-		return fmt.Errorf("instance stop field missing")
+		return nil, ErrUnauthorized
 	}
-	_, err = i.updateStatus(InsStatusExited)
+	i1, err = i.updateStatus(InsStatusExited)
 	if err != nil {
-		return
+		return nil, err
 	}
 	err = i.Snapshot.del(i.ptyInstancesPath())
-	if err != nil {
-		return
-	}
+
 	return
 }
 
-func (i *Instance) Fail() (i1 *Instance, err error) {
-	return i.updateStatus(InsStatusFailed)
-}
-
-func (i *Instance) Start(ip string, port int, host string) (i1 *Instance, err error) {
-	_, err = i.updateStatus(InsStatusStarted)
+// Failed tells the cooridnator that the instance has failed.
+func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
+	if err = i.verifyClaimer(host); err != nil {
+		return
+	}
+	i1, err = i.updateStatus(InsStatusFailed)
 	if err != nil {
 		return
 	}
-	*i1 = *i
+	_, err = i1.claimDir().set(host, fmt.Sprintf("%s %s", time.Now().UTC().String(), reason))
+
+	return
+}
+
+func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err error) {
+	//
+	//   instances/
+	//       6868/
+	// -         object = <app> <rev> <proc>
+	// +         object = <app> <rev> <proc> 10.0.0.1 24690 localhost
+	//           start  = 10.0.0.1
+	// +         status = started
+	//
+	//   apps/<app>/revs/<rev>/procs/<proc>/instances/
+	// +     6868 = 2012-07-19 16:41 UTC
+	//
+	if err = i.verifyClaimer(ip); err != nil {
+		return
+	}
+	i1, err = i.updateStatus(InsStatusStarted)
+	if err != nil {
+		return
+	}
 	i1.Ip = ip
 	i1.Port = port
 	i1.Host = host
@@ -214,7 +294,7 @@ func (i *Instance) Start(ip string, port int, host string) (i1 *Instance, err er
 }
 
 func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
-	rev, err := i.set("state", string(s))
+	rev, err := i.set("status", string(s))
 	if err != nil {
 		return
 	}
@@ -223,18 +303,56 @@ func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
 	return i.FastForward(rev), err
 }
 
+func (i *Instance) getClaimer() (*string, error) {
+	claimer, _, err := i.get("start")
+
+	if IsErrNoEnt(err) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+	return &claimer, nil
+}
+
+func (i *Instance) setClaimer(claimer string) (rev int64, err error) {
+	return i.set("start", claimer)
+}
+
 // Unclaim removes the lock applied by Claim of the Ticket.
 func (i *Instance) Unclaim(host string) (i1 *Instance, err error) {
-	rev, err := i.set("start", "")
+	//
+	//   instances/
+	//       6868/
+	// -         start = 10.0.0.1
+	// +         start =
+	//
+	if err = i.verifyClaimer(host); err != nil {
+		return
+	}
+
+	rev, err := i.setClaimer("")
 	if err != nil {
-		return i, err
+		return
 	}
 	i1 = i.FastForward(rev)
 
 	return
 }
 
+func (i *Instance) verifyClaimer(host string) error {
+	claimer, err := i.getClaimer()
+	if err != nil {
+		return err
+	} else if claimer == nil || *claimer != host {
+		return ErrUnauthorized
+	}
+	return nil
+}
+
 func (i *Instance) Unclaimable(host string, reason error) (i1 *Instance, err error) {
+	if err = i.verifyClaimer(host); err != nil {
+		return
+	}
 	i1, err = i.updateStatus(InsStatusUnclaimable)
 	if err != nil {
 		return
@@ -249,6 +367,9 @@ func (i *Instance) Unclaimable(host string, reason error) (i1 *Instance, err err
 }
 
 func (i *Instance) Dead(host string, reason error) (i1 *Instance, err error) {
+	if err = i.verifyClaimer(host); err != nil {
+		return
+	}
 	_, err = i.updateStatus(InsStatusDead)
 	if err != nil {
 		return

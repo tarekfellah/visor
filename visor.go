@@ -108,7 +108,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
-	list, err := s.getdir(path.Join(appsPath, app, procsPath, processName, instancesPath))
+	list, err := getInstanceIds(s, app, processName)
 	if err != nil {
 		return
 	}
@@ -121,7 +121,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		for i := 0; i < tickets; i++ {
 			var ticket *Instance
 
-			ticket, err = CreateInstance(app, revision, processName, s)
+			ticket, err = RegisterInstance(app, revision, processName, s)
 			if err != nil {
 				return
 			}

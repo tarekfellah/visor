@@ -6,10 +6,11 @@
 package visor
 
 import (
+	"errors"
 	"testing"
 )
 
-func proctypeSetup(ref string) (s Snapshot, app *App) {
+func proctypeSetup(appid string) (s Snapshot, app *App) {
 	s, err := Dial(DefaultAddr, "/proctype-test")
 	if err != nil {
 		panic(err)
@@ -25,9 +26,7 @@ func proctypeSetup(ref string) (s Snapshot, app *App) {
 	}
 	s = s.FastForward(r)
 
-	app = NewApp("rev-test", "git://rev.git", "references", s)
-
-	s = s.FastForward(app.Rev)
+	app = NewApp(appid, "git://proctype.git", "master", s)
 
 	return
 }
@@ -67,5 +66,85 @@ func TestProcTypeUnregister(t *testing.T) {
 	check, _, err := s.exists(pty.dir.Name)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
+	}
+}
+
+func TestProcTypeGetInstances(t *testing.T) {
+	appid := "get-instances-app"
+	s, app := proctypeSetup(appid)
+
+	pty := NewProcType(app, "web", s)
+	pty, err := pty.Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for i := 0; i < 3; i++ {
+		ins, err := RegisterInstance(appid, "128af9", "web", s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Claim("10.0.0.1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Started("10.0.0.1", 9999, appid+".org")
+		if err != nil {
+			t.Fatal(err)
+		}
+		pty = pty.FastForward(ins.Rev)
+	}
+
+	is, err := pty.GetInstances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is) != 3 {
+		t.Errorf("list is missing instances: %s", is)
+	}
+}
+
+func TestProcTypeGetDeadInstances(t *testing.T) {
+	appid := "get-dead-instances-app"
+	s, app := proctypeSetup(appid)
+
+	pty := NewProcType(app, "web", s)
+	pty, err := pty.Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	instances := []*Instance{}
+
+	for i := 0; i < 7; i++ {
+		ins, err := RegisterInstance(appid, "128af9", "web", s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Claim("10.0.0.1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Started("10.0.0.1", 9999, appid+".org")
+		if err != nil {
+			t.Fatal(err)
+		}
+		instances = append(instances, ins)
+		pty = pty.FastForward(ins.Rev)
+	}
+	for i := 0; i < 4; i++ {
+		ins, err := instances[i].Dead("10.0.0.1", errors.New("no reason."))
+		if err != nil {
+			t.Fatal(err)
+		}
+		pty = pty.FastForward(ins.Rev)
+	}
+
+	is, err := pty.GetDeadInstances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is) != 4 {
+		t.Errorf("list is missing instances: %s", is)
 	}
 }

@@ -85,25 +85,20 @@ func (p *ProcType) instancesPath() string {
 	return p.dir.prefix(instancesPath)
 }
 
-func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
-	exists, _, err := p.conn.Exists(p.instancesPath())
-	if err != nil || !exists {
-		return
-	}
+func (p *ProcType) deadInstancesPath() string {
+	return p.dir.prefix(deathsPath)
+}
 
-	dir, err := p.getdir(p.instancesPath())
+func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
+	return getInstanceIds(p.Snapshot, p.App.Name, p.Name)
+}
+
+func (p *ProcType) GetDeadInstances() (ins []*Instance, err error) {
+	ids, err := p.getdir(p.deadInstancesPath())
 	if err != nil {
 		return
 	}
-	ids = []int64{}
-	for _, f := range dir {
-		id, e := strconv.ParseInt(f, 10, 64)
-		if e != nil {
-			return nil, e
-		}
-		ids = append(ids, id)
-	}
-	return
+	return p.getInstances(ids)
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
@@ -111,6 +106,10 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 	if err != nil {
 		return
 	}
+	return p.getInstances(ids)
+}
+
+func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
 	results, err := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
 		id, err := strconv.ParseInt(idstr, 10, 64)
 		if err != nil {
