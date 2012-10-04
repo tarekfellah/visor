@@ -10,7 +10,7 @@ import (
 )
 
 func appSetup(name string) (app *App) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := Dial(DefaultAddr, "/app-test")
 	if err != nil {
 		panic(err)
 	}
@@ -211,7 +211,7 @@ func TestEnvironmentVars(t *testing.T) {
 }
 
 func TestAppGetProcTypes(t *testing.T) {
-	app := appSetup("apps-test")
+	app := appSetup("bob-the-sponge")
 	names := []string{"api", "web", "worker"}
 
 	var pty *ProcType
@@ -241,11 +241,11 @@ func TestAppGetProcTypes(t *testing.T) {
 }
 
 func TestApps(t *testing.T) {
-	app := appSetup("apps-test")
-	names := []string{"cat", "dog", "lol"}
+	app := appSetup("mat-the-sponge")
+	names := map[string]bool{"cat": true, "dog": true, "lol": true}
 
-	for i := range names {
-		a := NewApp(names[i], "zebra", "joke", app.dir.Snapshot)
+	for k, _ := range names {
+		a := NewApp(k, "zebra", "joke", app.dir.Snapshot)
 		_, err := a.Register()
 		if err != nil {
 			t.Error(err)
@@ -262,9 +262,10 @@ func TestApps(t *testing.T) {
 	if len(apps) != len(names) {
 		t.Fatal("expected length %d returned length %d", len(names), len(apps))
 	}
+
 	for i := range apps {
-		if apps[i].Name != names[i] {
-			t.Errorf("expected %s got %s", names[i], apps[i].Name)
+		if !names[apps[i].Name] {
+			t.Errorf("expected %s to be in %s", apps[i].Name, names)
 		}
 	}
 }
