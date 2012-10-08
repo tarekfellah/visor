@@ -6,11 +6,25 @@
 package visor
 
 import (
-	"fmt"
 	"testing"
 )
 
-const SCALE_PATH_FMT = "apps/%s/revs/%s/scale/%s"
+func visorSetup(root string) (s Snapshot) {
+	s, err := Dial(DefaultAddr, root)
+	if err != nil {
+		panic(err)
+	}
+	s.del("/")
+	s = s.FastForward(-1)
+
+	rev, err := Init(s)
+	if err != nil {
+		panic(err)
+	}
+	s = s.FastForward(rev)
+
+	return
+}
 
 func TestDialWithDefaultAddrAndRoot(t *testing.T) {
 	_, err := Dial(DefaultAddr, DefaultRoot)
@@ -26,77 +40,75 @@ func TestDialWithInvalidAddr(t *testing.T) {
 	}
 }
 
-func TestScaleUp(t *testing.T) {
-	s, err := Dial(DefaultAddr, "/scale-test")
-	if err != nil {
-		panic(err)
-	}
-	s.del("/")
+func TestScale(t *testing.T) {
+	s := visorSetup("/scale-test")
+	scale := 5
+
+	app := genApp(s)
+	rev := genRevision(app)
+	pty := genProctype(app, "web")
+
 	s = s.FastForward(-1)
 
-	s.set("/apps/dog/revs/master/file", "")
-	s.set("/apps/dog/procs/lol", "")
+	// Scale up
 
-	err = Scale("dog", "master", "lol", 5, s.FastForward(-1))
-	if err != nil {
-		t.Error(err)
-	}
-
-	factor, _, err := s.conn.Get(fmt.Sprintf(SCALE_PATH_FMT, "dog", "master", "lol"), nil)
-	if err != nil {
-		t.Error(err)
-	}
-	if string(factor) != "5" {
-		t.Errorf("scaling factor expected %s, got %s", "5", factor)
-	}
-
-	tickets, err := s.conn.Getdir(ticketsPath, s.FastForward(-1).Rev)
-	if err != nil {
-		t.Error(err)
-	}
-	if len(tickets) != 5 {
-		t.Errorf("Expected tickets %s, got %d", "5", len(tickets))
-	}
-}
-
-func TestScaleDown(t *testing.T) {
-	s, err := Dial(DefaultAddr, "/scale-test")
-	if err != nil {
-		panic(err)
-	}
-	s.del("/")
-	s = s.FastForward(-1)
-
-	s.conn.Set("/apps/cat/revs/master/file", -1, []byte{})
-	s.conn.Set("/apps/cat/procs/lol", -1, []byte{})
-
-	p := fmt.Sprintf(SCALE_PATH_FMT, "cat", "master", "lol")
-	s, err = s.set(p, "5")
-
-	err = Scale("cat", "master", "lol", -1, s)
+	err := Scale("fnord", rev.Ref, pty.Name, scale, s)
 	if err == nil {
-		t.Error("Should return an error on a non-positive scaling factor")
+		t.Error("expected error (bad arguments)")
+	}
+	err = Scale(app.Name, "fnord", pty.Name, scale, s)
+	if err == nil {
+		t.Error("expected error (bad arguments)")
+	}
+	err = Scale(app.Name, rev.Ref, "fnord", scale, s)
+	if err == nil {
+		t.Error("expected error (bad arguments)")
 	}
 
-	err = Scale("cat", "master", "lol", 2, s)
+	err = Scale(app.Name, rev.Ref, pty.Name, scale, s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
+	}
+	s = s.FastForward(-1)
+
+	scale1, _, err := s.GetScale(app.Name, rev.Ref, pty.Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if scale1 != scale {
+		t.Fatal("expected %d instances, got %d", scale, scale1)
 	}
 
-	factor, _, err := s.conn.Get(p, nil)
-	if err != nil {
-		t.Error(err)
-	}
-	if string(factor) != "2" {
-		t.Errorf("Scaling factor expected %s, got %s", "2", factor)
+	// Scale down
+
+	err = Scale(app.Name, rev.Ref, pty.Name, -1, s)
+	if err == nil {
+		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	tickets, err := s.FastForward(-1).getdir(ticketsPath)
+	err = Scale(app.Name, rev.Ref, pty.Name, 1, s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
-	if len(tickets) != 3 {
-		t.Errorf("Expected tickets %s, got %d", "3", len(tickets))
+	s = s.FastForward(-1)
+
+	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
+	if scale1 != scale {
+		t.Fatal("expected %d instances, got %d", scale, scale1)
+	}
+
+	err = Scale(app.Name, rev.Ref, pty.Name, 0, s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s = s.FastForward(-1)
+
+	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if scale1 != scale {
+		t.Fatal("expected %d instances, got %d", scale, scale1)
 	}
 }
 
