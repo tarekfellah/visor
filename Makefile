@@ -4,6 +4,7 @@ GOBIN    ?= $(GOPATH)/bin
 LDFLAGS  := -ldflags "-X main.VERSION $(VERSION)"
 GOFLAGS  := -x $(LDFLAGS)
 PKGPATH  := $(GOPATH)/src/github.com/soundcloud/visor
+GOARCH   ?= amd64
 
 # LOCAL #
 
@@ -22,6 +23,13 @@ $(PKGPATH):
 
 test:
 	go test
+
+# DIST #
+
+dist: linux darwin
+
+linux darwin:
+	GOOS=$@ CGO_ENABLED=0 GOARCH=$(GOARCH) go build $(LDFLAGS) -o bin/$@/visor ./cmd/visor
 
 # DEBIAN PACKAGING #
 
