@@ -49,8 +49,8 @@ another bazooka-pm claims the ticket and adds itself to the *claims* dir.
       -         start  =
       +         start  = 10.0.1.15
 
-this bazooka-pm successfuly deploys the object, sets the *status* file to the
-instance ip/port/hostname.
+this bazooka-pm successfuly deploys the object, appends the port & hostname to
+the *start* file.
 
         instances/
             5461/
