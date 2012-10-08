@@ -8,6 +8,7 @@ package visor
 import (
 	"errors"
 	"testing"
+	"time"
 )
 
 func instanceSetup() (s Snapshot) {
@@ -298,6 +299,61 @@ func TestInstanceFailed(t *testing.T) {
 	_, err = ins.Failed("9.9.9.9", errors.New("no reason."))
 	if err != ErrUnauthorized {
 		t.Error("expected command to fail")
+	}
+}
+
+func TestWatchInstanceStartAndStop(t *testing.T) {
+	appid := "w-app"
+	revid := "w-rev"
+	ptyid := "w-pty"
+	s := instanceSetup()
+	l := make(chan *Instance)
+
+	go WatchInstanceStart(s, l, make(chan error))
+
+	ins, err := RegisterInstance(appid, revid, ptyid, s)
+	if err != nil {
+		t.Error(err)
+	}
+
+	select {
+	case ins = <-l:
+		// TODO Check other fields
+		if ins.AppName == appid && ins.RevisionName == revid && ins.ProcessName == ptyid {
+			break
+		}
+		t.Errorf("received unexpected instance: %s", ins.String())
+	case <-time.After(time.Second):
+		t.Errorf("expected instance, got timeout")
+	}
+
+	// Stop test
+
+	ch := make(chan *Instance)
+
+	go func() {
+		ins, err := ins.WaitStop()
+		if err != nil {
+			t.Fatal(err)
+		}
+		ch <- ins
+	}()
+
+	ins1, err := StopInstance(ins.Id, ins.Snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case ins2 := <-ch:
+		if ins2 == nil {
+			t.Error("instance is nil")
+		}
+		if ins1.Rev != ins2.Rev {
+			t.Errorf("instance revs don't match: %d != %d", ins1.Rev, ins2.Rev)
+		}
+	case <-time.After(time.Second):
+		t.Errorf("expected instance, got timeout")
 	}
 }
 

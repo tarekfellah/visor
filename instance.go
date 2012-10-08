@@ -413,6 +413,43 @@ func (i *Instance) Dead(host string, reason error) (i1 *Instance, err error) {
 	return
 }
 
+func WatchInstanceStart(s Snapshot, listener chan *Instance, errors chan error) {
+	// instances/*/start =
+	rev := s.Rev
+
+	for {
+		ev, err := s.conn.Wait(path.Join(instancesPath, "*", startPath), rev+1)
+		rev = ev.Rev
+
+		if !ev.IsSet() || string(ev.Body) != "" {
+			continue
+		}
+		idstr := strings.Split(ev.Path, "/")[2]
+
+		id, err := strconv.ParseInt(idstr, 0, 64)
+		if err != nil {
+			panic(err)
+		}
+		ins, err := GetInstance(s.FastForward(rev), id)
+		if err != nil {
+			panic(err)
+		}
+		listener <- ins
+	}
+}
+
+func (i *Instance) WaitStop() (i1 *Instance, err error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), stopPath)
+
+	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	if err != nil {
+		return
+	}
+	i1 = i.FastForward(ev.Rev)
+
+	return
+}
+
 func WatchTicket(s Snapshot, listener chan *Instance, errors chan error) {
 	rev := s.Rev
 
