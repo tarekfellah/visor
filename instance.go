@@ -134,6 +134,9 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 	// +         object = <app> <rev> <proc>
 	// +         start  =
 	//
+	//   apps/<app>/revs/<rev>/procs/<proc>/instances/
+	// +     6868 = 2012-07-19 16:41 UTC
+	//
 	id, err := Getuid(s)
 	if err != nil {
 		return
@@ -147,16 +150,19 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		dir:          dir{s, instancePath(id)},
 	}
 
-	f, err := createFile(s, ins.dir.prefix("object"), ins.objectArray(), new(listCodec))
+	_, err = createFile(s, ins.dir.prefix("object"), ins.objectArray(), new(listCodec))
 	if err != nil {
 		return nil, err
 	}
-
-	f, err = createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
+	_, err = createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
 	if err != nil {
 		return nil, err
 	}
-	ins = ins.FastForward(f.FileRev)
+	s1, err := s.set(ins.ptyInstancesPath(), time.Now().UTC().String())
+	if err != nil {
+		return
+	}
+	ins = ins.FastForward(s1.Rev)
 
 	return
 }
@@ -290,9 +296,6 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	// -         start  = 10.0.0.1
 	// +         start  = 10.0.0.1 24690 localhost
 	//
-	//   apps/<app>/revs/<rev>/procs/<proc>/instances/
-	// +     6868 = 2012-07-19 16:41 UTC
-	//
 	if err = i.verifyClaimer(ip); err != nil {
 		return
 	}
@@ -301,15 +304,11 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	i.Host = host
 	i.Status = InsStatusStarted
 
-	_, err = createFile(i.Snapshot, i.dir.prefix(startPath), i.startArray(), new(listCodec))
+	f, err := createFile(i.Snapshot, i.dir.prefix(startPath), i.startArray(), new(listCodec))
 	if err != nil {
 		return
 	}
-	s, err := i.Snapshot.set(i.ptyInstancesPath(), time.Now().UTC().String())
-	if err != nil {
-		return
-	}
-	i1 = i.FastForward(s.Rev)
+	i1 = i.FastForward(f.FileRev)
 
 	return
 }
@@ -523,6 +522,10 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Instance,
 		dir:          dir{snapshot, p},
 	}
 	return t, err
+}
+
+func ptyInstancesPath(app, pty string) string {
+	return path.Join(appsPath, app, procsPath, pty, instancesPath)
 }
 
 func (i *Instance) idString() string {

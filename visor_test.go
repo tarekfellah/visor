@@ -40,8 +40,8 @@ func TestDialWithInvalidAddr(t *testing.T) {
 	}
 }
 
-func TestScale(t *testing.T) {
-	s := visorSetup("/scale-test")
+func TestScaleErrors(t *testing.T) {
+	s := visorSetup("/scale-error-test")
 	scale := 5
 
 	app := genApp(s)
@@ -64,8 +64,21 @@ func TestScale(t *testing.T) {
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
+}
 
-	err = Scale(app.Name, rev.Ref, pty.Name, scale, s)
+func TestScale(t *testing.T) {
+	s := visorSetup("/scale-test")
+	scale := 5
+
+	app := genApp(s)
+	rev := genRevision(app)
+	pty := genProctype(app, "web")
+
+	s = s.FastForward(-1)
+
+	// Scale up
+
+	err := Scale(app.Name, rev.Ref, pty.Name, scale, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,7 +89,7 @@ func TestScale(t *testing.T) {
 		t.Fatal(err)
 	}
 	if scale1 != scale {
-		t.Fatal("expected %d instances, got %d", scale, scale1)
+		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 
 	// Scale down
@@ -94,7 +107,7 @@ func TestScale(t *testing.T) {
 
 	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
 	if scale1 != scale {
-		t.Fatal("expected %d instances, got %d", scale, scale1)
+		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 
 	err = Scale(app.Name, rev.Ref, pty.Name, 0, s)
@@ -108,7 +121,7 @@ func TestScale(t *testing.T) {
 		t.Fatal(err)
 	}
 	if scale1 != scale {
-		t.Fatal("expected %d instances, got %d", scale, scale1)
+		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 }
 

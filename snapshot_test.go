@@ -132,7 +132,7 @@ func TestSnapshotUpdate(t *testing.T) {
 	}
 }
 
-func TestSnapshotGetAndSetScale(t *testing.T) {
+func TestSnapshotGetScale(t *testing.T) {
 	s := snapshotSetup()
 
 	app := NewApp("scale-app", "git://scale.git", "scale-stack", s)
@@ -158,10 +158,11 @@ func TestSnapshotGetAndSetScale(t *testing.T) {
 		t.Error("expected initial scale of 0")
 	}
 
-	s1, err := s.SetScale(app.Name, rev.Ref, string(pty.Name), 9)
+	err = Scale(app.Name, rev.Ref, pty.Name, 9, s)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
+	s1 := s.FastForward(-1)
 
 	scale, _, err = s1.GetScale(app.Name, rev.Ref, string(pty.Name))
 	if err != nil {

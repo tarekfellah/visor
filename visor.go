@@ -44,7 +44,6 @@ const (
 	DefaultUri   string = "doozer:?ca=localhost:8046"
 	DefaultAddr  string = "localhost:8046"
 	DefaultRoot  string = "/visor"
-	scalePath    string = "scale"
 	startPort    int    = 8000
 	nextPortPath string = "/next-port"
 	uidPath      string = "/uid"
@@ -128,7 +127,6 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 			s = s.FastForward(ticket.Rev)
 		}
 	} else if factor < current {
-		var s Snapshot
 		// Scale down
 		stops := current - factor
 		for i := 0; i < stops; i++ {

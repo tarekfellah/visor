@@ -35,7 +35,7 @@ func (f *file) createSnapshot(rev int64) (file snapshotable) {
 func (f *file) FastForward(rev int64) *file {
 	if rev == -1 {
 		var err error
-		_, rev, err = f.conn.Stat(f.dir)
+		_, rev, err = f.conn.Stat(f.dir, nil)
 		if err != nil {
 			return f
 		}

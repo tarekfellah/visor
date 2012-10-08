@@ -31,7 +31,7 @@ func (c *conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 	newrev, err = c.conn.Set(path, rev, value)
 	if err != nil {
 		if newrev == 0 { // err + newrev == 0: REV MISMATCH
-			_, newrev, _ = c.Stat(path)
+			_, newrev, _ = c.Stat(path, nil)
 		}
 		err = NewError(ErrRevMismatch, fmt.Sprintf("error setting file '%s' to '%s': %s", path, string(value), err.Error()))
 	}
@@ -39,8 +39,8 @@ func (c *conn) Set(path string, rev int64, value []byte) (newrev int64, err erro
 }
 
 // Stat calls (*doozer.Conn).Stat with a prefixed path
-func (c *conn) Stat(path string) (len int, pathrev int64, err error) {
-	return c.conn.Stat(c.prefixPath(path), nil)
+func (c *conn) Stat(path string, rev *int64) (len int, pathrev int64, err error) {
+	return c.conn.Stat(c.prefixPath(path), rev)
 }
 
 // Exists returns true or false depending on if the path exists
@@ -50,7 +50,7 @@ func (c *conn) Exists(path string) (exists bool, pathrev int64, err error) {
 
 // ExistsRev returns true or false depending on if the path exists
 func (c *conn) ExistsRev(path string, rev *int64) (exists bool, pathrev int64, err error) {
-	_, pathrev, err = c.conn.Stat(c.prefixPath(path), rev)
+	_, pathrev, err = c.Stat(path, rev)
 	if err != nil {
 		return
 	}

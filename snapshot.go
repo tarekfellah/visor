@@ -10,7 +10,6 @@ import (
 	"github.com/soundcloud/doozer"
 	"path"
 	"regexp"
-	"strconv"
 	"time"
 )
 
@@ -68,37 +67,21 @@ func DialUri(uri string, root string) (s Snapshot, err error) {
 	return
 }
 
-// GetScale returns the scale of an app:proc@rev tuple. If the scale isn't found, 0 is returned.
-func (s Snapshot) GetScale(app string, revision string, processName string) (scale int, rev int64, err error) {
-	// NOTE: This method does not check whether or not the scale target exists.
-	// A scale of `0` will be returned if any of the path components are missing.
-	// This is to avoid having to set the /apps/<app>/revs/<rev>/scale/<proc> paths to 0
-	// when registering revisions.
-	path := path.Join(appsPath, app, revsPath, revision, scalePath, processName)
-	f, err := s.getFile(path, new(intCodec))
+// GetScale returns the scale of an app:pty@rev tuple. If the scale isn't found, 0 is returned.
+func (s Snapshot) GetScale(app string, revid string, pty string) (scale int, rev int64, err error) {
+	path := ptyInstancesPath(app, revid, pty)
+	count, rev, err := s.conn.Stat(path, &s.Rev)
 
 	// File doesn't exist, assume scale = 0
 	if IsErrNoEnt(err) {
-		err = nil
-		scale = 0
-		return
+		return 0, rev, nil
 	}
 
 	if err != nil {
-		scale = -1
-		return
+		return -1, rev, err
 	}
 
-	rev = f.FileRev
-	scale = f.Value.(int)
-
-	return
-}
-
-// SetScale sets the scale of an app:proc@rev tuple to the specified value.
-func (s Snapshot) SetScale(app string, revision string, processName string, factor int) (s1 Snapshot, err error) {
-	path := path.Join(appsPath, app, revsPath, revision, scalePath, processName)
-	return s.set(path, strconv.Itoa(factor))
+	return count, rev, nil
 }
 
 // GetProxies gets the list of bazooka-proxy service IPs
