@@ -189,8 +189,8 @@ func instancePath(id int64) string {
 	return path.Join(instancesPath, strconv.FormatInt(id, 10))
 }
 
-// FastForward advances the ticket in time. It returns
-// a new instance of Ticket with the supplied revision.
+// FastForward advances the instance in time. It returns
+// a new instance of Instance with the supplied revision.
 func (i *Instance) FastForward(rev int64) *Instance {
 	return i.Snapshot.fastForward(i, rev).(*Instance)
 }
@@ -451,29 +451,6 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 	return
 }
 
-func WatchTicket(s Snapshot, listener chan *Instance, errors chan error) {
-	rev := s.Rev
-
-	for {
-		ev, err := s.conn.Wait(path.Join(instancesPath, "*", "status"), rev+1)
-		if err != nil {
-			errors <- err
-			return
-		}
-		rev = ev.Rev
-
-		if !ev.IsSet() || string(ev.Body) != "unclaimed" {
-			continue
-		}
-
-		ticket, err := parseTicket(s.FastForward(rev), &ev, ev.Body)
-		if err != nil {
-			continue
-		}
-		listener <- ticket
-	}
-}
-
 func WaitTicketProcessed(s Snapshot, id int64) (status InsStatus, s1 Snapshot, err error) {
 	var ev doozer.Event
 
@@ -499,31 +476,6 @@ func WaitTicketProcessed(s Snapshot, id int64) (status InsStatus, s1 Snapshot, e
 	s1 = s.FastForward(rev)
 
 	return
-}
-
-func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Instance, err error) {
-	idStr := strings.Split(ev.Path, "/")[2]
-	id, err := strconv.ParseInt(idStr, 0, 64)
-	if err != nil {
-		return nil, fmt.Errorf("ticket id %s can't be parsed as an int64", idStr)
-	}
-
-	p := path.Join(instancesPath, idStr)
-
-	f, err := snapshot.getFile(path.Join(p, "op"), new(listCodec))
-	if err != nil {
-		return t, err
-	}
-	data := f.Value.([]string)
-
-	t = &Instance{
-		Id:           id,
-		AppName:      data[0],
-		RevisionName: data[1],
-		ProcessName:  data[2],
-		dir:          dir{snapshot, p},
-	}
-	return t, err
 }
 
 func ptyInstancesPath(app, rev, pty string) string {
@@ -570,12 +522,12 @@ func (i *Instance) portString() string {
 	return fmt.Sprintf("%d", i.Port)
 }
 
-// String returns the Go-syntax representation of Ticket.
+// String returns the Go-syntax representation of Instance.
 func (i *Instance) String() string {
 	return fmt.Sprintf("Instance{id=%d, app=%s, rev=%s, proc=%s, addr=%s:%d}", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
 }
 
-// IdString returns a string of the format "TICKET[$ticket-id]"
+// IdString returns a string of the format "INSTANCE[id]"
 func (i *Instance) IdString() string {
 	return fmt.Sprintf("INSTANCE[%d]", i.Id)
 }
