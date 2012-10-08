@@ -17,6 +17,8 @@ import (
 const claimsPath = "claims"
 const instancesPath = "instances"
 const deathsPath = "deaths"
+const startPath = "start"
+const stopPath = "stop"
 
 const (
 	InsStatusInitial     InsStatus = "initial"
@@ -150,7 +152,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		return nil, err
 	}
 
-	f, err = createFile(s, ins.dir.prefix("start"), "", new(stringCodec))
+	f, err = createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +218,7 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	// -         start  =
 	// +         start  = 10.0.0.1
 	//
-	val, rev, err := i.dir.get("start")
+	val, rev, err := i.dir.get(startPath)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +227,7 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	}
 	d := i.dir.fastForward(rev)
 
-	_, err = d.set("start", host)
+	_, err = d.set(startPath, host)
 	if err != nil {
 		return i, err
 	}
@@ -299,7 +301,7 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	i.Host = host
 	i.Status = InsStatusStarted
 
-	_, err = createFile(i.Snapshot, i.dir.prefix("start"), i.startArray(), new(listCodec))
+	_, err = createFile(i.Snapshot, i.dir.prefix(startPath), i.startArray(), new(listCodec))
 	if err != nil {
 		return
 	}
@@ -323,7 +325,7 @@ func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
 }
 
 func (i *Instance) getClaimer() (*string, error) {
-	f, err := i.getFile(i.dir.prefix("start"), new(listCodec))
+	f, err := i.getFile(i.dir.prefix(startPath), new(listCodec))
 
 	if IsErrNoEnt(err) {
 		return nil, nil
@@ -339,7 +341,7 @@ func (i *Instance) getClaimer() (*string, error) {
 }
 
 func (i *Instance) setClaimer(claimer string) (rev int64, err error) {
-	return i.set("start", claimer)
+	return i.set(startPath, claimer)
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
