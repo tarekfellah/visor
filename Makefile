@@ -20,6 +20,9 @@ $(PKGPATH):
 	mkdir -p $(shell dirname $(PKGPATH))
 	ln -sf $(PWD) $(PKGPATH)
 
+test:
+	go test
+
 # DEBIAN PACKAGING #
 
 DEB_NAME=visor
@@ -40,3 +43,5 @@ build: clean debroot debbuild
 clean: debclean
 	GOPATH=$(GOPATH) go clean
 	rm -rf bin src pkg
+
+.PHONY: test
