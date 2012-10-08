@@ -21,6 +21,9 @@ $(PKGPATH):
 	mkdir -p $(shell dirname $(PKGPATH))
 	ln -sf $(PWD) $(PKGPATH)
 
+test:
+	go test
+
 # DIST #
 
 dist: linux darwin
@@ -48,3 +51,5 @@ build: clean debroot debbuild
 clean: debclean
 	GOPATH=$(GOPATH) go clean
 	rm -rf bin src pkg
+
+.PHONY: test
