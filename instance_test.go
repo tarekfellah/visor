@@ -130,12 +130,13 @@ func TestInstanceClaiming(t *testing.T) {
 func TestInstanceStarted(t *testing.T) {
 	appid := "fat"
 	ptyid := "web"
+	revid := "128af9"
 	ip := "10.0.0.1"
 	port := 25790
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
-	ins, err := RegisterInstance(appid, "128af9", ptyid, s)
+	ins, err := RegisterInstance(appid, revid, ptyid, s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +166,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not stored correctly for %#v", ins3)
 	}
 
-	ids, err := getInstanceIds(ins2.Snapshot, appid, ptyid)
+	ids, err := getInstanceIds(ins2.Snapshot, appid, revid, ptyid)
 	if err != nil {
 		t.Fatal(err)
 	}

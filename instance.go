@@ -105,8 +105,8 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	return
 }
 
-func getInstanceIds(s Snapshot, app, pty string) (ids []int64, err error) {
-	p := path.Join(appsPath, app, procsPath, pty, instancesPath)
+func getInstanceIds(s Snapshot, app, rev, pty string) (ids []int64, err error) {
+	p := ptyInstancesPath(app, rev, pty)
 	exists, _, err := s.conn.Exists(p)
 	if err != nil || !exists {
 		return
@@ -134,7 +134,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 	// +         object = <app> <rev> <proc>
 	// +         start  =
 	//
-	//   apps/<app>/revs/<rev>/procs/<proc>/instances/
+	//   apps/<app>/procs/<proc>/instances/<rev>
 	// +     6868 = 2012-07-19 16:41 UTC
 	//
 	id, err := Getuid(s)
@@ -220,6 +220,8 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	//
 	//   instances/
 	//       6868/
+	//           claims/
+	// +             10.0.0.1 = 2012-07-19 16:22 UTC
 	//           object = <app> <rev> <proc>
 	// -         start  =
 	// +         start  = 10.0.0.1
@@ -524,8 +526,8 @@ func parseTicket(snapshot Snapshot, ev *doozer.Event, body []byte) (t *Instance,
 	return t, err
 }
 
-func ptyInstancesPath(app, pty string) string {
-	return path.Join(appsPath, app, procsPath, pty, instancesPath)
+func ptyInstancesPath(app, rev, pty string) string {
+	return path.Join(appsPath, app, procsPath, pty, instancesPath, rev)
 }
 
 func (i *Instance) idString() string {
@@ -541,7 +543,7 @@ func (i *Instance) ptyDeathsPath() string {
 }
 
 func (i *Instance) ptyInstancesPath() string {
-	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.idString())
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.RevisionName, i.idString())
 }
 
 func (i *Instance) claimPath(host string) string {

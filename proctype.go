@@ -89,8 +89,19 @@ func (p *ProcType) deadInstancesPath() string {
 	return p.dir.prefix(deathsPath)
 }
 
-func (p *ProcType) GetInstanceIds() (ids []int64, err error) {
-	return getInstanceIds(p.Snapshot, p.App.Name, p.Name)
+func (p *ProcType) instanceIds() (ids []string, err error) {
+	revs, err := p.getdir(p.dir.prefix("instances"))
+	if err != nil {
+		return
+	}
+	for _, rev := range revs {
+		iids, e := p.getdir(p.dir.prefix("instances", rev))
+		if e != nil {
+			return nil, e
+		}
+		ids = append(ids, iids...)
+	}
+	return
 }
 
 func (p *ProcType) GetDeadInstances() (ins []*Instance, err error) {
@@ -102,7 +113,7 @@ func (p *ProcType) GetDeadInstances() (ins []*Instance, err error) {
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
-	ids, err := p.getdir(p.instancesPath())
+	ids, err := p.instanceIds()
 	if err != nil {
 		return
 	}

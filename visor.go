@@ -107,7 +107,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
-	list, err := getInstanceIds(s, app, processName)
+	list, err := getInstanceIds(s, app, revision, processName)
 	if err != nil {
 		return
 	}
