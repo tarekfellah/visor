@@ -6,15 +6,13 @@ import (
 
 const schemaPath = "/internal/schema"
 
-type Schema struct {
+type SchemaEvent struct {
 	Version int
 }
 
-// WatchSchema watches for schema changes. Use it to react on schema updates
-//
-// If an event occurs, call VerifySchemaVersion again to check whether you
-// still support the current coordinator schema version
-func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
+// WatchSchema notifies the specified ch channel on schema change,
+// and errch on error. If an error occures, WatchSchema exits.
+func WatchSchema(s Snapshot, ch chan SchemaEvent, errch chan error) {
 	rev := s.Rev
 	for {
 		ev, err := s.conn.Wait(schemaPath, rev+1)
@@ -29,17 +27,27 @@ func WatchSchema(s Snapshot, ch chan Schema, errch chan error) {
 			errch <- err
 			return
 		}
-		ch <- Schema{v}
+		ch <- SchemaEvent{v}
 	}
 }
 
-// VerifySchemaVersion makes sure that the given schema version is compatible
-// with the current coordinator schema; if this is not the case ErrSchemaMism is
-// returned
+// VerifySchema checks that visor's schema version is compatible with
+// the coordinator's. If this is not the case, ErrSchemaMism is returned.
 //
-// Once the schema version is verified, make sure to use WatchSchema for schema
-// changes and act accordingly
-func VerifySchemaVersion(s Snapshot, version Schema) error {
+// See WatchSchema to get notified on schema change.
+func VerifySchema(s Snapshot) error {
+	return verifySchemaVersion(s, SchemaVersion)
+}
+
+func SetSchemaVersion(s Snapshot, version int) (newSnapshot Snapshot, err error) {
+	strVersion := strconv.Itoa(version)
+
+	newSnapshot, err = s.set(schemaPath, strVersion)
+
+	return
+}
+
+func verifySchemaVersion(s Snapshot, version int) error {
 	exists, _, err := s.exists(schemaPath)
 	if err != nil {
 		return err
@@ -59,17 +67,9 @@ func VerifySchemaVersion(s Snapshot, version Schema) error {
 		return err
 	}
 
-	if intValue != version.Version {
+	if intValue != version {
 		return ErrSchemaMism
 	}
 
 	return nil
-}
-
-func SetSchemaVersion(s Snapshot, version Schema) (newSnapshot Snapshot, err error) {
-	strVersion := strconv.Itoa(version.Version)
-
-	newSnapshot, err = s.set(schemaPath, strVersion)
-
-	return
 }

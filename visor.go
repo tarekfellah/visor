@@ -40,6 +40,8 @@ import (
 	"time"
 )
 
+const SchemaVersion = 1
+
 const (
 	DefaultUri   string = "doozer:?ca=localhost:8046"
 	DefaultAddr  string = "localhost:8046"

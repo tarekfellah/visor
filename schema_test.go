@@ -30,7 +30,6 @@ func cleanSchemaVersion(s Snapshot, t *testing.T) Snapshot {
 
 func TestSchemaMissing(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	version := Schema{1}
 
 	if err != nil {
 		panic(err)
@@ -38,7 +37,7 @@ func TestSchemaMissing(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if err := VerifySchemaVersion(s, version); err != ErrSchemaMism {
+	if err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("missing schema version did not error out")
 		} else {
@@ -49,7 +48,6 @@ func TestSchemaMissing(t *testing.T) {
 
 func TestSetVersion(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	version := Schema{1}
 
 	if err != nil {
 		panic(err)
@@ -57,19 +55,18 @@ func TestSetVersion(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = SetSchemaVersion(s, version); err != nil {
+	if s, err = SetSchemaVersion(s, SchemaVersion); err != nil {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchemaVersion(s, version); err != nil {
+	if err := VerifySchema(s); err != nil {
 		t.Error("setting new version failed: " + err.Error())
 	}
 }
 
 func TestVersionTooNew(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	coordinatorVersion := Schema{1}
-	clientVersion := Schema{2}
+	coordinatorVersion := 0
 
 	if err != nil {
 		panic(err)
@@ -81,7 +78,7 @@ func TestVersionTooNew(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchemaVersion(s, clientVersion); err != ErrSchemaMism {
+	if err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("newer schema version did not error out")
 		} else {
@@ -92,8 +89,7 @@ func TestVersionTooNew(t *testing.T) {
 
 func TestVersionTooOld(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	coordinatorVersion := Schema{2}
-	clientVersion := Schema{1}
+	coordinatorVersion := 99
 
 	if err != nil {
 		panic(err)
@@ -105,7 +101,7 @@ func TestVersionTooOld(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchemaVersion(s, clientVersion); err != ErrSchemaMism {
+	if err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("older schema version did not error out")
 		} else {
@@ -117,7 +113,7 @@ func TestVersionTooOld(t *testing.T) {
 
 func TestSchemaWatcher(t *testing.T) {
 	s, err := Dial(DefaultAddr, DefaultRoot)
-	coordinatorVersion := Schema{2}
+	coordinatorVersion := 2
 
 	if err != nil {
 		panic(err)
@@ -129,7 +125,7 @@ func TestSchemaWatcher(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	schemaEvents := make(chan Schema, 1)
+	schemaEvents := make(chan SchemaEvent, 1)
 	errch := make(chan error, 1)
 	finished := make(chan bool)
 
@@ -149,7 +145,7 @@ func TestSchemaWatcher(t *testing.T) {
 		finished <- true
 	}()
 
-	coordinatorVersion.Version += 1
+	coordinatorVersion += 1
 	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
 		t.Fatal("setting schema version failed: " + err.Error())
 	}
