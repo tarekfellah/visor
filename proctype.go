@@ -56,7 +56,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	if match := reProcName.MatchString(p.Name); match == false {
+	if !reProcName.MatchString(p.Name) {
 		return nil, ErrBadPtyName
 	}
 
