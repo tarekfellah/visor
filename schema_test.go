@@ -108,7 +108,6 @@ func TestVersionTooOld(t *testing.T) {
 			t.Error("older schema version returned incorrect error: " + err.Error())
 		}
 	}
-
 }
 
 func TestSchemaWatcher(t *testing.T) {
@@ -122,33 +121,26 @@ func TestSchemaWatcher(t *testing.T) {
 	s = cleanSchemaVersion(s, t)
 
 	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
-		t.Fatal("setting schema version failed")
+		t.Fatal(err)
 	}
 
 	schemaEvents := make(chan SchemaEvent, 1)
 	errch := make(chan error, 1)
-	finished := make(chan bool)
+
+	go WatchSchema(s, schemaEvents, errch)
 
 	go func() {
-		WatchSchema(s, schemaEvents, errch)
-	}()
-
-	go func() {
-		select {
-		case <-time.After(1 * time.Second):
-			t.Error("error watching for a schema update event")
-		case e := <-errch:
-			t.Error("schemaWatch returned error: " + e.Error())
-		case <-schemaEvents:
+		if s, err = SetSchemaVersion(s, coordinatorVersion+1); err != nil {
+			t.Fatal(err)
 		}
-
-		finished <- true
 	}()
 
-	coordinatorVersion += 1
-	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
-		t.Fatal("setting schema version failed: " + err.Error())
+	select {
+	case <-time.After(time.Second):
+		t.Error("waiting for schema change timed out")
+	case e := <-errch:
+		t.Error(e)
+	case <-schemaEvents:
+		// Ok
 	}
-
-	<-finished
 }
