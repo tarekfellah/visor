@@ -16,6 +16,7 @@ var (
 	ErrNoEnt        = errors.New("file not found")
 	ErrBadPath      = errors.New("invalid path: only ASCII letters, numbers, '.', or '-' are allowed")
 	ErrSchemaMism   = errors.New("visor version not compatible with current coordinator schema")
+	ErrBadPtyName   = errors.New("invalid proc type name: only alphanumeric chars allowed")
 )
 
 type Error struct {

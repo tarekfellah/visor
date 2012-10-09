@@ -8,8 +8,11 @@ package visor
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 )
+
+var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
@@ -51,6 +54,10 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 	}
 	if exists {
 		return nil, ErrKeyConflict
+	}
+
+	if !reProcName.MatchString(p.Name) {
+		return nil, ErrBadPtyName
 	}
 
 	p.Port, err = ClaimNextPort(p.Snapshot)

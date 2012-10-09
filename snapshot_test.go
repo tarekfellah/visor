@@ -136,7 +136,7 @@ func TestSnapshotGetAndSetScale(t *testing.T) {
 	s := snapshotSetup()
 
 	app := NewApp("scale-app", "git://scale.git", "scale-stack", s)
-	pty := NewProcType(app, "scale-proc", s)
+	pty := NewProcType(app, "scaleproc", s)
 	rev := NewRevision(app, "scale-ref", s)
 
 	if _, err := app.Register(); err != nil {
