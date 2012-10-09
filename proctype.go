@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-var reProcName = regexp.MustCompile("^[[:alnum:]]*$")
+var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
