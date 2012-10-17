@@ -152,6 +152,8 @@ func (c *conn) Close() {
 
 // Del is a wrapper around (*doozer.Conn).Del which also supports
 // deleting directories.
+// TODO: Concurrent implementation
+// TODO: Better error messages on NOENT
 func (c *conn) Del(path string, rev int64) (err error) {
 	path = c.prefixPath(path)
 

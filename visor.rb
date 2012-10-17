@@ -5,7 +5,7 @@ class Visor < Formula
   url 'https://github.com/soundcloud/visor/zipball/master'
   depends_on 'go'
   skip_clean 'bin'
-  version '0.6.0'
+  version '0.6.3'
 
 
   def install
@@ -25,6 +25,7 @@ and try again
       exit 1
     end
 
+    ENV['PATH'] = "/usr/local/bin:#{ENV['PATH']}"
     begin
       system("which hg")
     rescue
@@ -51,6 +52,7 @@ and reinstall with brew by executing:
     end
     ENV['GOPATH'] = buildpath
     ENV['GOBIN'] = "#{prefix}/bin"
+    ENV['PWD'] = buildpath
     system "make install"
   end
 

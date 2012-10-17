@@ -49,6 +49,7 @@ func (f *file) Del() error {
 }
 
 // Create creates a file from its Value attribute
+// TODO: Rename to 'Save'
 func (f *file) Create() (*file, error) {
 	return f.Set(f.Value)
 }

@@ -49,6 +49,32 @@ func TestProcTypeRegister(t *testing.T) {
 	}
 }
 
+func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
+	s, app := proctypeSetup("reg1232")
+	pty := NewProcType(app, "who-op", s)
+
+	pty, err := pty.Register()
+	if err != ErrBadPtyName {
+		t.Errorf("invalid proc type name (who-op) did not raise error")
+	}
+	if err != ErrBadPtyName && err != nil {
+		t.Fatal("wrong error was raised for invalid proc type name")
+	}
+}
+
+func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
+	s, app := proctypeSetup("reg1233")
+	pty := NewProcType(app, "who_op", s)
+
+	pty, err := pty.Register()
+	if err != ErrBadPtyName {
+		t.Errorf("invalid proc type name (who_op) did not raise error")
+	}
+	if err != ErrBadPtyName && err != nil {
+		t.Fatal("wrong error was raised for invalid proc type name")
+	}
+}
+
 func TestProcTypeUnregister(t *testing.T) {
 	s, app := proctypeSetup("unreg123")
 	pty := NewProcType(app, "whoop", s)

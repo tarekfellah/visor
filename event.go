@@ -14,6 +14,7 @@ import (
 )
 
 // An Event represents a change to a file in the registry.
+// TODO: turn `Emitter` into own type, instead of map
 type Event struct {
 	Type    EventType         // Type of event
 	Emitter map[string]string // The parsed file path
@@ -23,6 +24,7 @@ type Event struct {
 	Rev     int64
 }
 
+// TODO: turn into string, remove `EventTypes`
 type EventType int
 
 var EventTypes = map[EventType]string{
