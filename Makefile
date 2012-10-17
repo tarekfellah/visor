@@ -43,7 +43,7 @@ DEB_MAINTAINER=Daniel Bornkessel <daniel@soundcloud.com>
 include deb.mk
 
 debroot:
-	GOBIN=$(DEB_ROOT)/usr/bin $(MAKE)
+	GOBIN=$(DEB_ROOT)/usr/bin $(MAKE) install
 
 # BUILD #
 
