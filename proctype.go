@@ -8,8 +8,8 @@ package visor
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"regexp"
+	"strconv"
 	"time"
 )
 
