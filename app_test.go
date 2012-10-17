@@ -241,26 +241,26 @@ func TestAppGetProcTypes(t *testing.T) {
 }
 
 func TestApps(t *testing.T) {
+	var s Snapshot
+
 	app := appSetup("mat-the-sponge")
 	names := map[string]bool{"cat": true, "dog": true, "lol": true}
 
 	for k, _ := range names {
-		a := NewApp(k, "zebra", "joke", app.dir.Snapshot)
-		_, err := a.Register()
+		a := NewApp(k, "zebra", "joke", app.Snapshot)
+		a, err := a.Register()
 		if err != nil {
 			t.Error(err)
 		}
+		s = a.Snapshot
 	}
-	app = app.FastForward(-1)
-
-	s, _ := Dial(DefaultAddr, DefaultRoot)
 
 	apps, err := Apps(s)
 	if err != nil {
 		t.Error(err)
 	}
 	if len(apps) != len(names) {
-		t.Fatal("expected length %d returned length %d", len(names), len(apps))
+		t.Fatalf("expected length %d returned length %d", len(names), len(apps))
 	}
 
 	for i := range apps {
