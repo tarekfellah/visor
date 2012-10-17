@@ -486,6 +486,10 @@ func (i *Instance) idString() string {
 	return fmt.Sprintf("%d", i.Id)
 }
 
+func (i *Instance) RefString() string {
+	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
+}
+
 func (i *Instance) ServiceName() string {
 	return fmt.Sprintf("%s-%s", i.AppName, i.ProcessName)
 }
