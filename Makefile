@@ -29,7 +29,7 @@ test:
 dist: linux darwin
 
 linux darwin:
-	GOOS=$@ CGO_ENABLED=0 GOARCH=$(GOARCH) go build $(LDFLAGS) -o bin/$@/visor ./cmd/visor
+	GOPATH=$(GOPATH) GOOS=$@ CGO_ENABLED=0 GOARCH=$(GOARCH) go build $(LDFLAGS) -o bin/$@/visor ./cmd/visor
 	cd bin/$@ && tar -caf visor-v$(VERSION)-$@.tar.gz visor
 
 # DEBIAN PACKAGING #
