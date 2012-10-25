@@ -48,15 +48,6 @@ func SetSchemaVersion(s Snapshot, version int) (newSnapshot Snapshot, err error)
 }
 
 func verifySchemaVersion(s Snapshot, version int) (int, error) {
-	exists, _, err := s.exists(schemaPath)
-	if err != nil {
-		return -1, err
-	}
-
-	if !exists {
-		return -1, ErrSchemaMism
-	}
-
 	value, _, err := s.get(schemaPath)
 	if err != nil {
 		return -1, err

@@ -37,7 +37,7 @@ func TestSchemaMissing(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if _, err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := VerifySchema(s); !IsErrNoEnt(err) {
 		if err == nil {
 			t.Error("missing schema version did not error out")
 		} else {

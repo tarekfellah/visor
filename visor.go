@@ -56,20 +56,16 @@ const (
 type InsStatus string
 
 func Init(s Snapshot) (rev int64, err error) {
-	var s1 Snapshot
-
 	exists, _, err := s.conn.Exists(nextPortPath)
 	if err != nil {
 		return
 	}
 
 	if !exists {
-		s1, err = s.set(nextPortPath, strconv.Itoa(startPort))
+		s, err = s.set(nextPortPath, strconv.Itoa(startPort))
 		if err != nil {
 			return
 		}
-
-		return s1.Rev, err
 	}
 
 	s, err = SetSchemaVersion(s, SchemaVersion)
@@ -77,7 +73,7 @@ func Init(s Snapshot) (rev int64, err error) {
 		return
 	}
 
-	return s.conn.Rev()
+	return s.Rev, nil
 }
 
 func ClaimNextPort(s Snapshot) (port int, err error) {
