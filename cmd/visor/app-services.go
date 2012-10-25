@@ -55,7 +55,7 @@ func runAppServices(cmd *Command, args []string) {
 	}
 
 	for _, pty := range ptys {
-		ins, err := pty.GetInstanceNames()
+		ins, err := pty.InstanceIds()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error fetching instances for %s %s\n", pty.Name, err.Error())
 			os.Exit(1)

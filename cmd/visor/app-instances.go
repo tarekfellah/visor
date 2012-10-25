@@ -64,7 +64,7 @@ func runAppInstances(cmd *Command, args []string) {
 
 	for i := 0; i < total; i++ {
 		for _, i := range <-insch {
-			fmt.Fprintf(os.Stdout, "%s %s %s %s %s %s %d %s\n", i.Name, i.ServiceName, i.AppName, i.ProcessName, i.RevisionName, i.Host, i.Port, i.State)
+			fmt.Fprintf(os.Stdout, "%s %s %s %s %s %s %d %s\n", i.Name, i.ServiceName(), i.AppName, i.ProcessName, i.RevisionName, i.Host, i.Port, i.Status)
 		}
 	}
 }
