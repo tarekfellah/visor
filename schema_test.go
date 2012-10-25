@@ -37,7 +37,7 @@ func TestSchemaMissing(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("missing schema version did not error out")
 		} else {
@@ -59,7 +59,7 @@ func TestSetVersion(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchema(s); err != nil {
+	if _, err := VerifySchema(s); err != nil {
 		t.Error("setting new version failed: " + err.Error())
 	}
 }
@@ -78,7 +78,7 @@ func TestVersionTooNew(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("newer schema version did not error out")
 		} else {
@@ -101,7 +101,7 @@ func TestVersionTooOld(t *testing.T) {
 		t.Fatal("setting schema version failed")
 	}
 
-	if err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := VerifySchema(s); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("older schema version did not error out")
 		} else {
