@@ -71,6 +71,12 @@ func Init(s Snapshot) (rev int64, err error) {
 
 		return s1.Rev, err
 	}
+
+	s, err = SetSchemaVersion(s, SchemaVersion)
+	if err != nil {
+		return
+	}
+
 	return s.conn.Rev()
 }
 
