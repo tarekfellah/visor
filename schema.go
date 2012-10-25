@@ -35,7 +35,7 @@ func WatchSchema(s Snapshot, ch chan SchemaEvent, errch chan error) {
 // the coordinator's. If this is not the case, ErrSchemaMism is returned.
 //
 // See WatchSchema to get notified on schema change.
-func VerifySchema(s Snapshot) error {
+func VerifySchema(s Snapshot) (int, error) {
 	return verifySchemaVersion(s, SchemaVersion)
 }
 
@@ -47,29 +47,29 @@ func SetSchemaVersion(s Snapshot, version int) (newSnapshot Snapshot, err error)
 	return
 }
 
-func verifySchemaVersion(s Snapshot, version int) error {
+func verifySchemaVersion(s Snapshot, version int) (int, error) {
 	exists, _, err := s.exists(schemaPath)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	if !exists {
-		return ErrSchemaMism
+		return -1, ErrSchemaMism
 	}
 
 	value, _, err := s.get(schemaPath)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	intValue, err := strconv.Atoi(value)
 	if err != nil {
-		return err
+		return intValue, err
 	}
 
 	if intValue != version {
-		return ErrSchemaMism
+		return intValue, ErrSchemaMism
 	}
 
-	return nil
+	return -1, nil
 }
