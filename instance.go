@@ -22,6 +22,7 @@ const stopPath = "stop"
 
 const (
 	InsStatusInitial     InsStatus = "initial"
+	InsStatusClaimed               = "claimed"
 	InsStatusStarted               = "started"
 	InsStatusFailed                = "failed"
 	InsStatusDead                  = "dead"
@@ -290,6 +291,18 @@ func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
 	return
 }
 
+func (i *Instance) started(ip string, port int, host string) {
+	i.Ip = ip
+	i.Port = port
+	i.Host = host
+	i.Status = InsStatusStarted
+}
+
+func (i *Instance) claimed(ip string) {
+	i.Ip = ip
+	i.Status = InsStatusClaimed
+}
+
 func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err error) {
 	//
 	//   instances/
@@ -301,10 +314,7 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	if err = i.verifyClaimer(ip); err != nil {
 		return
 	}
-	i.Ip = ip
-	i.Port = port
-	i.Host = host
-	i.Status = InsStatusStarted
+	i.started(ip, port, host)
 
 	f, err := createFile(i.Snapshot, i.dir.prefix(startPath), i.startArray(), new(listCodec))
 	if err != nil {
@@ -448,6 +458,32 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 	}
 	i1 = i.FastForward(ev.Rev)
 
+	return
+}
+
+func (i *Instance) WaitStart() (i1 *Instance, err error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
+
+	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	if err != nil {
+		return
+	}
+	i1 = i.FastForward(ev.Rev)
+	parts, err := new(listCodec).Decode(ev.Body)
+	if err != nil {
+		return
+	}
+	fields := parts.([]string)
+	if len(fields) >= 3 {
+		ip, host := fields[0], fields[2]
+		port, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return i, err
+		}
+		i1.started(ip, port, host)
+	} else {
+		i1.claimed(fields[0])
+	}
 	return
 }
 
