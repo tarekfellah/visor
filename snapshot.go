@@ -111,7 +111,11 @@ func (s Snapshot) UnregisterProxy(host string) error {
 }
 
 func (s Snapshot) ResetCoordinator() error {
-	return s.del("/")
+	err := s.del("/")
+	if IsErrNoEnt(err) {
+		return nil
+	}
+	return err
 }
 
 // Getuid returns a unique ID from the coordinator
