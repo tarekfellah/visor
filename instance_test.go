@@ -358,6 +358,71 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	}
 }
 
+func TestInstanceWaitStart(t *testing.T) {
+	s := instanceSetup()
+	ins, err := RegisterInstance("bob", "985245a", "web", s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	go func() {
+		if _, err := ins.Claim("127.0.0.1"); err != nil {
+			panic(err)
+		}
+	}()
+	ins1, err := ins.WaitStart()
+	if err != nil {
+		t.Error(err)
+	}
+	if ins1.Status != InsStatusClaimed {
+		t.Errorf("expected instance status to be %s", InsStatusClaimed)
+	}
+
+	go func() {
+		if _, err := ins1.Started("127.0.0.1", 9000, "localhost"); err != nil {
+			panic(err)
+		}
+	}()
+	ins2, err := ins1.WaitStart()
+	if err != nil {
+		t.Error(err)
+	}
+	if ins2.Status != InsStatusStarted {
+		t.Errorf("expected instance status to be %s", InsStatusStarted)
+	}
+	if ins2.Ip != "127.0.0.1" || ins2.Port != 9000 || ins2.Host != "localhost" {
+		t.Errorf("expected ip/port/host to match for %#v", ins2)
+	}
+}
+
+func TestInstanceWaitStop(t *testing.T) {
+	s := instanceSetup()
+	ins, err := RegisterInstance("bobby", "985245a", "web", s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ins1, err := ins.Claim("127.0.0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ins1.Started("127.0.0.1", 9000, "localhost"); err != nil {
+		t.Fatal(err)
+	}
+
+	go func() {
+		if _, err := StopInstance(ins.Id, s); err != nil {
+			panic(err)
+		}
+	}()
+	ins1, err = ins1.WaitStop()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ins1.Rev <= ins.Rev {
+		t.Error("expected new revision to be greater than previous")
+	}
+}
+
 func testInstanceStatus(t *testing.T, id int64, status InsStatus, s Snapshot) {
 	ins, err := GetInstance(s, id)
 	if err != nil {
