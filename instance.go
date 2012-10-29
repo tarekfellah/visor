@@ -462,7 +462,28 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 	return
 }
 
-func (i *Instance) WaitStart() (i1 *Instance, err error) {
+func (i *Instance) WaitClaimed() (i1 *Instance, err error) {
+	return i.waitStartPathStatus(InsStatusClaimed)
+}
+
+func (i *Instance) WaitStarted() (i1 *Instance, err error) {
+	return i.waitStartPathStatus(InsStatusStarted)
+}
+
+func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
+	for {
+		i, err = i.waitStartPath()
+		if err != nil {
+			return i, err
+		}
+		if i.Status == s {
+			break
+		}
+	}
+	return i, nil
+}
+
+func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
 
 	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)

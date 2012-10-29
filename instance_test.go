@@ -358,7 +358,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	}
 }
 
-func TestInstanceWaitStart(t *testing.T) {
+func TestInstanceWait(t *testing.T) {
 	s := instanceSetup()
 	ins, err := RegisterInstance("bob", "985245a", "web", s)
 	if err != nil {
@@ -370,7 +370,7 @@ func TestInstanceWaitStart(t *testing.T) {
 			panic(err)
 		}
 	}()
-	ins1, err := ins.WaitStart()
+	ins1, err := ins.WaitClaimed()
 	if err != nil {
 		t.Error(err)
 	}
@@ -383,7 +383,7 @@ func TestInstanceWaitStart(t *testing.T) {
 			panic(err)
 		}
 	}()
-	ins2, err := ins1.WaitStart()
+	ins2, err := ins1.WaitStarted()
 	if err != nil {
 		t.Error(err)
 	}
