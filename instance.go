@@ -314,13 +314,14 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	if err = i.verifyClaimer(ip); err != nil {
 		return
 	}
-	i.started(ip, port, host)
+	i1 = i.FastForward(i.Rev) // Create a copy
+	i1.started(ip, port, host)
 
-	f, err := createFile(i.Snapshot, i.dir.prefix(startPath), i.startArray(), new(listCodec))
+	f, err := createFile(i1.Snapshot, i1.dir.prefix(startPath), i1.startArray(), new(listCodec))
 	if err != nil {
 		return
 	}
-	i1 = i.FastForward(f.FileRev)
+	i1 = i1.FastForward(f.FileRev)
 
 	return
 }
