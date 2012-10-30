@@ -503,8 +503,10 @@ func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 			return i, err
 		}
 		i1.started(ip, port, host)
-	} else {
+	} else if len(fields) > 0 {
 		i1.claimed(fields[0])
+	} else {
+		// TODO
 	}
 	return
 }
