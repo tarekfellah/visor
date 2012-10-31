@@ -18,6 +18,7 @@ const claimsPath = "claims"
 const instancesPath = "instances"
 const deathsPath = "deaths"
 const startPath = "start"
+const statusPath = "status"
 const stopPath = "stop"
 
 const (
@@ -458,6 +459,18 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 		return
 	}
 	i1 = i.FastForward(ev.Rev)
+
+	return
+}
+
+func (i *Instance) WaitStatus() (i1 *Instance, err error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), statusPath)
+	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	if err != nil {
+		return
+	}
+	i1 = i.FastForward(ev.Rev)
+	i1.Status = InsStatus(string(ev.Body))
 
 	return
 }
