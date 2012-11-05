@@ -8,7 +8,6 @@ package visor
 import (
 	"fmt"
 	"path"
-	"time"
 )
 
 const servicesPath = "services"
@@ -48,7 +47,7 @@ func (s *Service) Register() (srv *Service, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := s.set("registered", time.Now().UTC().String())
+	rev, err := s.set("registered", timestamp())
 	if err != nil {
 		return
 	}

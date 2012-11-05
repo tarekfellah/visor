@@ -10,7 +10,6 @@ import (
 	"github.com/soundcloud/doozer"
 	"path"
 	"regexp"
-	"time"
 )
 
 // Snapshot represents a specific point in time
@@ -95,7 +94,7 @@ func (s Snapshot) GetPms() ([]string, error) {
 }
 
 func (s Snapshot) RegisterPm(host string) (Snapshot, error) {
-	return s.set(path.Join(pmDir, host), time.Now().UTC().String())
+	return s.set(path.Join(pmDir, host), timestamp())
 }
 
 func (s Snapshot) UnregisterPm(host string) error {
@@ -103,7 +102,7 @@ func (s Snapshot) UnregisterPm(host string) error {
 }
 
 func (s Snapshot) RegisterProxy(host string) (Snapshot, error) {
-	return s.set(path.Join(proxyDir, host), time.Now().UTC().String())
+	return s.set(path.Join(proxyDir, host), timestamp())
 }
 
 func (s Snapshot) UnregisterProxy(host string) error {

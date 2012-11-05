@@ -11,7 +11,6 @@ import (
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const claimsPath = "claims"
@@ -160,7 +159,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 	if err != nil {
 		return nil, err
 	}
-	s1, err := s.set(ins.ptyInstancesPath(), time.Now().UTC().String())
+	s1, err := s.set(ins.ptyInstancesPath(), timestamp())
 	if err != nil {
 		return
 	}
@@ -242,7 +241,7 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 		return i, err
 	}
 
-	rev, err = i.claimDir().fastForward(rev).set(host, time.Now().UTC().String())
+	rev, err = i.claimDir().fastForward(rev).set(host, timestamp())
 	if err != nil {
 		return i, err
 	}
@@ -287,7 +286,7 @@ func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
 	if err != nil {
 		return
 	}
-	_, err = i1.claimDir().set(host, fmt.Sprintf("%s %s", time.Now().UTC().String(), reason))
+	_, err = i1.claimDir().set(host, fmt.Sprintf("%s %s", timestamp(), reason))
 
 	return
 }
@@ -396,7 +395,7 @@ func (i *Instance) Unclaimable(host string, reason error) (i1 *Instance, err err
 	if err != nil {
 		return
 	}
-	rev, err := i1.claimDir().set(host, fmt.Sprintf("%s %s", time.Now().UTC().String(), reason))
+	rev, err := i1.claimDir().set(host, fmt.Sprintf("%s %s", timestamp(), reason))
 	if err != nil {
 		return
 	}

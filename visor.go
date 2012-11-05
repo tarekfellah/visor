@@ -142,3 +142,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 	}
 	return
 }
+
+func timestamp() string {
+	return time.Now().UTC().Format(time.RFC3339)
+}

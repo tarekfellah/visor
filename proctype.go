@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"time"
 )
 
 var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
@@ -73,7 +72,7 @@ func (p *ProcType) Register() (ptype *ProcType, err error) {
 		return p, err
 	}
 
-	rev, err := p.set("registered", time.Now().UTC().String())
+	rev, err := p.set("registered", timestamp())
 
 	if err != nil {
 		return p, err

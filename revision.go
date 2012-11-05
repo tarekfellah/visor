@@ -7,7 +7,6 @@ package visor
 
 import (
 	"fmt"
-	"time"
 )
 
 // A Revision represents an application revision,
@@ -55,7 +54,7 @@ func (r *Revision) Register() (revision *Revision, err error) {
 	if err != nil {
 		return
 	}
-	rev, err = r.set("registered", time.Now().UTC().String())
+	rev, err = r.set("registered", timestamp())
 	if err != nil {
 		return
 	}

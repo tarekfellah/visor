@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"path"
 	"strings"
-	"time"
 )
 
 const appsPath = "apps"
@@ -83,7 +82,7 @@ func (a *App) Register() (app *App, err error) {
 		}
 	}
 
-	rev, err := a.set("registered", time.Now().UTC().String())
+	rev, err := a.set("registered", timestamp())
 	if err != nil {
 		return
 	}
