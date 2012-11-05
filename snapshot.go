@@ -93,8 +93,8 @@ func (s Snapshot) GetPms() ([]string, error) {
 	return s.getdir(pmDir)
 }
 
-func (s Snapshot) RegisterPm(host string) (Snapshot, error) {
-	return s.set(path.Join(pmDir, host), timestamp())
+func (s Snapshot) RegisterPm(host, version string) (Snapshot, error) {
+	return s.set(path.Join(pmDir, host), timestamp()+" "+version)
 }
 
 func (s Snapshot) UnregisterPm(host string) error {
