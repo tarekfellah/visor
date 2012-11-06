@@ -51,6 +51,7 @@ var commands = []*Command{
 	cmdAppEnvDel,
 	cmdAppEnvGet,
 	cmdAppEnvSet,
+	cmdAppHeadSet,
 	cmdAppInstances,
 	cmdAppInstancesPurge,
 	cmdAppList,
