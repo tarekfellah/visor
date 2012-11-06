@@ -523,33 +523,6 @@ func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 	return
 }
 
-func WaitTicketProcessed(s Snapshot, id int64) (status InsStatus, s1 Snapshot, err error) {
-	var ev doozer.Event
-
-	rev := s.Rev
-
-	for {
-		ev, err = s.conn.Wait(fmt.Sprintf("/%s/%d/status", instancesPath, id), rev+1)
-		if err != nil {
-			return
-		}
-		rev = ev.Rev
-
-		// TODO
-		//if ev.IsSet() && InsStatus(ev.Body) == InsStatusDone {
-		//	status = InsStatusDone
-		//	break
-		//}
-		if ev.IsSet() && InsStatus(ev.Body) == InsStatusDead {
-			status = InsStatusDead
-			break
-		}
-	}
-	s1 = s.FastForward(rev)
-
-	return
-}
-
 func ptyInstancesPath(app, rev, pty string) string {
 	return path.Join(appsPath, app, procsPath, pty, instancesPath, rev)
 }
