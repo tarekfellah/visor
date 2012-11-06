@@ -303,7 +303,7 @@ func (i *Instance) claimed(ip string) {
 	i.Status = InsStatusClaimed
 }
 
-func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err error) {
+func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance, err error) {
 	//
 	//   instances/
 	//       6868/
@@ -311,11 +311,11 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	// -         start  = 10.0.0.1
 	// +         start  = 10.0.0.1 24690 localhost
 	//
-	if err = i.verifyClaimer(ip); err != nil {
+	if err = i.verifyClaimer(host); err != nil {
 		return
 	}
 	i1 = i.FastForward(i.Rev) // Create a copy
-	i1.started(ip, port, host)
+	i1.started(host, port, hostname)
 
 	f, err := createFile(i1.Snapshot, i1.dir.prefix(startPath), i1.startArray(), new(listCodec))
 	if err != nil {
