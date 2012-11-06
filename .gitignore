@@ -5,5 +5,5 @@ bin/
 src/
 tags
 visor.rb-e
-visor
 bin/
+/visor
