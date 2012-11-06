@@ -22,6 +22,7 @@ type App struct {
 	Name       string
 	RepoUrl    string
 	Stack      string
+	Head       string
 	Env        Env
 	DeployType string
 }
@@ -96,6 +97,18 @@ func (a *App) Register() (app *App, err error) {
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() error {
 	return a.del("/")
+}
+
+// SetHead sets the application's latest revision
+func (a *App) SetHead(head string) (a1 *App, err error) {
+	rev, err := a.set("head", head)
+	if err != nil {
+		return
+	}
+	a1 = a.FastForward(rev)
+	a1.Head = head
+
+	return
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
@@ -220,6 +233,12 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.Stack = value["stack"].(string)
 	app.DeployType = value["deploy-type"].(string)
 
+	f, err = s.getFile(app.dir.prefix("head"), new(stringCodec))
+	if err == nil {
+		app.Head = f.Value.(string)
+	} else if IsErrNoEnt(err) {
+		err = nil
+	}
 	return
 }
 
