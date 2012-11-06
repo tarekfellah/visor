@@ -311,7 +311,7 @@ func (i *Instance) Started(ip string, port int, host string) (i1 *Instance, err 
 	// -         start  = 10.0.0.1
 	// +         start  = 10.0.0.1 24690 localhost
 	//
-	if err = i.verifyClaimer(ip); err != nil {
+	if err = i.verifyClaimer(host); err != nil {
 		return
 	}
 	i1 = i.FastForward(i.Rev) // Create a copy
