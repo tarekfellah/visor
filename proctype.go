@@ -92,7 +92,7 @@ func (p *ProcType) instancesPath() string {
 }
 
 func (p *ProcType) failedInstancesPath() string {
-	return p.dir.prefix(deathsPath)
+	return p.dir.prefix(failedPath)
 }
 
 func (p *ProcType) InstanceIds() (ids []string, err error) {

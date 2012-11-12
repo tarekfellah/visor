@@ -15,7 +15,7 @@ import (
 
 const claimsPath = "claims"
 const instancesPath = "instances"
-const deathsPath = "deaths"
+const failedPath = "failed"
 const startPath = "start"
 const statusPath = "status"
 const stopPath = "stop"
@@ -508,7 +508,7 @@ func (i *Instance) ServiceName() string {
 }
 
 func (i *Instance) ptyFailedPath() string {
-	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, deathsPath, i.idString())
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, failedPath, i.idString())
 }
 
 func (i *Instance) ptyInstancesPath() string {
