@@ -13,10 +13,10 @@ import (
 
 var cmdAppInstancesPurge = &Command{
 	Name:      "app-instances-purge",
-	Short:     "purge dead instances",
+	Short:     "purge failed instances",
 	UsageLine: "app-instances-purge <app> <rev> [proctype]",
 	Long: `
-App-instances-purge asks the coordinator to clean-up dead instances.
+App-instances-purge asks the coordinator to clean-up failed instances.
   `,
 }
 
