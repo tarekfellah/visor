@@ -130,8 +130,8 @@ func TestProcTypeGetInstances(t *testing.T) {
 	}
 }
 
-func TestProcTypeGetDeadInstances(t *testing.T) {
-	appid := "get-dead-instances-app"
+func TestProcTypeGetFailedInstances(t *testing.T) {
+	appid := "get-failed-instances-app"
 	s, app := proctypeSetup(appid)
 
 	pty := NewProcType(app, "web", s)
@@ -159,14 +159,14 @@ func TestProcTypeGetDeadInstances(t *testing.T) {
 		pty = pty.FastForward(ins.Rev)
 	}
 	for i := 0; i < 4; i++ {
-		ins, err := instances[i].Dead("10.0.0.1", errors.New("no reason."))
+		ins, err := instances[i].Failed("10.0.0.1", errors.New("no reason."))
 		if err != nil {
 			t.Fatal(err)
 		}
 		pty = pty.FastForward(ins.Rev)
 	}
 
-	is, err := pty.GetDeadInstances()
+	is, err := pty.GetFailedInstances()
 	if err != nil {
 		t.Fatal(err)
 	}

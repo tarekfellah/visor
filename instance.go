@@ -21,13 +21,12 @@ const statusPath = "status"
 const stopPath = "stop"
 
 const (
-	InsStatusInitial     InsStatus = "initial"
-	InsStatusClaimed               = "claimed"
-	InsStatusStarted               = "started"
-	InsStatusFailed                = "failed"
-	InsStatusDead                  = "dead"
-	InsStatusUnclaimable           = "unclaimable"
-	InsStatusExited                = "exited"
+	InsStatusPending InsStatus = "pending"
+	InsStatusClaimed           = "claimed"
+	InsStatusRunning           = "running"
+
+	InsStatusFailed = "failed"
+	InsStatusExited = "exited"
 )
 
 // Instance represents application instances.
@@ -65,7 +64,7 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 			ip = fields[0]
 		}
 		if len(fields) > 1 { // Port
-			status = InsStatusStarted
+			status = InsStatusRunning
 			port, err = strconv.Atoi(fields[1])
 			if err != nil {
 				panic("invalid port number: " + fields[1])
@@ -79,7 +78,7 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	statusStr, _, err := s.get(p + "/status")
 	if IsErrNoEnt(err) {
 		err = nil
-		status = InsStatusInitial
+		status = InsStatusPending
 	} else if err == nil {
 		status = InsStatus(statusStr)
 	} else {
@@ -147,7 +146,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		AppName:      app,
 		RevisionName: rev,
 		ProcessName:  pty,
-		Status:       InsStatusInitial,
+		Status:       InsStatusPending,
 		dir:          dir{s, instancePath(id)},
 	}
 
@@ -277,25 +276,11 @@ func (i *Instance) Exited(host string) (i1 *Instance, err error) {
 	return
 }
 
-// Failed tells the cooridnator that the instance has failed.
-func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
-	if err = i.verifyClaimer(host); err != nil {
-		return
-	}
-	i1, err = i.updateStatus(InsStatusFailed)
-	if err != nil {
-		return
-	}
-	_, err = i1.claimDir().set(host, fmt.Sprintf("%s %s", timestamp(), reason))
-
-	return
-}
-
 func (i *Instance) started(ip string, port int, host string) {
 	i.Ip = ip
 	i.Port = port
 	i.Host = host
-	i.Status = InsStatusStarted
+	i.Status = InsStatusRunning
 }
 
 func (i *Instance) claimed(ip string) {
@@ -387,32 +372,15 @@ func (i *Instance) verifyClaimer(host string) error {
 	return nil
 }
 
-func (i *Instance) Unclaimable(host string, reason error) (i1 *Instance, err error) {
+func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
 	if err = i.verifyClaimer(host); err != nil {
 		return
 	}
-	i1, err = i.updateStatus(InsStatusUnclaimable)
+	_, err = i.updateStatus(InsStatusFailed)
 	if err != nil {
 		return
 	}
-	rev, err := i1.claimDir().set(host, fmt.Sprintf("%s %s", timestamp(), reason))
-	if err != nil {
-		return
-	}
-	i1 = i1.FastForward(rev)
-
-	return
-}
-
-func (i *Instance) Dead(host string, reason error) (i1 *Instance, err error) {
-	if err = i.verifyClaimer(host); err != nil {
-		return
-	}
-	_, err = i.updateStatus(InsStatusDead)
-	if err != nil {
-		return
-	}
-	s, err := i.Snapshot.set(i.ptyDeathsPath(), reason.Error())
+	s, err := i.Snapshot.set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
 	if err != nil {
 		return
 	}
@@ -479,7 +447,7 @@ func (i *Instance) WaitClaimed() (i1 *Instance, err error) {
 }
 
 func (i *Instance) WaitStarted() (i1 *Instance, err error) {
-	return i.waitStartPathStatus(InsStatusStarted)
+	return i.waitStartPathStatus(InsStatusRunning)
 }
 
 func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
@@ -539,7 +507,7 @@ func (i *Instance) ServiceName() string {
 	return fmt.Sprintf("%s-%s", i.AppName, i.ProcessName)
 }
 
-func (i *Instance) ptyDeathsPath() string {
+func (i *Instance) ptyFailedPath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, deathsPath, i.idString())
 }
 

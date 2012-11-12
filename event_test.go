@@ -255,12 +255,6 @@ func TestEventInstanceStateChange(t *testing.T) {
 		t.Error(err)
 	}
 	expectEvent(EvInsExit, emitter, l, t)
-
-	_, err = ins.Dead(ip, errors.New("no reason."))
-	if err != nil {
-		t.Error(err)
-	}
-	expectEvent(EvInsDead, emitter, l, t)
 }
 
 func TestEventSrvRegistered(t *testing.T) {

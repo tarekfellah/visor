@@ -64,14 +64,14 @@ func runAppInstancesPurge(cmd *Command, args []string) {
 }
 
 func purgeProctypeInstances(pty *visor.ProcType, revname *string) {
-	ins, err := pty.GetInstances()
+	ins, err := pty.GetFailedInstances()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error fetching instances for %s: %s\n", pty.Name, err.Error())
 		os.Exit(1)
 	}
 
 	for _, i := range ins {
-		if i.Status == visor.InsStatusDead && i.RevisionName == *revname {
+		if i.RevisionName == *revname {
 			err := i.Unregister()
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Error removing instance %s: %s\n", i.Name, err.Error())

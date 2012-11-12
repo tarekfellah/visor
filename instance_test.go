@@ -47,7 +47,7 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if ins.Status != InsStatusInitial {
+	if ins.Status != InsStatusPending {
 		t.Error("instance status wasn't set correctly")
 	}
 	if ins.Id <= 0 {
@@ -150,7 +150,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if ins2.Status != InsStatusStarted {
+	if ins2.Status != InsStatusRunning {
 		t.Errorf("unexpected status '%s'", ins2.Status)
 	}
 
@@ -242,51 +242,11 @@ func TestInstanceExited(t *testing.T) {
 	testInstanceStatus(t, ins.Id, InsStatusExited, ins3.Snapshot)
 }
 
-func TestInstanceUnclaimable(t *testing.T) {
-	ip := "10.0.0.1"
-	ins := instanceSetupClaimed("bat-cat", ip)
-
-	ins1, err := ins.Unclaimable(ip, errors.New("because."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testInstanceStatus(t, ins.Id, InsStatusUnclaimable, ins1.Snapshot)
-
-	_, err = ins1.Unclaimable("9.9.9.9", errors.New("no reason."))
-	if err != ErrUnauthorized {
-		t.Error("expected command to fail")
-	}
-}
-
-func TestInstanceDead(t *testing.T) {
+func TestInstanceFailed(t *testing.T) {
 	ip := "10.0.0.1"
 	ins := instanceSetupClaimed("fat-cat", ip)
 
 	ins, err := ins.Started(ip, 9999, "fat-cat.com")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	ins1, err := ins.Dead(ip, errors.New("because."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	testInstanceStatus(t, ins.Id, InsStatusDead, ins1.Snapshot)
-
-	_, err = ins.Dead("9.9.9.9", errors.New("no reason."))
-	if err != ErrUnauthorized {
-		t.Error("expected command to fail")
-	}
-
-	// Note: we do not test whether or not dead instances can be retrieved
-	// here. See the proctype tests & (*Proctype).GetDeadInstances()
-}
-
-func TestInstanceFailed(t *testing.T) {
-	ip := "10.0.0.1"
-	ins := instanceSetupClaimed("fat-bat", ip)
-
-	ins, err := ins.Started(ip, 9999, "fat-bat.com")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,6 +261,9 @@ func TestInstanceFailed(t *testing.T) {
 	if err != ErrUnauthorized {
 		t.Error("expected command to fail")
 	}
+
+	// Note: we do not test whether or not failed instances can be retrieved
+	// here. See the proctype tests & (*Proctype).GetFailedInstances()
 }
 
 func TestWatchInstanceStartAndStop(t *testing.T) {
@@ -387,8 +350,8 @@ func TestInstanceWait(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if ins2.Status != InsStatusStarted {
-		t.Errorf("expected instance status to be %s", InsStatusStarted)
+	if ins2.Status != InsStatusRunning {
+		t.Errorf("expected instance status to be %s", InsStatusRunning)
 	}
 	if ins2.Ip != "127.0.0.1" || ins2.Port != 9000 || ins2.Host != "localhost" {
 		t.Errorf("expected ip/port/host to match for %#v", ins2)

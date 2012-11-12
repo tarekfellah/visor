@@ -91,7 +91,7 @@ func (p *ProcType) instancesPath() string {
 	return p.dir.prefix(instancesPath)
 }
 
-func (p *ProcType) deadInstancesPath() string {
+func (p *ProcType) failedInstancesPath() string {
 	return p.dir.prefix(deathsPath)
 }
 
@@ -110,8 +110,8 @@ func (p *ProcType) InstanceIds() (ids []string, err error) {
 	return
 }
 
-func (p *ProcType) GetDeadInstances() (ins []*Instance, err error) {
-	ids, err := p.getdir(p.deadInstancesPath())
+func (p *ProcType) GetFailedInstances() (ins []*Instance, err error) {
+	ids, err := p.getdir(p.failedInstancesPath())
 	if err != nil {
 		return
 	}

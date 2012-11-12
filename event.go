@@ -39,7 +39,6 @@ var EventTypes = map[EventType]string{
 	EvInsStart:  "instance-start",
 	EvInsFail:   "instance-fail",
 	EvInsExit:   "instance-exit",
-	EvInsDead:   "instance-dead",
 	EvSrvReg:    "service-register",
 	EvSrvUnreg:  "service-unregister",
 	EvEpReg:     "endpoint-register",
@@ -68,7 +67,6 @@ const (
 	EvInsUnreg                     // Instance unregister
 	EvInsStart                     // Instance state changed to 'started'
 	EvInsFail                      // Instance state changed to 'failed'
-	EvInsDead                      // Instance state changed to 'dead'
 	EvInsExit                      // Instance state changed to 'exited'
 	EvSrvReg                       // Service register
 	EvSrvUnreg                     // Service unregister
@@ -185,7 +183,7 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
-	case EvInsReg, EvInsStart, EvInsExit, EvInsFail, EvInsDead:
+	case EvInsReg, EvInsStart, EvInsExit, EvInsFail:
 		var i *Instance
 		var id int64
 
@@ -307,14 +305,12 @@ func parseEvent(src *doozer.Event) *Event {
 				}
 
 				switch InsStatus(src.Body) {
-				case InsStatusStarted:
+				case InsStatusRunning:
 					etype = EvInsStart
 				case InsStatusExited:
 					etype = EvInsExit
 				case InsStatusFailed:
 					etype = EvInsFail
-				case InsStatusDead:
-					etype = EvInsDead
 				}
 			case pathSrv:
 				emitter["service"] = match[1]
