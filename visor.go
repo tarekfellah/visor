@@ -40,7 +40,7 @@ import (
 	"time"
 )
 
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 const (
 	DefaultUri   string = "doozer:?ca=localhost:8046"
