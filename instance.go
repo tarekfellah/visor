@@ -250,8 +250,6 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 func (i *Instance) Unregister() (err error) {
 	err = i.Snapshot.del(i.ptyInstancesPath())
 	if err != nil {
-		println(IsErrNoEnt(err))
-		println(err.Error())
 		if IsErrNoEnt(err) {
 			err = nil
 		} else {
