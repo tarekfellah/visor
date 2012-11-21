@@ -101,6 +101,11 @@ func (p *ProcType) InstanceIds() (ids []string, err error) {
 		return
 	}
 	for _, rev := range revs {
+		// TODO: remove this once all old instances are cleaned up
+		if len(rev) != 7 {
+			continue
+		}
+
 		iids, e := p.getdir(p.dir.prefix("instances", rev))
 		if e != nil {
 			return nil, e

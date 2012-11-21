@@ -106,7 +106,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 	}
 
 	for i := 0; i < 3; i++ {
-		ins, err := RegisterInstance(appid, "128af9", "web", s)
+		ins, err := RegisterInstance(appid, "128af90", "web", s)
 		if err != nil {
 			t.Fatal(err)
 		}
