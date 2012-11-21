@@ -5,7 +5,7 @@ class Visor < Formula
   url 'https://github.com/soundcloud/visor/zipball/master'
   depends_on 'go'
   skip_clean 'bin'
-  version '0.7.1'
+  version '0.7.2'
 
 
   def install
