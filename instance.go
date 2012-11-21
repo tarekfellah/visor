@@ -45,12 +45,12 @@ type Instance struct {
 // GetInstance returns an Instance from the given id
 func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	p := instancePath(id)
+	status := InsStatusPending
 
 	var (
-		status InsStatus
-		ip     string
-		port   int
-		host   string
+		ip   string
+		port int
+		host string
 	)
 
 	f, err := s.getFile(p+"/start", new(listCodec))
@@ -78,7 +78,6 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	statusStr, _, err := s.get(p + "/status")
 	if IsErrNoEnt(err) {
 		err = nil
-		status = InsStatusPending
 	} else if err == nil {
 		status = InsStatus(statusStr)
 	} else {
