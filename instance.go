@@ -293,6 +293,9 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 	// -         start  = 10.0.0.1
 	// +         start  = 10.0.0.1 24690 localhost
 	//
+	if i.Status == InsStatusRunning {
+		return i, nil
+	}
 	if err = i.verifyClaimer(host); err != nil {
 		return
 	}
