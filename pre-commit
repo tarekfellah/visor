@@ -1,6 +1,0 @@
-#!/bin/bash
-
-VERSION="$(cat VERSION)"
-sed -i -e "s/^\([ ]*\)version.*/\1version '$VERSION'/" visor.rb
-
-go fmt ./...
