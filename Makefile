@@ -1,6 +1,6 @@
 MAJOR    := 0
 MINOR    := 7
-PATCH    := 3
+PATCH    := 4
 VERSION  := $(MAJOR).$(MINOR).$(PATCH)
 GOPATH   ?= $(PWD)
 GOBIN    ?= $(GOPATH)/bin
