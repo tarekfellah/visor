@@ -153,13 +153,13 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 	if err != nil {
 		return nil, err
 	}
-	_, err = createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
-	if err != nil {
-		return nil, err
-	}
-	s1, err := s.set(ins.ptyInstancesPath(), timestamp())
+	_, err = s.set(ins.ptyInstancesPath(), timestamp())
 	if err != nil {
 		return
+	}
+	s1, err := createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
+	if err != nil {
+		return nil, err
 	}
 	ins = ins.FastForward(s1.Rev)
 
