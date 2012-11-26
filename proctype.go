@@ -95,6 +95,27 @@ func (p *ProcType) failedInstancesPath() string {
 	return p.dir.prefix(failedPath)
 }
 
+func (p *ProcType) NumInstances() (int, error) {
+	revs, err := p.getdir(p.dir.prefix("instances"))
+	if err != nil {
+		return -1, err
+	}
+	total := 0
+
+	for _, rev := range revs {
+		// TODO: remove this once all old instances are cleaned up
+		if len(rev) != 7 {
+			continue
+		}
+		size, _, err := p.Snapshot.conn.Stat(p.dir.prefix("instances", rev), &p.Snapshot.Rev)
+		if err != nil {
+			return -1, err
+		}
+		total += size
+	}
+	return total, nil
+}
+
 func (p *ProcType) InstanceIds() (ids []string, err error) {
 	revs, err := p.getdir(p.dir.prefix("instances"))
 	if err != nil {
