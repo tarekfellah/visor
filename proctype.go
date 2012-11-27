@@ -169,6 +169,8 @@ func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
 	return
 }
 
+// TODO consider moving to (*App).GetProcType(name)
+
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name string) (p *ProcType, err error) {
 	path := app.dir.prefix(procsPath, string(name))

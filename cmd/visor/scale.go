@@ -37,7 +37,7 @@ func runScale(cmd *Command, args []string) {
 		os.Exit(1)
 	}
 
-	err = visor.Scale(args[0], args[1], args[2], f, cmdScale.Snapshot)
+	_, _, err = visor.Scale(args[0], args[1], args[2], f, cmdScale.Snapshot)
 	if err != nil {
 		log.Fatal(err)
 	}

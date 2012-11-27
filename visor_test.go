@@ -52,15 +52,15 @@ func TestScaleErrors(t *testing.T) {
 
 	// Scale up
 
-	err := Scale("fnord", rev.Ref, pty.Name, scale, s)
+	_, _, err := Scale("fnord", rev.Ref, pty.Name, scale, s)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	err = Scale(app.Name, "fnord", pty.Name, scale, s)
+	_, _, err = Scale(app.Name, "fnord", pty.Name, scale, s)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	err = Scale(app.Name, rev.Ref, "fnord", scale, s)
+	_, _, err = Scale(app.Name, rev.Ref, "fnord", scale, s)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
@@ -78,7 +78,10 @@ func TestScale(t *testing.T) {
 
 	// Scale up
 
-	err := Scale(app.Name, rev.Ref, pty.Name, scale, s)
+	_, current, err := Scale(app.Name, rev.Ref, pty.Name, scale, s)
+	if current != 0 {
+		t.Fatal("expected current scale to = 0")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,12 +97,15 @@ func TestScale(t *testing.T) {
 
 	// Scale down
 
-	err = Scale(app.Name, rev.Ref, pty.Name, -1, s)
+	_, _, err = Scale(app.Name, rev.Ref, pty.Name, -1, s)
 	if err == nil {
 		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	err = Scale(app.Name, rev.Ref, pty.Name, 1, s)
+	_, current, err = Scale(app.Name, rev.Ref, pty.Name, 1, s)
+	if current != 5 {
+		t.Fatal("expected current scale to = 5")
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +116,7 @@ func TestScale(t *testing.T) {
 		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 
-	err = Scale(app.Name, rev.Ref, pty.Name, 0, s)
+	_, _, err = Scale(app.Name, rev.Ref, pty.Name, 0, s)
 	if err != nil {
 		t.Fatal(err)
 	}

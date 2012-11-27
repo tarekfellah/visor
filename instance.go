@@ -21,9 +21,10 @@ const statusPath = "status"
 const stopPath = "stop"
 
 const (
-	InsStatusPending InsStatus = "pending"
-	InsStatusClaimed           = "claimed"
-	InsStatusRunning           = "running"
+	InsStatusPending  InsStatus = "pending"
+	InsStatusClaimed            = "claimed"
+	InsStatusRunning            = "running"
+	InsStatusStopping           = "stopping"
 
 	InsStatusFailed = "failed"
 	InsStatusExited = "exited"
@@ -82,6 +83,15 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 		status = InsStatus(statusStr)
 	} else {
 		return
+	}
+
+	if status == InsStatusRunning {
+		_, _, err := s.get(p + "/stop")
+		if err == nil {
+			status = InsStatusStopping
+		} else if !IsErrNoEnt(err) {
+			return nil, err
+		}
 	}
 
 	f, err = s.getFile(p+"/object", new(listCodec))

@@ -97,37 +97,39 @@ func ClaimNextPort(s Snapshot) (port int, err error) {
 	return
 }
 
-func Scale(app string, revision string, processName string, factor int, s Snapshot) (err error) {
+func Scale(app string, revision string, processName string, factor int, s Snapshot) (tickets []*Instance, current int, err error) {
 	if factor < 0 {
-		return errors.New("scaling factor needs to be a positive integer")
+		return nil, -1, errors.New("scaling factor needs to be a positive integer")
 	}
 
 	exists, _, err := s.conn.Exists(path.Join(appsPath, app, revsPath, revision))
 	if !exists || err != nil {
-		return fmt.Errorf("%s@%s not found", app, revision)
+		return nil, -1, fmt.Errorf("%s@%s not found", app, revision)
 	}
 	exists, _, err = s.conn.Exists(path.Join(appsPath, app, procsPath, processName))
 	if !exists || err != nil {
-		return fmt.Errorf("proc '%s' doesn't exist", processName)
+		return nil, -1, fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
 	list, err := getInstanceIds(s, app, revision, processName)
 	if err != nil {
-		return
+		return nil, -1, err
 	}
-	current := len(list)
+	current = len(list)
 
 	if factor > current {
 		// Scale up
-		tickets := factor - current
+		ntickets := factor - current
 
-		for i := 0; i < tickets; i++ {
+		for i := 0; i < ntickets; i++ {
 			var ticket *Instance
 
 			ticket, err = RegisterInstance(app, revision, processName, s)
 			if err != nil {
 				return
 			}
+			tickets = append(tickets, ticket)
+
 			s = s.FastForward(ticket.Rev)
 		}
 	} else if factor < current {

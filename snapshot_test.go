@@ -158,7 +158,7 @@ func TestSnapshotGetScale(t *testing.T) {
 		t.Error("expected initial scale of 0")
 	}
 
-	err = Scale(app.Name, rev.Ref, pty.Name, 9, s)
+	_, _, err = Scale(app.Name, rev.Ref, pty.Name, 9, s)
 	if err != nil {
 		t.Fatal(err)
 	}
