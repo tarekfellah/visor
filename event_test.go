@@ -42,17 +42,17 @@ func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t
 		select {
 		case event = <-l:
 			if event.Type == etype {
-				for key, value := range emitterMap {
-					if event.Emitter[key] != value {
-						t.Errorf("received incorrect emitter field %s: expected %s got %s", key, value, event.Emitter[key])
-					}
-				}
+				// XXX: LOVE ME
+				// 	validate := func (name, expected, actual string) {
+				// 		t.Errorf("received incorrect emitter field %s: expected %s got %s", name, expected, actual)
+				// 	}
+				// }
 			} else {
 				t.Errorf("received incorrect event type: expected %s got %s %s", etype, event, event.Type)
 			}
 			return
 		case <-time.After(time.Second):
-			t.Errorf("expected event type %d got timeout", etype)
+			t.Errorf("expected event type %s got timeout", etype)
 			return
 		}
 	}
@@ -266,7 +266,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 	}
 	ev := expectEvent(EvInsStart, emitter, l, t)
 
-	instance := ev.Info.(*Instance)
+	instance := ev.Metadata.Instance
 
 	if instance.Ip != ip || instance.Host != host || instance.Port != port {
 		t.Fatal("instance fields don't match")
