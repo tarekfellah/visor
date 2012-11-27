@@ -37,6 +37,28 @@ func eventAppSetup(name string, s Snapshot) *App {
 	return NewApp(name, "git://"+name, name+"stack", s)
 }
 
+func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) (event *Event) {
+	for {
+		select {
+		case event = <-l:
+			if event.Type == etype {
+				for key, value := range emitterMap {
+					if event.Emitter[key] != value {
+						t.Errorf("received incorrect emitter field %s: expected %s got %s", key, value, event.Emitter[key])
+					}
+				}
+			} else {
+				t.Errorf("received incorrect event type: expected %s got %s %s", etype, event, event.Type)
+			}
+			return
+		case <-time.After(time.Second):
+			t.Errorf("expected event type %d got timeout", etype)
+			return
+		}
+	}
+	return
+}
+
 func TestEventAppRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regcat", s)
@@ -244,7 +266,9 @@ func TestEventInstanceStateChange(t *testing.T) {
 	}
 	ev := expectEvent(EvInsStart, emitter, l, t)
 
-	if ev.Info.(*Instance).Ip != ip || ev.Info.(*Instance).Host != host || ev.Info.(*Instance).Port != port {
+	instance := ev.Info.(*Instance)
+
+	if instance.Ip != ip || instance.Host != host || instance.Port != port {
 		t.Fatal("instance fields don't match")
 	}
 
@@ -337,26 +361,4 @@ func TestEventEpUnregistered(t *testing.T) {
 	}
 
 	expectEvent(EvEpUnreg, map[string]string{"service": "eventunep", "endpoint": "4-3-2-1-2000"}, l, t)
-}
-
-func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) (event *Event) {
-	for {
-		select {
-		case event = <-l:
-			if event.Type == etype {
-				for key, value := range emitterMap {
-					if event.Emitter[key] != value {
-						t.Errorf("received incorrect emitter field %s: expected %s got %s", key, value, event.Emitter[key])
-					}
-				}
-			} else if event.Type >= 0 {
-				t.Errorf("received incorrect event type: expected %d got %d", etype, event.Type)
-			}
-			return
-		case <-time.After(time.Second):
-			t.Errorf("expected event type %d got timeout", etype)
-			return
-		}
-	}
-	return
 }

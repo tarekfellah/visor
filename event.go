@@ -24,54 +24,29 @@ type Event struct {
 	Rev     int64
 }
 
-// TODO: turn into string, remove `EventTypes`
-type EventType int
+type EventType string
 
-var EventTypes = map[EventType]string{
-	EvAppReg:    "app-register",
-	EvAppUnreg:  "app-unregister",
-	EvRevReg:    "rev-register",
-	EvRevUnreg:  "rev-unregister",
-	EvProcReg:   "proc-register",
-	EvProcUnreg: "proc-unregister",
-	EvInsReg:    "instance-register",
-	EvInsUnreg:  "instance-unregister",
-	EvInsStart:  "instance-start",
-	EvInsFail:   "instance-fail",
-	EvInsExit:   "instance-exit",
-	EvSrvReg:    "service-register",
-	EvSrvUnreg:  "service-unregister",
-	EvEpReg:     "endpoint-register",
-	EvEpUnreg:   "endpoint-unregister",
-}
-
-func (e EventType) String() string {
-	str, ok := EventTypes[e]
-	if !ok {
-		return "<unknown event>"
-	}
-	return str
-}
-
-// Event types
 const (
-	EvAppReg      EventType = iota // App register
-	EvAppUnreg                     // App unregister
-	EvRevReg                       // Revision register
-	EvRevUnreg                     // Revision unregister
-	EvProcReg                      // ProcType register
-	EvProcUnreg                    // ProcType unregister
-	EvInsReg                       // Instance register
-	EvInsStartReq                  // Instance start request
-	EvInsStopReq                   // Instance stop request
-	EvInsUnreg                     // Instance unregister
-	EvInsStart                     // Instance state changed to 'started'
-	EvInsFail                      // Instance state changed to 'failed'
-	EvInsExit                      // Instance state changed to 'exited'
-	EvSrvReg                       // Service register
-	EvSrvUnreg                     // Service unregister
-	EvEpReg                        // Endpoint register
-	EvEpUnreg                      // Endpoint unregister
+	EvAppReg    = EventType("app-register")
+	EvAppUnreg  = EventType("app-unregister")
+	EvRevReg    = EventType("rev-register")
+	EvRevUnreg  = EventType("rev-unregister")
+	EvProcReg   = EventType("proc-register")
+	EvProcUnreg = EventType("proc-unregister")
+	EvInsReg    = EventType("instance-register")
+	EvInsUnreg  = EventType("instance-unregister")
+	EvInsStart  = EventType("instance-start")
+	EvInsFail   = EventType("instance-fail")
+	EvInsExit   = EventType("instance-exit")
+	EvSrvReg    = EventType("service-register")
+	EvSrvUnreg  = EventType("service-unregister")
+	EvEpReg     = EventType("endpoint-register")
+	EvEpUnreg   = EventType("endpoint-unregister")
+	EvUnknown   = EventType("UNKNOWN")
+)
+
+const (
+	doozerGlobPlural = "**"
 )
 
 type eventPath int
@@ -109,7 +84,7 @@ func (ev *Event) String() string {
 func WatchEventRaw(s Snapshot, listener chan *Event) error {
 	rev := s.Rev
 	for {
-		ev, err := s.conn.Wait("**", rev+1)
+		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
 		if err != nil {
 			return err
 		}
@@ -125,13 +100,14 @@ func WatchEventRaw(s Snapshot, listener chan *Event) error {
 func WatchEvent(s Snapshot, listener chan *Event) error {
 	rev := s.Rev
 	for {
-		ev, err := s.conn.Wait("**", rev+1)
+		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
 		if err != nil {
 			return err
 		}
 		rev = ev.Rev
 		event := parseEvent(&ev)
-		if event.Type == -1 {
+
+		if event.Type == EvUnknown {
 			continue
 		}
 		event.Info, err = getEventInfo(s.FastForward(rev), event)
@@ -145,10 +121,11 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 }
 
 func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
+	emitter := ev.Emitter
+
 	switch ev.Type {
 	case EvAppReg:
-		e := ev.Emitter
-		info, err = GetApp(s, e["app"])
+		info, err = GetApp(s, emitter["app"])
 
 		if err != nil {
 			fmt.Printf("error getting app: %s\n", err)
@@ -157,14 +134,13 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvRevReg:
 		var app *App
 
-		e := ev.Emitter
-		app, err = GetApp(s, e["app"])
+		app, err = GetApp(s, emitter["app"])
 		if err != nil {
 			fmt.Printf("error getting app for revision: %s\n", err)
 			return
 		}
 
-		info, err = GetRevision(s, app, e["rev"])
+		info, err = GetRevision(s, app, emitter["rev"])
 		if err != nil {
 			fmt.Printf("error getting revision: %s\n", err)
 			return
@@ -172,14 +148,13 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvProcReg:
 		var app *App
 
-		e := ev.Emitter
-		app, err = GetApp(s, e["app"])
+		app, err = GetApp(s, emitter["app"])
 		if err != nil {
 			fmt.Printf("error getting app for proctype: %s\n", err)
 			return
 		}
 
-		info, err = GetProcType(s, app, e["proctype"])
+		info, err = GetProcType(s, app, emitter["proctype"])
 		if err != nil {
 			fmt.Printf("error getting proctype: %s\n", err)
 		}
@@ -187,9 +162,7 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 		var i *Instance
 		var id int64
 
-		e := ev.Emitter
-
-		id, err = strconv.ParseInt(e["instance"], 10, 64)
+		id, err = strconv.ParseInt(emitter["instance"], 10, 64)
 		if err != nil {
 			return
 		}
@@ -200,9 +173,9 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 			return
 		}
 		// XXX Find better place for this
-		e["app"] = i.AppName
-		e["rev"] = i.RevisionName
-		e["proctype"] = string(i.ProcessName)
+		emitter["app"] = i.AppName
+		emitter["rev"] = i.RevisionName
+		emitter["proctype"] = string(i.ProcessName)
 
 		info = i
 
@@ -220,14 +193,13 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 	case EvEpReg:
 		var srv *Service
 
-		e := ev.Emitter
-		srv, err = GetService(s, e["service"])
+		srv, err = GetService(s, emitter["service"])
 		if err != nil {
 			fmt.Printf("error getting service for endpoint: %s\n", err)
 			return
 		}
 
-		info, err = GetEndpoint(s, srv, e["endpoint"])
+		info, err = GetEndpoint(s, srv, emitter["endpoint"])
 		if err != nil {
 			fmt.Printf("error getting endpoint: %s\n", err)
 		}
@@ -238,7 +210,7 @@ func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
 func parseEvent(src *doozer.Event) *Event {
 	path := src.Path
 
-	etype := EventType(-1)
+	etype := EvUnknown
 	emitter := map[string]string{}
 
 	for re, ev := range eventPatterns {
@@ -290,7 +262,7 @@ func parseEvent(src *doozer.Event) *Event {
 				}
 				body := string(src.Body)
 				if body == "" {
-					etype = EvInsStartReq
+					etype = EvInsStart
 				} else {
 					fields := strings.Fields(body)
 					if len(fields) > 1 {
@@ -333,5 +305,13 @@ func parseEvent(src *doozer.Event) *Event {
 			break
 		}
 	}
-	return &Event{etype, emitter, string(src.Body), nil, src, src.Rev}
+
+	return &Event{
+		Type:    etype,
+		Emitter: emitter,
+		Body:    string(src.Body),
+		Info:    nil,
+		source:  src,
+		Rev:     src.Rev,
+	}
 }
