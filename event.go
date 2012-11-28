@@ -13,23 +13,14 @@ import (
 	"strings"
 )
 
-type Metadata struct {
-	Application *App
-	Revision    *Revision
-	ProcType    *ProcType
-	Instance    *Instance
-	Service     *Service
-	Endpoint    *Endpoint
-}
-
 // An Event represents a change to a file in the registry.
 // TODO: turn `Emitter` into own type, instead of map
 type Event struct {
-	Type     EventType     // Type of event
-	Body     string        // Body of the changed file
-	Metadata Metadata      // Extra information, such as InstanceInfo
-	source   *doozer.Event // Original event returned by doozer
-	Rev      int64
+	Type   EventType // Type of event
+	Body   string    // Body of the changed file
+	Source snapshotable
+	raw    *doozer.Event // Original event returned by doozer
+	Rev    int64
 }
 
 type EventType string
@@ -98,7 +89,7 @@ func WatchEventRaw(s Snapshot, listener chan *Event) error {
 		}
 		rev = ev.Rev
 
-		event, err := enrichEvent(s, &ev)
+		event, err := enrichEvent(s.FastForward(rev), &ev)
 		if err != nil {
 			return err
 		}
@@ -117,7 +108,7 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 			return err
 		}
 		rev = ev.Rev
-		event, err := enrichEvent(s, &ev)
+		event, err := enrichEvent(s.FastForward(rev), &ev)
 		if err != nil {
 			return err
 		}
@@ -131,64 +122,79 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 	return nil
 }
 
-func canonicalizeMetadata(s Snapshot, uncanonicalized uncanonicalizedMetadata) (metadata Metadata, err error) {
+func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized uncanonicalizedMetadata) (source snapshotable, err error) {
+	var (
+		app *App
+		rev *Revision
+		pty *ProcType
+		ins *Instance
+		srv *Service
+		edp *Endpoint
+	)
+
 	if uncanonicalized.application != nil {
-		metadata.Application, err = GetApp(s, *uncanonicalized.application)
+		app, err = GetApp(s, *uncanonicalized.application)
 
 		if err != nil {
-			fmt.Printf("error canonicalizing Application: %s\n", err)
 			return
 		}
 	}
 
 	if uncanonicalized.revision != nil {
-		metadata.Revision, err = GetRevision(s, metadata.Application, *uncanonicalized.revision)
+		rev, err = GetRevision(s, app, *uncanonicalized.revision)
 
 		if err != nil {
-			fmt.Printf("error canonicalizing Revision: %s\n", err)
 			return
 		}
 	}
 
 	if uncanonicalized.proctype != nil {
-		metadata.ProcType, err = GetProcType(s, metadata.Application, *uncanonicalized.proctype)
+		pty, err = GetProcType(s, app, *uncanonicalized.proctype)
 		if err != nil {
-			fmt.Printf("error canonicalizing ProcType: %s\n", err)
 			return
 		}
 	}
 
 	if uncanonicalized.instance != nil {
-		onError := func(err error) {
-			fmt.Printf("error canonicalizing Instance: %s\n", err)
-		}
-
 		var id int64 = -1
 		if id, err = strconv.ParseInt(*uncanonicalized.instance, 10, 64); err != nil {
-			onError(err)
 			return
 		}
-		if metadata.Instance, err = GetInstance(s, id); err != nil {
-			onError(err)
+		if ins, err = GetInstance(s, id); err != nil {
 			return
 		}
 	}
 
 	if uncanonicalized.service != nil {
-		metadata.Service, err = GetService(s, *uncanonicalized.service)
+		srv, err = GetService(s, *uncanonicalized.service)
 		if err != nil {
-			fmt.Printf("error canonicalizing Service: %s\n", err)
 			return
 		}
 
 	}
 
 	if uncanonicalized.endpoint != nil {
-		metadata.Endpoint, err = GetEndpoint(s, metadata.Service, *uncanonicalized.endpoint)
+		edp, err = GetEndpoint(s, srv, *uncanonicalized.endpoint)
 		if err != nil {
-			fmt.Printf("error canonicalizing Endpoint: %s\n", err)
+			return
 		}
 	}
+
+	switch etype {
+	case EvAppReg:
+		source = app
+	case EvRevReg:
+		source = rev
+	case EvProcReg:
+		source = pty
+	case EvInsReg, EvInsStart, EvInsFail, EvInsExit:
+		source = ins
+	case EvSrvReg:
+		source = srv
+	case EvEpReg:
+		source = edp
+	}
+
 	return
 }
 
@@ -202,6 +208,8 @@ type uncanonicalizedMetadata struct {
 }
 
 func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
+	var canonicalized snapshotable
+
 	path := src.Path
 	etype := EvUnknown
 	uncanonicalized := uncanonicalizedMetadata{}
@@ -239,10 +247,6 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 				uncanonicalized.instance = &match[1]
 
 				if src.IsSet() {
-					fields := strings.Fields(string(src.Body))
-					uncanonicalized.application = &fields[0]
-					uncanonicalized.revision = &fields[1]
-					uncanonicalized.proctype = &fields[2]
 					etype = EvInsReg
 				} else if src.IsDel() {
 					etype = EvInsUnreg
@@ -298,18 +302,19 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 		}
 	}
 
-	canonicalized, err := canonicalizeMetadata(s, uncanonicalized)
-
-	if err != nil {
-		fmt.Printf("error canonicalizing inputs: %s\n", err)
-		return nil, err
+	if src.IsSet() {
+		canonicalized, err = canonicalizeMetadata(s, etype, uncanonicalized)
+		if err != nil {
+			fmt.Printf("error canonicalizing inputs: %s\n", err)
+			return nil, err
+		}
 	}
 
 	return &Event{
-		Type:     etype,
-		Body:     string(src.Body),
-		Metadata: canonicalized,
-		source:   src,
-		Rev:      src.Rev,
+		Type:   etype,
+		Body:   string(src.Body),
+		Source: canonicalized,
+		raw:    src,
+		Rev:    src.Rev,
 	}, nil
 }
