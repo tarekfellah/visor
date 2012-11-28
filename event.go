@@ -13,12 +13,21 @@ import (
 	"strings"
 )
 
+type EventData struct {
+	App      *string
+	Endpoint *string
+	Instance *string
+	Proctype *string
+	Revision *string
+	Service  *string
+}
+
 // An Event represents a change to a file in the registry.
-// TODO: turn `Emitter` into own type, instead of map
 type Event struct {
 	Type   EventType // Type of event
 	Body   string    // Body of the changed file
 	Source snapshotable
+	Path   EventData
 	raw    *doozer.Event // Original event returned by doozer
 	Rev    int64
 }
@@ -122,7 +131,7 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 	return nil
 }
 
-func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized uncanonicalizedMetadata) (source snapshotable, err error) {
+func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData) (source snapshotable, err error) {
 	var (
 		app *App
 		rev *Revision
@@ -132,32 +141,32 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized uncanonic
 		edp *Endpoint
 	)
 
-	if uncanonicalized.application != nil {
-		app, err = GetApp(s, *uncanonicalized.application)
+	if uncanonicalized.App != nil {
+		app, err = GetApp(s, *uncanonicalized.App)
 
 		if err != nil {
 			return
 		}
 	}
 
-	if uncanonicalized.revision != nil {
-		rev, err = GetRevision(s, app, *uncanonicalized.revision)
+	if uncanonicalized.Revision != nil {
+		rev, err = GetRevision(s, app, *uncanonicalized.Revision)
 
 		if err != nil {
 			return
 		}
 	}
 
-	if uncanonicalized.proctype != nil {
-		pty, err = GetProcType(s, app, *uncanonicalized.proctype)
+	if uncanonicalized.Proctype != nil {
+		pty, err = GetProcType(s, app, *uncanonicalized.Proctype)
 		if err != nil {
 			return
 		}
 	}
 
-	if uncanonicalized.instance != nil {
+	if uncanonicalized.Instance != nil {
 		var id int64 = -1
-		if id, err = strconv.ParseInt(*uncanonicalized.instance, 10, 64); err != nil {
+		if id, err = strconv.ParseInt(*uncanonicalized.Instance, 10, 64); err != nil {
 			return
 		}
 		if ins, err = GetInstance(s, id); err != nil {
@@ -165,16 +174,16 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized uncanonic
 		}
 	}
 
-	if uncanonicalized.service != nil {
-		srv, err = GetService(s, *uncanonicalized.service)
+	if uncanonicalized.Service != nil {
+		srv, err = GetService(s, *uncanonicalized.Service)
 		if err != nil {
 			return
 		}
 
 	}
 
-	if uncanonicalized.endpoint != nil {
-		edp, err = GetEndpoint(s, srv, *uncanonicalized.endpoint)
+	if uncanonicalized.Endpoint != nil {
+		edp, err = GetEndpoint(s, srv, *uncanonicalized.Endpoint)
 		if err != nil {
 			return
 		}
@@ -198,27 +207,18 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized uncanonic
 	return
 }
 
-type uncanonicalizedMetadata struct {
-	application *string
-	endpoint    *string
-	instance    *string
-	proctype    *string
-	revision    *string
-	service     *string
-}
-
 func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 	var canonicalized snapshotable
 
 	path := src.Path
 	etype := EvUnknown
-	uncanonicalized := uncanonicalizedMetadata{}
+	uncanonicalized := EventData{}
 
 	for re, ev := range eventPatterns {
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch ev {
 			case pathApp:
-				uncanonicalized.application = &match[1]
+				uncanonicalized.App = &match[1]
 
 				if src.IsSet() {
 					etype = EvAppReg
@@ -226,8 +226,8 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvAppUnreg
 				}
 			case pathRev:
-				uncanonicalized.application = &match[1]
-				uncanonicalized.revision = &match[2]
+				uncanonicalized.App = &match[1]
+				uncanonicalized.Revision = &match[2]
 
 				if src.IsSet() {
 					etype = EvRevReg
@@ -235,8 +235,8 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvRevUnreg
 				}
 			case pathProc:
-				uncanonicalized.application = &match[1]
-				uncanonicalized.proctype = &match[2]
+				uncanonicalized.App = &match[1]
+				uncanonicalized.Proctype = &match[2]
 
 				if src.IsSet() {
 					etype = EvProcReg
@@ -244,7 +244,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvProcUnreg
 				}
 			case pathIns:
-				uncanonicalized.instance = &match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if src.IsSet() {
 					etype = EvInsReg
@@ -252,7 +252,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvInsUnreg
 				}
 			case pathInsStart:
-				uncanonicalized.instance = &match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if !src.IsSet() {
 					break
@@ -267,7 +267,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					}
 				}
 			case pathInsStatus:
-				uncanonicalized.instance = &match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if !src.IsSet() {
 					break
@@ -282,7 +282,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvInsFail
 				}
 			case pathSrv:
-				uncanonicalized.service = &match[1]
+				uncanonicalized.Service = &match[1]
 
 				if src.IsSet() {
 					etype = EvSrvReg
@@ -290,8 +290,8 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvSrvUnreg
 				}
 			case pathEp:
-				uncanonicalized.service = &match[1]
-				uncanonicalized.endpoint = &match[2]
+				uncanonicalized.Service = &match[1]
+				uncanonicalized.Endpoint = &match[2]
 				if src.IsSet() {
 					etype = EvEpReg
 				} else if src.IsDel() {
