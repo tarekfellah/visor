@@ -13,65 +13,48 @@ import (
 	"strings"
 )
 
+type EventData struct {
+	App      *string
+	Endpoint *string
+	Instance *string
+	Proctype *string
+	Revision *string
+	Service  *string
+}
+
 // An Event represents a change to a file in the registry.
-// TODO: turn `Emitter` into own type, instead of map
 type Event struct {
-	Type    EventType         // Type of event
-	Emitter map[string]string // The parsed file path
-	Body    string            // Body of the changed file
-	Info    interface{}       // Extra information, such as InstanceInfo
-	source  *doozer.Event     // Original event returned by doozer
-	Rev     int64
+	Type   EventType // Type of event
+	Body   string    // Body of the changed file
+	Source snapshotable
+	Path   EventData
+	raw    *doozer.Event // Original event returned by doozer
+	Rev    int64
 }
 
-// TODO: turn into string, remove `EventTypes`
-type EventType int
+type EventType string
 
-var EventTypes = map[EventType]string{
-	EvAppReg:    "app-register",
-	EvAppUnreg:  "app-unregister",
-	EvRevReg:    "rev-register",
-	EvRevUnreg:  "rev-unregister",
-	EvProcReg:   "proc-register",
-	EvProcUnreg: "proc-unregister",
-	EvInsReg:    "instance-register",
-	EvInsUnreg:  "instance-unregister",
-	EvInsStart:  "instance-start",
-	EvInsFail:   "instance-fail",
-	EvInsExit:   "instance-exit",
-	EvSrvReg:    "service-register",
-	EvSrvUnreg:  "service-unregister",
-	EvEpReg:     "endpoint-register",
-	EvEpUnreg:   "endpoint-unregister",
-}
-
-func (e EventType) String() string {
-	str, ok := EventTypes[e]
-	if !ok {
-		return "<unknown event>"
-	}
-	return str
-}
-
-// Event types
 const (
-	EvAppReg      EventType = iota // App register
-	EvAppUnreg                     // App unregister
-	EvRevReg                       // Revision register
-	EvRevUnreg                     // Revision unregister
-	EvProcReg                      // ProcType register
-	EvProcUnreg                    // ProcType unregister
-	EvInsReg                       // Instance register
-	EvInsStartReq                  // Instance start request
-	EvInsStopReq                   // Instance stop request
-	EvInsUnreg                     // Instance unregister
-	EvInsStart                     // Instance state changed to 'started'
-	EvInsFail                      // Instance state changed to 'failed'
-	EvInsExit                      // Instance state changed to 'exited'
-	EvSrvReg                       // Service register
-	EvSrvUnreg                     // Service unregister
-	EvEpReg                        // Endpoint register
-	EvEpUnreg                      // Endpoint unregister
+	EvAppReg    = EventType("app-register")
+	EvAppUnreg  = EventType("app-unregister")
+	EvRevReg    = EventType("rev-register")
+	EvRevUnreg  = EventType("rev-unregister")
+	EvProcReg   = EventType("proc-register")
+	EvProcUnreg = EventType("proc-unregister")
+	EvInsReg    = EventType("instance-register")
+	EvInsUnreg  = EventType("instance-unregister")
+	EvInsStart  = EventType("instance-start")
+	EvInsFail   = EventType("instance-fail")
+	EvInsExit   = EventType("instance-exit")
+	EvSrvReg    = EventType("service-register")
+	EvSrvUnreg  = EventType("service-unregister")
+	EvEpReg     = EventType("endpoint-register")
+	EvEpUnreg   = EventType("endpoint-unregister")
+	EvUnknown   = EventType("UNKNOWN")
+)
+
+const (
+	doozerGlobPlural = "**"
 )
 
 type eventPath int
@@ -109,12 +92,16 @@ func (ev *Event) String() string {
 func WatchEventRaw(s Snapshot, listener chan *Event) error {
 	rev := s.Rev
 	for {
-		ev, err := s.conn.Wait("**", rev+1)
+		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
 		if err != nil {
 			return err
 		}
 		rev = ev.Rev
-		event := parseEvent(&ev)
+
+		event, err := enrichEvent(s.FastForward(rev), &ev)
+		if err != nil {
+			return err
+		}
 
 		listener <- event
 	}
@@ -125,17 +112,17 @@ func WatchEventRaw(s Snapshot, listener chan *Event) error {
 func WatchEvent(s Snapshot, listener chan *Event) error {
 	rev := s.Rev
 	for {
-		ev, err := s.conn.Wait("**", rev+1)
+		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
 		if err != nil {
 			return err
 		}
 		rev = ev.Rev
-		event := parseEvent(&ev)
-		if event.Type == -1 {
-			continue
-		}
-		event.Info, err = getEventInfo(s.FastForward(rev), event)
+		event, err := enrichEvent(s.FastForward(rev), &ev)
 		if err != nil {
+			return err
+		}
+
+		if event.Type == EvUnknown {
 			continue
 		}
 
@@ -144,108 +131,94 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 	return nil
 }
 
-func getEventInfo(s Snapshot, ev *Event) (info interface{}, err error) {
-	switch ev.Type {
-	case EvAppReg:
-		e := ev.Emitter
-		info, err = GetApp(s, e["app"])
+func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData) (source snapshotable, err error) {
+	var (
+		app *App
+		rev *Revision
+		pty *ProcType
+		ins *Instance
+		srv *Service
+		edp *Endpoint
+	)
 
-		if err != nil {
-			fmt.Printf("error getting app: %s\n", err)
-			return
-		}
-	case EvRevReg:
-		var app *App
+	if uncanonicalized.App != nil {
+		app, err = GetApp(s, *uncanonicalized.App)
 
-		e := ev.Emitter
-		app, err = GetApp(s, e["app"])
-		if err != nil {
-			fmt.Printf("error getting app for revision: %s\n", err)
-			return
-		}
-
-		info, err = GetRevision(s, app, e["rev"])
-		if err != nil {
-			fmt.Printf("error getting revision: %s\n", err)
-			return
-		}
-	case EvProcReg:
-		var app *App
-
-		e := ev.Emitter
-		app, err = GetApp(s, e["app"])
-		if err != nil {
-			fmt.Printf("error getting app for proctype: %s\n", err)
-			return
-		}
-
-		info, err = GetProcType(s, app, e["proctype"])
-		if err != nil {
-			fmt.Printf("error getting proctype: %s\n", err)
-		}
-	case EvInsReg, EvInsStart, EvInsExit, EvInsFail:
-		var i *Instance
-		var id int64
-
-		e := ev.Emitter
-
-		id, err = strconv.ParseInt(e["instance"], 10, 64)
 		if err != nil {
 			return
-		}
-
-		i, err = GetInstance(s, id)
-		if err != nil {
-			fmt.Printf("error getting instance: %s\n", err)
-			return
-		}
-		// XXX Find better place for this
-		e["app"] = i.AppName
-		e["rev"] = i.RevisionName
-		e["proctype"] = string(i.ProcessName)
-
-		info = i
-
-		if err != nil {
-			fmt.Printf("error getting instance info: %s\n", err)
-			return
-		}
-	case EvSrvReg:
-		info, err = GetService(s, ev.Emitter["service"])
-
-		if err != nil {
-			fmt.Printf("error getting service: %s\n", err)
-			return
-		}
-	case EvEpReg:
-		var srv *Service
-
-		e := ev.Emitter
-		srv, err = GetService(s, e["service"])
-		if err != nil {
-			fmt.Printf("error getting service for endpoint: %s\n", err)
-			return
-		}
-
-		info, err = GetEndpoint(s, srv, e["endpoint"])
-		if err != nil {
-			fmt.Printf("error getting endpoint: %s\n", err)
 		}
 	}
+
+	if uncanonicalized.Revision != nil {
+		rev, err = GetRevision(s, app, *uncanonicalized.Revision)
+
+		if err != nil {
+			return
+		}
+	}
+
+	if uncanonicalized.Proctype != nil {
+		pty, err = GetProcType(s, app, *uncanonicalized.Proctype)
+		if err != nil {
+			return
+		}
+	}
+
+	if uncanonicalized.Instance != nil {
+		var id int64 = -1
+		if id, err = strconv.ParseInt(*uncanonicalized.Instance, 10, 64); err != nil {
+			return
+		}
+		if ins, err = GetInstance(s, id); err != nil {
+			return
+		}
+	}
+
+	if uncanonicalized.Service != nil {
+		srv, err = GetService(s, *uncanonicalized.Service)
+		if err != nil {
+			return
+		}
+
+	}
+
+	if uncanonicalized.Endpoint != nil {
+		edp, err = GetEndpoint(s, srv, *uncanonicalized.Endpoint)
+		if err != nil {
+			return
+		}
+	}
+
+	switch etype {
+	case EvAppReg:
+		source = app
+	case EvRevReg:
+		source = rev
+	case EvProcReg:
+		source = pty
+	case EvInsReg, EvInsStart, EvInsFail, EvInsExit:
+		source = ins
+	case EvSrvReg:
+		source = srv
+	case EvEpReg:
+		source = edp
+	}
+
 	return
 }
 
-func parseEvent(src *doozer.Event) *Event {
-	path := src.Path
+func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
+	var canonicalized snapshotable
 
-	etype := EventType(-1)
-	emitter := map[string]string{}
+	path := src.Path
+	etype := EvUnknown
+	uncanonicalized := EventData{}
 
 	for re, ev := range eventPatterns {
 		if match := re.FindStringSubmatch(path); match != nil {
 			switch ev {
 			case pathApp:
-				emitter["app"] = match[1]
+				uncanonicalized.App = &match[1]
 
 				if src.IsSet() {
 					etype = EvAppReg
@@ -253,8 +226,8 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvAppUnreg
 				}
 			case pathRev:
-				emitter["app"] = match[1]
-				emitter["rev"] = match[2]
+				uncanonicalized.App = &match[1]
+				uncanonicalized.Revision = &match[2]
 
 				if src.IsSet() {
 					etype = EvRevReg
@@ -262,8 +235,8 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvRevUnreg
 				}
 			case pathProc:
-				emitter["app"] = match[1]
-				emitter["proctype"] = match[2]
+				uncanonicalized.App = &match[1]
+				uncanonicalized.Proctype = &match[2]
 
 				if src.IsSet() {
 					etype = EvProcReg
@@ -271,26 +244,22 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvProcUnreg
 				}
 			case pathIns:
-				emitter["instance"] = match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if src.IsSet() {
-					fields := strings.Fields(string(src.Body))
-					emitter["app"] = fields[0]
-					emitter["rev"] = fields[1]
-					emitter["proctype"] = fields[2]
 					etype = EvInsReg
 				} else if src.IsDel() {
 					etype = EvInsUnreg
 				}
 			case pathInsStart:
-				emitter["instance"] = match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if !src.IsSet() {
 					break
 				}
 				body := string(src.Body)
 				if body == "" {
-					etype = EvInsStartReq
+					etype = EvInsStart
 				} else {
 					fields := strings.Fields(body)
 					if len(fields) > 1 {
@@ -298,7 +267,7 @@ func parseEvent(src *doozer.Event) *Event {
 					}
 				}
 			case pathInsStatus:
-				emitter["instance"] = match[1]
+				uncanonicalized.Instance = &match[1]
 
 				if !src.IsSet() {
 					break
@@ -313,7 +282,7 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvInsFail
 				}
 			case pathSrv:
-				emitter["service"] = match[1]
+				uncanonicalized.Service = &match[1]
 
 				if src.IsSet() {
 					etype = EvSrvReg
@@ -321,9 +290,8 @@ func parseEvent(src *doozer.Event) *Event {
 					etype = EvSrvUnreg
 				}
 			case pathEp:
-				emitter["service"] = match[1]
-				emitter["endpoint"] = match[2]
-
+				uncanonicalized.Service = &match[1]
+				uncanonicalized.Endpoint = &match[2]
 				if src.IsSet() {
 					etype = EvEpReg
 				} else if src.IsDel() {
@@ -333,5 +301,20 @@ func parseEvent(src *doozer.Event) *Event {
 			break
 		}
 	}
-	return &Event{etype, emitter, string(src.Body), nil, src, src.Rev}
+
+	if src.IsSet() {
+		canonicalized, err = canonicalizeMetadata(s, etype, uncanonicalized)
+		if err != nil {
+			fmt.Printf("error canonicalizing inputs: %s\n", err)
+			return nil, err
+		}
+	}
+
+	return &Event{
+		Type:   etype,
+		Body:   string(src.Body),
+		Source: canonicalized,
+		raw:    src,
+		Rev:    src.Rev,
+	}, nil
 }

@@ -7,6 +7,7 @@ package visor
 
 import (
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -37,6 +38,26 @@ func eventAppSetup(name string, s Snapshot) *App {
 	return NewApp(name, "git://"+name, name+"stack", s)
 }
 
+func expectEvent(etype EventType, s snapshotable, l chan *Event, t *testing.T) (event *Event) {
+	for {
+		select {
+		case event = <-l:
+			if event.Type == etype {
+				if reflect.TypeOf(event.Source) != reflect.TypeOf(s) {
+					t.Errorf("types are not equal %#v != %#v", event.Source, s)
+				}
+			} else {
+				t.Errorf("received incorrect event type: expected %s got %s %s", etype, event, event.Type)
+			}
+			return
+		case <-time.After(time.Second):
+			t.Errorf("expected event type %s got timeout", etype)
+			return
+		}
+	}
+	return
+}
+
 func TestEventAppRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regcat", s)
@@ -48,7 +69,7 @@ func TestEventAppRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppReg, map[string]string{"app": "regcat"}, l, t)
+	expectEvent(EvAppReg, app, l, t)
 }
 
 func TestEventAppUnregistered(t *testing.T) {
@@ -70,13 +91,12 @@ func TestEventAppUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppUnreg, map[string]string{"app": "unregcat"}, l, t)
+	expectEvent(EvAppUnreg, nil, l, t)
 }
 
 func TestEventRevRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regdog", s)
-	emitter := map[string]string{"app": "regdog", "rev": "stable"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -95,13 +115,12 @@ func TestEventRevRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevReg, emitter, l, t)
+	expectEvent(EvRevReg, rev, l, t)
 }
 
 func TestEventRevUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("unregdog", s)
-	emitter := map[string]string{"app": "unregdog", "rev": "stable"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -125,13 +144,12 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevUnreg, emitter, l, t)
+	expectEvent(EvRevUnreg, nil, l, t)
 }
 
 func TestEventProcTypeRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regstar", s)
-	emitter := map[string]string{"app": "regstar", "proctype": "all"}
 
 	app, err := app.Register()
 	if err != nil {
@@ -157,14 +175,13 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcReg, emitter, l, t)
+	expectEvent(EvProcReg, pty, l, t)
 }
 
 func TestEventProcTypeUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("unregstar", s)
 	pty := NewProcType(app, "all", s)
-	emitter := map[string]string{"app": "unregstar", "proctype": "all"}
 
 	pty, err := pty.Register()
 	if err != nil {
@@ -180,27 +197,25 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcUnreg, emitter, l, t)
+	expectEvent(EvProcUnreg, nil, l, t)
 }
 
 func TestEventInstanceRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup("regmouse", s)
-	emitter := map[string]string{"app": "regmouse", "proctype": "web", "rev": "stable"}
 
 	go WatchEvent(s, l)
 
-	_, err := RegisterInstance(app.Name, "stable", "web", s)
+	ins, err := RegisterInstance(app.Name, "stable", "web", s)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	expectEvent(EvInsReg, emitter, l, t)
+	expectEvent(EvInsReg, ins, l, t)
 }
 
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	emitter := map[string]string{}
 
 	ins, err := RegisterInstance("unregmouse", "stable", "web", s)
 	if err != nil {
@@ -215,7 +230,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectEvent(EvInsUnreg, emitter, l, t)
+	expectEvent(EvInsUnreg, nil, l, t)
 }
 
 func TestEventInstanceStateChange(t *testing.T) {
@@ -223,7 +238,6 @@ func TestEventInstanceStateChange(t *testing.T) {
 	port := 9999
 	host := "mouse.org"
 	s, l := eventSetup()
-	emitter := map[string]string{"app": "statemouse", "proctype": "web-state", "rev": "stable-state"}
 
 	ins, err := RegisterInstance("statemouse", "stable-state", "web-state", s)
 	if err != nil {
@@ -242,9 +256,11 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	ev := expectEvent(EvInsStart, emitter, l, t)
+	ev := expectEvent(EvInsStart, ins, l, t)
 
-	if ev.Info.(*Instance).Ip != ip || ev.Info.(*Instance).Host != host || ev.Info.(*Instance).Port != port {
+	instance := ev.Source.(*Instance)
+
+	if instance.Ip != ip || instance.Host != host || instance.Port != port {
 		t.Fatal("instance fields don't match")
 	}
 
@@ -252,13 +268,13 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsFail, emitter, l, t)
+	expectEvent(EvInsFail, ins, l, t)
 
 	ins, err = ins.Exited(ip)
 	if err != nil {
 		t.Error(err)
 	}
-	expectEvent(EvInsExit, emitter, l, t)
+	expectEvent(EvInsExit, ins, l, t)
 }
 
 func TestEventSrvRegistered(t *testing.T) {
@@ -272,7 +288,7 @@ func TestEventSrvRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvSrvReg, map[string]string{"service": "eventsrv"}, l, t)
+	expectEvent(EvSrvReg, srv, l, t)
 }
 
 func TestEventSrvUnregistered(t *testing.T) {
@@ -293,7 +309,7 @@ func TestEventSrvUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvSrvUnreg, map[string]string{"service": "eventunsrv"}, l, t)
+	expectEvent(EvSrvUnreg, nil, l, t)
 }
 
 func TestEventEpRegistered(t *testing.T) {
@@ -311,7 +327,7 @@ func TestEventEpRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvEpReg, map[string]string{"service": "eventep", "endpoint": "1-2-3-4-1000"}, l, t)
+	expectEvent(EvEpReg, ep, l, t)
 }
 
 func TestEventEpUnregistered(t *testing.T) {
@@ -336,27 +352,5 @@ func TestEventEpUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvEpUnreg, map[string]string{"service": "eventunep", "endpoint": "4-3-2-1-2000"}, l, t)
-}
-
-func expectEvent(etype EventType, emitterMap map[string]string, l chan *Event, t *testing.T) (event *Event) {
-	for {
-		select {
-		case event = <-l:
-			if event.Type == etype {
-				for key, value := range emitterMap {
-					if event.Emitter[key] != value {
-						t.Errorf("received incorrect emitter field %s: expected %s got %s", key, value, event.Emitter[key])
-					}
-				}
-			} else if event.Type >= 0 {
-				t.Errorf("received incorrect event type: expected %d got %d", etype, event.Type)
-			}
-			return
-		case <-time.After(time.Second):
-			t.Errorf("expected event type %d got timeout", etype)
-			return
-		}
-	}
-	return
+	expectEvent(EvEpUnreg, nil, l, t)
 }
