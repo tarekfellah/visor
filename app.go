@@ -209,6 +209,21 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	return
 }
 
+// WatchEvent watches for events related to the app
+func (a *App) WatchEvent(listener chan *Event) {
+	ch := make(chan *Event)
+	go WatchEvent(a.Snapshot, ch)
+
+	for e := range ch {
+		if e.Path.App != nil && *e.Path.App == a.Name {
+			listener <- e
+		}
+		if i, ok := e.Source.(*Instance); ok && i.AppName == a.Name {
+			listener <- e
+		}
+	}
+}
+
 func (a *App) String() string {
 	return fmt.Sprintf("App<%s>{stack: %s, type: %s}", a.Name, a.Stack, a.DeployType)
 }
