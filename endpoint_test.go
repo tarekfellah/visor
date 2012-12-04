@@ -27,7 +27,7 @@ func endpointSetup(srvName string) (s Snapshot, srv *Service) {
 
 	srv = NewService(srvName, s)
 
-	s = s.FastForward(srv.Rev)
+	s = s.FastForward(srv.Dir.Snapshot.Rev)
 
 	return
 }
@@ -44,7 +44,7 @@ func TestEndpointRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(ep.dir.String())
+	check, _, err := s.conn.Exists(ep.Dir.String())
 	if err != nil {
 		t.Error(err)
 	}
@@ -70,7 +70,7 @@ func TestEndpointUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.exists(ep.dir.String())
+	check, _, err := s.exists(ep.Dir.String())
 	if check {
 		t.Errorf("endpoint %s is still registered", ep)
 	}
@@ -88,7 +88,7 @@ func TestEndpointGet(t *testing.T) {
 		t.Error(err)
 	}
 
-	ep2, err := GetEndpoint(ep.Snapshot, srv, ep.Id())
+	ep2, err := GetEndpoint(ep.Dir.Snapshot, srv, ep.Id())
 	if err != nil {
 		t.Error(err)
 		return

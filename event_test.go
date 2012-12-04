@@ -82,7 +82,7 @@ func TestEventAppUnregistered(t *testing.T) {
 		return
 	}
 
-	s = s.FastForward(app.Rev)
+	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 
@@ -103,7 +103,7 @@ func TestEventRevRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Rev)
+	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	rev := NewRevision(app, "stable", s)
 	rev = rev.FastForward(s.Rev)
@@ -127,7 +127,7 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Rev)
+	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	rev := NewRevision(app, "stable", s)
 	rev, err = rev.FastForward(s.Rev).Register()
@@ -135,7 +135,7 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	s = s.FastForward(rev.Rev)
+	s = s.FastForward(rev.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 
@@ -156,7 +156,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Rev)
+	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	rev := NewRevision(app, "bang", s)
 	rev, err = rev.FastForward(s.Rev).Register()
@@ -164,7 +164,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	s = s.FastForward(rev.Rev)
+	s = s.FastForward(rev.Dir.Snapshot.Rev)
 
 	pty := NewProcType(app, "all", s)
 
@@ -188,7 +188,7 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(pty.Rev)
+	s = s.FastForward(pty.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 
@@ -221,7 +221,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(ins.Rev)
+	s = s.FastForward(ins.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 
@@ -243,7 +243,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(ins.Rev)
+	s = s.FastForward(ins.Dir.Snapshot.Rev)
 
 	ins, err = ins.Claim(ip)
 	if err != nil {
@@ -300,7 +300,7 @@ func TestEventSrvUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(srv.Rev)
+	s = s.FastForward(srv.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 
@@ -343,7 +343,7 @@ func TestEventEpUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.FastForward(ep.Rev)
+	s = s.FastForward(ep.Dir.Snapshot.Rev)
 
 	go WatchEvent(s, l)
 

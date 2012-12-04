@@ -32,7 +32,7 @@ const (
 
 // Instance represents application instances.
 type Instance struct {
-	dir
+	Dir          dir
 	Id           int64
 	AppName      string
 	RevisionName string
@@ -109,7 +109,7 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 		Ip:           ip,
 		Port:         port,
 		Host:         host,
-		dir:          dir{s, instancePath(id)},
+		Dir:          dir{s, instancePath(id)},
 	}
 	return
 }
@@ -156,10 +156,10 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		RevisionName: rev,
 		ProcessName:  pty,
 		Status:       InsStatusPending,
-		dir:          dir{s, instancePath(id)},
+		Dir:          dir{s, instancePath(id)},
 	}
 
-	_, err = createFile(s, ins.dir.prefix("object"), ins.objectArray(), new(listCodec))
+	_, err = createFile(s, ins.Dir.prefix("object"), ins.objectArray(), new(listCodec))
 	if err != nil {
 		return nil, err
 	}
@@ -167,11 +167,11 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 	if err != nil {
 		return
 	}
-	s1, err := createFile(s, ins.dir.prefix(startPath), "", new(stringCodec))
+	s1, err := createFile(s, ins.Dir.prefix(startPath), "", new(stringCodec))
 	if err != nil {
 		return nil, err
 	}
-	ins = ins.FastForward(s1.Rev)
+	ins = ins.FastForward(s1.Snapshot.Rev)
 
 	return
 }
@@ -201,22 +201,22 @@ func instancePath(id int64) string {
 // FastForward advances the instance in time. It returns
 // a new instance of Instance with the supplied revision.
 func (i *Instance) FastForward(rev int64) *Instance {
-	return i.Snapshot.fastForward(i, rev).(*Instance)
+	return i.Dir.Snapshot.fastForward(i, rev).(*Instance)
 }
 
 func (i *Instance) createSnapshot(rev int64) snapshotable {
 	tmp := *i
-	tmp.Snapshot = Snapshot{rev, i.conn}
+	tmp.Dir.Snapshot = Snapshot{rev, i.Dir.Snapshot.conn}
 	return &tmp
 }
 
 // Claims returns the list of claimers.
 func (i *Instance) Claims() (claims []string, err error) {
-	rev, err := i.conn.Rev()
+	rev, err := i.Dir.Snapshot.conn.Rev()
 	if err != nil {
 		return
 	}
-	claims, err = i.conn.Getdir(i.dir.prefix("claims"), rev)
+	claims, err = i.Dir.Snapshot.conn.Getdir(i.Dir.prefix("claims"), rev)
 	if err, ok := err.(*doozer.Error); ok && err.Err == doozer.ErrNoEnt {
 		claims = []string{}
 		err = nil
@@ -235,14 +235,14 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	// -         start  =
 	// +         start  = 10.0.0.1
 	//
-	val, rev, err := i.dir.get(startPath)
+	val, rev, err := i.Dir.get(startPath)
 	if err != nil {
 		return nil, err
 	}
 	if val != "" {
 		return nil, ErrInsClaimed
 	}
-	d := i.dir.fastForward(rev)
+	d := i.Dir.fastForward(rev)
 
 	_, err = d.set(startPath, host)
 	if err != nil {
@@ -257,7 +257,7 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 }
 
 func (i *Instance) Unregister() (err error) {
-	err = i.Snapshot.del(i.ptyInstancesPath())
+	err = i.Dir.Snapshot.del(i.ptyInstancesPath())
 	if err != nil {
 		if IsErrNoEnt(err) {
 			err = nil
@@ -265,7 +265,7 @@ func (i *Instance) Unregister() (err error) {
 			return
 		}
 	}
-	err = i.del("/")
+	err = i.Dir.del("/")
 	return
 }
 
@@ -278,7 +278,7 @@ func (i *Instance) Exited(host string) (i1 *Instance, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.Snapshot.del(i.ptyInstancesPath())
+	err = i.Dir.Snapshot.del(i.ptyInstancesPath())
 
 	return
 }
@@ -309,10 +309,10 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 	if err = i.verifyClaimer(host); err != nil {
 		return
 	}
-	i1 = i.FastForward(i.Rev) // Create a copy
+	i1 = i.FastForward(i.Dir.Snapshot.Rev) // Create a copy
 	i1.started(host, port, hostname)
 
-	f, err := createFile(i1.Snapshot, i1.dir.prefix(startPath), i1.startArray(), new(listCodec))
+	f, err := createFile(i1.Dir.Snapshot, i1.Dir.prefix(startPath), i1.startArray(), new(listCodec))
 	if err != nil {
 		return
 	}
@@ -322,7 +322,7 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 }
 
 func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
-	rev, err := i.set("status", string(s))
+	rev, err := i.Dir.set("status", string(s))
 	if err != nil {
 		return
 	}
@@ -332,7 +332,7 @@ func (i *Instance) updateStatus(s InsStatus) (i1 *Instance, err error) {
 }
 
 func (i *Instance) getClaimer() (*string, error) {
-	f, err := i.getFile(i.dir.prefix(startPath), new(listCodec))
+	f, err := i.Dir.Snapshot.getFile(i.Dir.prefix(startPath), new(listCodec))
 
 	if IsErrNoEnt(err) {
 		return nil, nil
@@ -348,7 +348,7 @@ func (i *Instance) getClaimer() (*string, error) {
 }
 
 func (i *Instance) setClaimer(claimer string) (rev int64, err error) {
-	return i.set(startPath, claimer)
+	return i.Dir.set(startPath, claimer)
 }
 
 // Unclaim removes the lock applied by Claim of the Ticket.
@@ -390,11 +390,11 @@ func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
 	if err != nil {
 		return
 	}
-	s, err := i.Snapshot.set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
+	s, err := i.Dir.Snapshot.set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
 	if err != nil {
 		return
 	}
-	err = i.Snapshot.del(i.ptyInstancesPath())
+	err = i.Dir.Snapshot.del(i.ptyInstancesPath())
 	if err != nil {
 		return
 	}
@@ -431,7 +431,7 @@ func WatchInstanceStart(s Snapshot, listener chan *Instance, errors chan error) 
 func (i *Instance) WaitStop() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), stopPath)
 
-	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	ev, err := i.Dir.Snapshot.conn.Wait(p, i.Dir.Snapshot.Rev+1)
 	if err != nil {
 		return
 	}
@@ -442,7 +442,7 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 
 func (i *Instance) WaitStatus() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), statusPath)
-	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	ev, err := i.Dir.Snapshot.conn.Wait(p, i.Dir.Snapshot.Rev+1)
 	if err != nil {
 		return
 	}
@@ -476,7 +476,7 @@ func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
 func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
 
-	ev, err := i.Snapshot.conn.Wait(p, i.Rev+1)
+	ev, err := i.Dir.Snapshot.conn.Wait(p, i.Dir.Snapshot.Rev+1)
 	if err != nil {
 		return
 	}
@@ -526,11 +526,11 @@ func (i *Instance) ptyInstancesPath() string {
 }
 
 func (i *Instance) claimPath(host string) string {
-	return i.dir.prefix("claims", host)
+	return i.Dir.prefix("claims", host)
 }
 
 func (i *Instance) claimDir() *dir {
-	return &dir{i.Snapshot, i.dir.prefix(claimsPath)}
+	return &dir{i.Dir.Snapshot, i.Dir.prefix(claimsPath)}
 }
 
 func (i *Instance) Fields() string {

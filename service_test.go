@@ -31,7 +31,7 @@ func serviceSetup(name string) (srv *Service) {
 func TestServiceRegistration(t *testing.T) {
 	srv := serviceSetup("fancydb")
 
-	check, _, err := srv.conn.Exists(srv.dir.Name)
+	check, _, err := srv.Dir.Snapshot.conn.Exists(srv.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,7 @@ func TestServiceRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = srv2.conn.Exists(srv2.dir.Name)
+	check, _, err = srv2.Dir.Snapshot.conn.Exists(srv2.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -80,7 +80,7 @@ func TestServiceUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := srv.conn.Exists(srv.dir.Name)
+	check, _, err := srv.Dir.Snapshot.conn.Exists(srv.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -96,14 +96,14 @@ func TestServices(t *testing.T) {
 	names := []string{"boombroker", "comastorage", "lulzdb"}
 
 	for _, name := range names {
-		srv = NewService(name, srv.Snapshot)
+		srv = NewService(name, srv.Dir.Snapshot)
 		srv, err = srv.Register()
 		if err != nil {
 			t.Error(err)
 		}
 	}
 
-	srvs, err := Services(srv.Snapshot)
+	srvs, err := Services(srv.Dir.Snapshot)
 	if err != nil {
 		t.Error(err)
 	}

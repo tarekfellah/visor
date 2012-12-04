@@ -130,7 +130,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 			}
 			tickets = append(tickets, ticket)
 
-			s = s.FastForward(ticket.Rev)
+			s = s.FastForward(ticket.Dir.Snapshot.Rev)
 		}
 	} else if factor < current {
 		// Scale down

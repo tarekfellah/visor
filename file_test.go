@@ -29,7 +29,7 @@ func TestSet(t *testing.T) {
 
 	f := fileSetup(path, value)
 
-	rev, _ := f.conn.Set(path, f.Snapshot.Rev, []byte(value))
+	rev, _ := f.Snapshot.conn.Set(path, f.Snapshot.Rev, []byte(value))
 	f = f.FastForward(rev)
 
 	f, err := f.Set([]byte(value + "!"))
@@ -42,7 +42,7 @@ func TestSet(t *testing.T) {
 		t.Errorf("expected (*File).Value to be update, got %s", string(f.Value.([]byte)))
 	}
 
-	val, _, err := f.conn.Get(path, &f.Rev)
+	val, _, err := f.Snapshot.conn.Get(path, &f.Snapshot.Rev)
 	if err != nil {
 		t.Error(err)
 	}
@@ -64,7 +64,7 @@ func TestFastForward(t *testing.T) {
 		return
 	}
 
-	_, err = f.conn.Set(path+"-1", s.Rev, []byte(value))
+	_, err = f.Snapshot.conn.Set(path+"-1", s.Rev, []byte(value))
 	if err != nil {
 		t.Error(err)
 		return
@@ -72,7 +72,7 @@ func TestFastForward(t *testing.T) {
 
 	f = f.FastForward(-1)
 	if f.Snapshot.Rev != s.Rev {
-		t.Errorf("expected %d got %d", s.Rev, f.Rev)
+		t.Errorf("expected %d got %d", s.Rev, f.Snapshot.Rev)
 	}
 }
 
@@ -108,7 +108,7 @@ func TestDel(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	exists, _, err := f.conn.Exists(path)
+	exists, _, err := f.Snapshot.conn.Exists(path)
 	if !exists {
 		t.Error("path wasn't set properly")
 		return
@@ -121,7 +121,7 @@ func TestDel(t *testing.T) {
 		t.Error(err)
 	}
 
-	exists, _, err = f.conn.Exists(path)
+	exists, _, err = f.Snapshot.conn.Exists(path)
 	if err != nil {
 		t.Error(err)
 	}

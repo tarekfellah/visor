@@ -40,7 +40,7 @@ func TestProcTypeRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(pty.dir.Name)
+	check, _, err := s.conn.Exists(pty.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -89,7 +89,7 @@ func TestProcTypeUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.exists(pty.dir.Name)
+	check, _, err := s.exists(pty.Dir.Name)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
 	}
@@ -118,7 +118,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.FastForward(ins.Rev)
+		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
 	}
 
 	is, err := pty.GetInstances()
@@ -156,14 +156,14 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 			t.Fatal(err)
 		}
 		instances = append(instances, ins)
-		pty = pty.FastForward(ins.Rev)
+		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
 	}
 	for i := 0; i < 4; i++ {
 		ins, err := instances[i].Failed("10.0.0.1", errors.New("no reason."))
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.FastForward(ins.Rev)
+		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
 	}
 
 	is, err := pty.GetFailedInstances()

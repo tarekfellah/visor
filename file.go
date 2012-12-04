@@ -26,7 +26,7 @@ func createFile(snapshot Snapshot, path string, value interface{}, codec codec) 
 
 func (f *file) createSnapshot(rev int64) (file snapshotable) {
 	tmp := *f
-	tmp.Snapshot = Snapshot{rev, f.conn}
+	tmp.Snapshot = Snapshot{rev, f.Snapshot.conn}
 	return &tmp
 }
 
@@ -35,7 +35,7 @@ func (f *file) createSnapshot(rev int64) (file snapshotable) {
 func (f *file) FastForward(rev int64) *file {
 	if rev == -1 {
 		var err error
-		_, rev, err = f.conn.Stat(f.dir, nil)
+		_, rev, err = f.Snapshot.conn.Stat(f.dir, nil)
 		if err != nil {
 			return f
 		}
@@ -61,7 +61,7 @@ func (f *file) Set(value interface{}) (file *file, err error) {
 		return
 	}
 
-	s, err := f.setBytes(f.dir, bytes)
+	s, err := f.Snapshot.setBytes(f.dir, bytes)
 
 	if s.Rev > 0 {
 		file = f.FastForward(s.Rev)

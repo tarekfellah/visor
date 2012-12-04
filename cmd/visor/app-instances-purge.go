@@ -74,7 +74,7 @@ func purgeProctypeInstances(pty *visor.ProcType, revname *string) {
 		if i.RevisionName == *revname {
 			err := i.Unregister()
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Error removing instance %s: %s\n", i.Name, err.Error())
+				fmt.Fprintf(os.Stderr, "Error removing instance %s: %s\n", i.Dir.Name, err.Error())
 			}
 		}
 	}
