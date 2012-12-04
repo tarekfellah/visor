@@ -20,7 +20,7 @@ func genApp(s Snapshot) (app *App) {
 
 func genRevision(app *App) (rev *Revision) {
 	name := randItem(revNames)
-	rev = NewRevision(app, name, app.Snapshot)
+	rev = NewRevision(app, name, app.Dir.Snapshot)
 	rev, err := rev.Register()
 	if err != nil {
 		panic(err)
@@ -29,7 +29,7 @@ func genRevision(app *App) (rev *Revision) {
 }
 
 func genProctype(app *App, name string) (pty *ProcType) {
-	pty = NewProcType(app, name, app.Snapshot)
+	pty = NewProcType(app, name, app.Dir.Snapshot)
 	pty, err := pty.Register()
 	if err != nil {
 		panic(err)

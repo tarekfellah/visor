@@ -32,9 +32,9 @@ func revSetup() (s Snapshot, app *App) {
 
 func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
-	rev := NewRevision(app, "stable", app.Snapshot)
+	rev := NewRevision(app, "stable", app.Dir.Snapshot)
 
-	check, _, err := s.conn.Exists(rev.dir.Name)
+	check, _, err := s.conn.Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -50,7 +50,7 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = s.conn.Exists(rev.dir.Name)
+	check, _, err = s.conn.Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,7 +66,7 @@ func TestRevisionRegister(t *testing.T) {
 
 func TestRevisionUnregister(t *testing.T) {
 	s, app := revSetup()
-	rev := NewRevision(app, "master", app.Snapshot)
+	rev := NewRevision(app, "master", app.Dir.Snapshot)
 
 	rev, err := rev.Register()
 	if err != nil {
@@ -78,7 +78,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.dir.Name)
+	check, _, err := s.conn.Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}

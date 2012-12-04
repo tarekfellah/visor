@@ -54,7 +54,7 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 		t.Error("instance id wasn't set correctly")
 	}
 
-	ins1, err := GetInstance(ins.Snapshot, ins.Id)
+	ins1, err := GetInstance(ins.Dir.Snapshot, ins.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -158,7 +158,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not set correctly for %#v", ins2)
 	}
 
-	ins3, err := GetInstance(ins2.Snapshot, ins2.Id)
+	ins3, err := GetInstance(ins2.Dir.Snapshot, ins2.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +166,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not stored correctly for %#v", ins3)
 	}
 
-	ids, err := getInstanceIds(ins2.Snapshot, appid, revid, ptyid)
+	ids, err := getInstanceIds(ins2.Dir.Snapshot, appid, revid, ptyid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +196,7 @@ func TestInstanceStop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = StopInstance(ins.Id, ins1.Snapshot)
+	_, err = StopInstance(ins.Id, ins1.Dir.Snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestInstanceExited(t *testing.T) {
 	//	t.Error("expected command to fail")
 	//}
 
-	s1, err := StopInstance(ins2.Id, ins2.Snapshot)
+	s1, err := StopInstance(ins2.Id, ins2.Dir.Snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestInstanceExited(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testInstanceStatus(t, ins.Id, InsStatusExited, ins3.Snapshot)
+	testInstanceStatus(t, ins.Id, InsStatusExited, ins3.Dir.Snapshot)
 }
 
 func TestInstanceFailed(t *testing.T) {
@@ -255,7 +255,7 @@ func TestInstanceFailed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testInstanceStatus(t, ins.Id, InsStatusFailed, ins1.Snapshot)
+	testInstanceStatus(t, ins.Id, InsStatusFailed, ins1.Dir.Snapshot)
 
 	_, err = ins.Failed("9.9.9.9", errors.New("no reason."))
 	if err != ErrUnauthorized {
@@ -303,7 +303,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 		ch <- ins
 	}()
 
-	ins1, err := StopInstance(ins.Id, ins.Snapshot)
+	ins1, err := StopInstance(ins.Id, ins.Dir.Snapshot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,8 +313,8 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 		if ins2 == nil {
 			t.Error("instance is nil")
 		}
-		if ins1.Rev != ins2.Rev {
-			t.Errorf("instance revs don't match: %d != %d", ins1.Rev, ins2.Rev)
+		if ins1.Rev != ins2.Dir.Snapshot.Rev {
+			t.Errorf("instance revs don't match: %d != %d", ins1.Rev, ins2.Dir.Snapshot.Rev)
 		}
 	case <-time.After(time.Second):
 		t.Errorf("expected instance, got timeout")
@@ -381,7 +381,7 @@ func TestInstanceWaitStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ins1.Rev <= ins.Rev {
+	if ins1.Dir.Snapshot.Rev <= ins.Dir.Snapshot.Rev {
 		t.Error("expected new revision to be greater than previous")
 	}
 }

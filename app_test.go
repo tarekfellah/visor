@@ -31,7 +31,7 @@ func appSetup(name string) (app *App) {
 func TestAppRegistration(t *testing.T) {
 	app := appSetup("lolcatapp")
 
-	check, _, err := app.conn.Exists(app.dir.Name)
+	check, _, err := app.Dir.Snapshot.conn.Exists(app.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -46,7 +46,7 @@ func TestAppRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = app2.conn.Exists(app.dir.Name)
+	check, _, err = app2.Dir.Snapshot.conn.Exists(app.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -104,7 +104,7 @@ func TestAppUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := app.conn.Exists(app.dir.Name)
+	check, _, err := app.Dir.Snapshot.conn.Exists(app.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -217,15 +217,15 @@ func TestAppGetProcTypes(t *testing.T) {
 	var pty *ProcType
 	var err error
 
-	for name, _ := range names {
-		pty = NewProcType(app, name, app.Snapshot)
+	for name := range names {
+		pty = NewProcType(app, name, app.Dir.Snapshot)
 		pty, err = pty.Register()
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	ptys, err := app.FastForward(pty.Rev).GetProcTypes()
+	ptys, err := app.FastForward(pty.Dir.Snapshot.Rev).GetProcTypes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -246,13 +246,13 @@ func TestApps(t *testing.T) {
 	app := appSetup("mat-the-sponge")
 	names := map[string]bool{"cat": true, "dog": true, "lol": true}
 
-	for k, _ := range names {
-		a := NewApp(k, "zebra", "joke", app.Snapshot)
+	for k := range names {
+		a := NewApp(k, "zebra", "joke", app.Dir.Snapshot)
 		a, err := a.Register()
 		if err != nil {
 			t.Error(err)
 		}
-		s = a.Snapshot
+		s = a.Dir.Snapshot
 	}
 
 	apps, err := Apps(s)

@@ -13,33 +13,33 @@ import (
 const servicesPath = "services"
 
 type Service struct {
-	dir
+	Dir  dir
 	Name string
 }
 
 // NewService returns a new Service given a name.
 func NewService(name string, snapshot Snapshot) (srv *Service) {
 	srv = &Service{Name: name}
-	srv.dir = dir{snapshot, path.Join(servicesPath, srv.Name)}
+	srv.Dir = dir{snapshot, path.Join(servicesPath, srv.Name)}
 
 	return
 }
 
 func (s *Service) createSnapshot(rev int64) snapshotable {
 	tmp := *s
-	tmp.Snapshot = Snapshot{rev, s.conn}
+	tmp.Dir.Snapshot = Snapshot{rev, s.Dir.Snapshot.conn}
 	return &tmp
 }
 
 // FastForward advances the service in time. It returns
 // a new instance of Service with the supplied revision.
 func (s *Service) FastForward(rev int64) *Service {
-	return s.Snapshot.fastForward(s, rev).(*Service)
+	return s.Dir.Snapshot.fastForward(s, rev).(*Service)
 }
 
 // Register adds the Service to the global process state.
 func (s *Service) Register() (srv *Service, err error) {
-	exists, _, err := s.conn.Exists(s.dir.Name)
+	exists, _, err := s.Dir.Snapshot.conn.Exists(s.Dir.Name)
 	if err != nil {
 		return
 	}
@@ -47,7 +47,7 @@ func (s *Service) Register() (srv *Service, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := s.set("registered", timestamp())
+	rev, err := s.Dir.set("registered", timestamp())
 	if err != nil {
 		return
 	}
@@ -59,7 +59,7 @@ func (s *Service) Register() (srv *Service, err error) {
 
 // Unregister removes the Service form the global process state.
 func (s *Service) Unregister() error {
-	return s.del("/")
+	return s.Dir.del("/")
 }
 
 func (s *Service) String() string {
@@ -71,14 +71,14 @@ func (s *Service) Inspect() string {
 }
 
 func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
-	p := s.dir.prefix(endpointsPath)
+	p := s.Dir.prefix(endpointsPath)
 
-	exists, _, err := s.conn.Exists(p)
+	exists, _, err := s.Dir.Snapshot.conn.Exists(p)
 	if err != nil || !exists {
 		return
 	}
 
-	ids, err := s.getdir(p)
+	ids, err := s.Dir.Snapshot.getdir(p)
 	if err != nil {
 		return
 	}
@@ -86,7 +86,7 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 	for _, id := range ids {
 		var e *Endpoint
 
-		e, err = GetEndpoint(s.Snapshot, s, id)
+		e, err = GetEndpoint(s.Dir.Snapshot, s, id)
 		if err != nil {
 			return
 		}
@@ -101,7 +101,7 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 func GetService(s Snapshot, name string) (srv *Service, err error) {
 	service := NewService(name, s)
 
-	exists, _, err := s.conn.Exists(service.dir.Name)
+	exists, _, err := s.conn.Exists(service.Dir.Name)
 	if err != nil && !exists {
 		return
 	}

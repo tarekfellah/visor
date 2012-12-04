@@ -12,7 +12,7 @@ import (
 // A Revision represents an application revision,
 // identifiable by its `ref`.
 type Revision struct {
-	dir
+	Dir        dir
 	App        *App
 	Ref        string
 	ArchiveUrl string
@@ -23,26 +23,26 @@ const revsPath = "revs"
 // NewRevision returns a new instance of Revision.
 func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref}
-	rev.dir = dir{snapshot, app.dir.prefix(revsPath, ref)}
+	rev.Dir = dir{snapshot, app.Dir.prefix(revsPath, ref)}
 
 	return
 }
 
 func (r *Revision) createSnapshot(rev int64) snapshotable {
 	tmp := *r
-	tmp.Snapshot = Snapshot{rev, r.conn}
+	tmp.Dir.Snapshot = Snapshot{rev, r.Dir.Snapshot.conn}
 	return &tmp
 }
 
 // FastForward advances the revision in time. It returns
 // a new instance of Revision with the supplied revision.
 func (r *Revision) FastForward(rev int64) *Revision {
-	return r.Snapshot.fastForward(r, rev).(*Revision)
+	return r.Dir.Snapshot.fastForward(r, rev).(*Revision)
 }
 
 // Register registers a new Revision with the registry.
 func (r *Revision) Register() (revision *Revision, err error) {
-	exists, _, err := r.conn.Exists(r.dir.Name)
+	exists, _, err := r.Dir.Snapshot.conn.Exists(r.Dir.Name)
 	if err != nil {
 		return
 	}
@@ -50,11 +50,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := r.set("archive-url", r.ArchiveUrl)
+	rev, err := r.Dir.set("archive-url", r.ArchiveUrl)
 	if err != nil {
 		return
 	}
-	rev, err = r.set("registered", timestamp())
+	rev, err = r.Dir.set("registered", timestamp())
 	if err != nil {
 		return
 	}
@@ -66,11 +66,11 @@ func (r *Revision) Register() (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister() (err error) {
-	return r.del("/")
+	return r.Dir.del("/")
 }
 
 func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	rev, err := r.set("archive-url", url)
+	rev, err := r.Dir.set("archive-url", url)
 	if err != nil {
 		return
 	}
@@ -87,7 +87,7 @@ func (r *Revision) Inspect() string {
 }
 
 func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.dir.prefix(revsPath, ref)
+	path := app.Dir.prefix(revsPath, ref)
 	codec := new(stringCodec)
 
 	f, err := s.getFile(path+"/archive-url", codec)
@@ -96,7 +96,7 @@ func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
 	}
 
 	r = &Revision{
-		dir:        dir{s, path},
+		Dir:        dir{s, path},
 		App:        app,
 		Ref:        ref,
 		ArchiveUrl: f.Value.(string),
@@ -127,7 +127,7 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	revs, err := s.getdir(app.dir.prefix("revs"))
+	revs, err := s.getdir(app.Dir.prefix("revs"))
 	if err != nil {
 		return
 	}
