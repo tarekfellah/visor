@@ -8,6 +8,7 @@ package visor
 import (
 	"errors"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -69,7 +70,10 @@ func TestEventAppRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppReg, app, l, t)
+	ev := expectEvent(EvAppReg, app, l, t)
+	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventAppUnregistered(t *testing.T) {
@@ -91,7 +95,10 @@ func TestEventAppUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvAppUnreg, nil, l, t)
+	ev := expectEvent(EvAppUnreg, nil, l, t)
+	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventRevRegistered(t *testing.T) {
@@ -115,7 +122,13 @@ func TestEventRevRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevReg, rev, l, t)
+	ev := expectEvent(EvRevReg, rev, l, t)
+	if ev.Path.Revision == nil || (*ev.Path.Revision != rev.Ref) {
+		t.Error("event.Path doesn't contain expected data")
+	}
+	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventRevUnregistered(t *testing.T) {
@@ -144,7 +157,10 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvRevUnreg, nil, l, t)
+	ev := expectEvent(EvRevUnreg, nil, l, t)
+	if ev.Path.Revision == nil || (*ev.Path.Revision != rev.Ref) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventProcTypeRegistered(t *testing.T) {
@@ -175,7 +191,13 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcReg, pty, l, t)
+	ev := expectEvent(EvProcReg, pty, l, t)
+	if ev.Path.Proctype == nil || (*ev.Path.Proctype != pty.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
+	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventProcTypeUnregistered(t *testing.T) {
@@ -197,7 +219,11 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	expectEvent(EvProcUnreg, nil, l, t)
+	ev := expectEvent(EvProcUnreg, nil, l, t)
+
+	if ev.Path.Proctype == nil || (*ev.Path.Proctype != pty.Name) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventInstanceRegistered(t *testing.T) {
@@ -211,7 +237,11 @@ func TestEventInstanceRegistered(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectEvent(EvInsReg, ins, l, t)
+	ev := expectEvent(EvInsReg, ins, l, t)
+
+	if ev.Path.Instance == nil || (*ev.Path.Instance != strconv.FormatInt(ins.Id, 10)) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventInstanceUnregistered(t *testing.T) {
@@ -230,7 +260,10 @@ func TestEventInstanceUnregistered(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectEvent(EvInsUnreg, nil, l, t)
+	ev := expectEvent(EvInsUnreg, nil, l, t)
+	if ev.Path.Instance == nil || (*ev.Path.Instance != strconv.FormatInt(ins.Id, 10)) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 }
 
 func TestEventInstanceStateChange(t *testing.T) {
@@ -257,6 +290,9 @@ func TestEventInstanceStateChange(t *testing.T) {
 		t.Error(err)
 	}
 	ev := expectEvent(EvInsStart, ins, l, t)
+	if ev.Path.Instance == nil || (*ev.Path.Instance != strconv.FormatInt(ins.Id, 10)) {
+		t.Error("event.Path doesn't contain expected data")
+	}
 
 	instance := ev.Source.(*Instance)
 

@@ -314,6 +314,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 		Type:   etype,
 		Body:   string(src.Body),
 		Source: canonicalized,
+		Path:   uncanonicalized,
 		raw:    src,
 		Rev:    src.Rev,
 	}, nil
