@@ -41,11 +41,13 @@ func runRevRegister(cmd *Command, args []string) {
 
 	rev := visor.NewRevision(app, name, s)
 
-	rev.ArchiveUrl = url
+	if _, err = rev.Propose(); err != nil {
+		fmt.Fprintf(os.Stderr, "Error proposing rev %s\n", err.Error())
+		os.Exit(1)
+	}
 
-	_, err = rev.Register()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error registering rev %s\n", err.Error())
+	if _, err = rev.Ratify(url); err != nil {
+		fmt.Fprintf(os.Stderr, "Error ratifying rev %s\n", err.Error())
 		os.Exit(1)
 	}
 }

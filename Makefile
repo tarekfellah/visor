@@ -11,7 +11,7 @@ GOARCH   ?= amd64
 
 # LOCAL #
 
-default:
+default: protocol
 	@go build $(LDFLAGS) ./cmd/visor
 	@echo built ./visor v$(VERSION)
 
@@ -24,7 +24,13 @@ $(PKGPATH):
 	mkdir -p $(shell dirname $(PKGPATH))
 	ln -sf $(PWD) $(PKGPATH)
 
-test:
+protocol: protocol-stamp
+
+protocol-stamp: model.proto
+	protoc model.proto --go_out $${PWD}/generated
+	touch $@
+
+test: protocol
 	go test
 
 # DIST #
@@ -54,6 +60,8 @@ build: clean debroot debbuild
 
 clean: debclean
 	GOPATH=$(GOPATH) go clean
+	-rm -f generated/*.go
+	-rm -f *-stamp
 	rm -rf bin src pkg
 
-.PHONY: test
+.PHONY: protocol test

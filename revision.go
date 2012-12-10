@@ -6,31 +6,52 @@
 package visor
 
 import (
+	"code.google.com/p/goprotobuf/proto"
+	"encoding/json"
 	"fmt"
+	"github.com/soundcloud/visor/generated"
+	"time"
 )
 
 // A Revision represents an application revision,
 // identifiable by its `ref`.
 type Revision struct {
-	Dir        dir
-	App        *App
-	Ref        string
-	ArchiveUrl string
+	Dir   dir
+	App   *App
+	Ref   string
+	state *generated.Revision
 }
 
-const revsPath = "revs"
+const (
+	pathRevisionRoot             = "revs"
+	pathRevisionEntityDefinition = "entity-definition"
+)
+
+const (
+	archiveUrlUnavailable = "<unavailable>"
+)
 
 // NewRevision returns a new instance of Revision.
-func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
-	rev = &Revision{App: app, Ref: ref}
-	rev.Dir = dir{snapshot, app.Dir.prefix(revsPath, ref)}
-
-	return
+func NewRevision(app *App, ref string, snapshot Snapshot) *Revision {
+	return &Revision{
+		App: app,
+		Ref: ref,
+		Dir: dir{
+			Snapshot: snapshot,
+			Name:     app.Dir.prefix(pathRevisionRoot, ref),
+		},
+		state: &generated.Revision{
+			State: generated.Revision_PROPOSED.Enum(),
+		},
+	}
 }
 
 func (r *Revision) createSnapshot(rev int64) snapshotable {
 	tmp := *r
-	tmp.Dir.Snapshot = Snapshot{rev, r.Dir.Snapshot.conn}
+	tmp.Dir.Snapshot = Snapshot{
+		Rev:  rev,
+		conn: r.Dir.Snapshot.conn,
+	}
 	return &tmp
 }
 
@@ -40,8 +61,24 @@ func (r *Revision) FastForward(rev int64) *Revision {
 	return r.Dir.Snapshot.fastForward(r, rev).(*Revision)
 }
 
+func (r *Revision) put() (revision *Revision, err error) {
+	if marshaled, err := json.Marshal(r.state); err == nil {
+		if rev, err := r.Dir.setBytes(pathRevisionEntityDefinition, marshaled); err == nil {
+			revision = r.FastForward(rev)
+		}
+	}
+
+	return
+}
+
 // Register registers a new Revision with the registry.
-func (r *Revision) Register() (revision *Revision, err error) {
+func (r *Revision) Propose() (revision *Revision, err error) {
+	if *r.state.State != generated.Revision_PROPOSED {
+		return nil, fmt.Errorf("Revision %s in state %s cannot be proposed", r, r.state.State)
+	}
+
+	r.state.RegistrationTimestamp = proto.Int64(time.Now().Unix())
+
 	exists, _, err := r.Dir.Snapshot.conn.Exists(r.Dir.Name)
 	if err != nil {
 		return
@@ -50,32 +87,28 @@ func (r *Revision) Register() (revision *Revision, err error) {
 		return nil, ErrKeyConflict
 	}
 
-	rev, err := r.Dir.set("archive-url", r.ArchiveUrl)
-	if err != nil {
-		return
-	}
-	rev, err = r.Dir.set("registered", timestamp())
-	if err != nil {
-		return
+	revision, err = r.put()
+
+	return
+}
+
+func (r *Revision) Ratify(archiveUrl string) (revision *Revision, err error) {
+	if *r.state.State != generated.Revision_PROPOSED {
+		return nil, fmt.Errorf("Revision %s in state %s cannot be ratified", r, r.state.State)
 	}
 
-	revision = r.FastForward(rev)
+	r.state.State = generated.Revision_ACCEPTED.Enum()
+
+	r.state.ArchiveUrl = proto.String(archiveUrl)
+
+	revision, err = r.put()
 
 	return
 }
 
 // Unregister unregisters a revision from the registry.
-func (r *Revision) Unregister() (err error) {
+func (r *Revision) Purge() (err error) {
 	return r.Dir.del("/")
-}
-
-func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	rev, err := r.Dir.set("archive-url", url)
-	if err != nil {
-		return
-	}
-	revision = r.FastForward(rev)
-	return
 }
 
 func (r *Revision) String() string {
@@ -87,20 +120,26 @@ func (r *Revision) Inspect() string {
 }
 
 func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.Dir.prefix(revsPath, ref)
-	codec := new(stringCodec)
+	path := app.Dir.prefix(pathRevisionRoot, ref)
 
-	f, err := s.getFile(path+"/archive-url", codec)
-	if err != nil {
-		return
+	dir := dir{
+		Snapshot: s,
+		Name:     path,
 	}
 
-	r = &Revision{
-		Dir:        dir{s, path},
-		App:        app,
-		Ref:        ref,
-		ArchiveUrl: f.Value.(string),
+	if marshaled, _, err := dir.getBytes(pathRevisionEntityDefinition); err == nil {
+		unmarshaled := &generated.Revision{}
+
+		if err := json.Unmarshal(marshaled, unmarshaled); err == nil {
+			r = &Revision{
+				Dir:   dir,
+				App:   app,
+				Ref:   ref,
+				state: unmarshaled,
+			}
+		}
 	}
+
 	return
 }
 
@@ -124,10 +163,28 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 	return
 }
 
+func (r *Revision) State() string {
+	s := int32(*r.state.State)
+	n, _ := generated.Revision_State_name[s]
+	return n
+}
+
+func (r *Revision) ArchiveUrl() string {
+	if *r.state.State != generated.Revision_ACCEPTED {
+		return archiveUrlUnavailable
+	}
+
+	return *r.state.ArchiveUrl
+}
+
+func (r *Revision) RegistrationTimestamp() time.Time {
+	return time.Unix(*r.state.RegistrationTimestamp, 0)
+}
+
 // AppRevisions returns an array of all registered revisions belonging
 // to the given application.
 func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	revs, err := s.getdir(app.Dir.prefix("revs"))
+	revs, err := s.getdir(app.Dir.prefix(pathRevisionRoot))
 	if err != nil {
 		return
 	}

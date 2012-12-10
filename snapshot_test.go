@@ -142,7 +142,7 @@ func TestSnapshotGetScale(t *testing.T) {
 	if _, err := app.Register(); err != nil {
 		panic(err)
 	}
-	if _, err := rev.Register(); err != nil {
+	if _, err := rev.Propose(); err != nil {
 		panic(err)
 	}
 	if _, err := pty.Register(); err != nil {

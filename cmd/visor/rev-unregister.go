@@ -44,7 +44,7 @@ func runRevUnregister(cmd *Command, args []string) {
 		os.Exit(1)
 	}
 
-	err = rev.Unregister()
+	err = rev.Purge()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error unregistering rev %s\n", err.Error())
 		os.Exit(1)

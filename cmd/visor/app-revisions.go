@@ -44,6 +44,6 @@ func runAppRevisions(cmd *Command, args []string) {
 	}
 
 	for _, rev := range revs {
-		fmt.Fprintf(os.Stdout, "%s %s %s\n", rev.App.Name, rev.Ref, rev.ArchiveUrl)
+		fmt.Fprintf(os.Stdout, "%s %s %s %s\n", rev.App.Name, rev.Ref, rev.State(), rev.ArchiveUrl())
 	}
 }

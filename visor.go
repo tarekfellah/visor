@@ -102,7 +102,7 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return nil, -1, errors.New("scaling factor needs to be a positive integer")
 	}
 
-	exists, _, err := s.conn.Exists(path.Join(appsPath, app, revsPath, revision))
+	exists, _, err := s.conn.Exists(path.Join(appsPath, app, pathRevisionRoot, revision))
 	if !exists || err != nil {
 		return nil, -1, fmt.Errorf("%s@%s not found", app, revision)
 	}

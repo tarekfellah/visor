@@ -61,7 +61,6 @@ type eventPath int
 
 const (
 	pathApp eventPath = iota
-	pathRev
 	pathProc
 	pathIns
 	pathInsStatus
@@ -69,18 +68,19 @@ const (
 	pathInsStop
 	pathSrv
 	pathEp
+	pathRevision
 )
 
 var eventPatterns = map[*regexp.Regexp]eventPath{
-	regexp.MustCompile("^/apps/(" + charPat + "+)/registered$"):                          pathApp,
-	regexp.MustCompile("^/apps/(" + charPat + "+)/revs/(" + charPat + "+)/registered$"):  pathRev,
-	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/registered$"): pathProc,
-	regexp.MustCompile("^/instances/([-0-9]+)/object$"):                                  pathIns,
-	regexp.MustCompile("^/instances/([-0-9]+)/status$"):                                  pathInsStatus,
-	regexp.MustCompile("^/instances/([-0-9]+)/start$"):                                   pathInsStart,
-	regexp.MustCompile("^/instances/([-0-9]+)/stop$"):                                    pathInsStop,
-	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                      pathSrv,
-	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-0-9]+)$"):             pathEp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/registered$"):                                pathApp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/procs/(" + charPat + "+)/registered$"):       pathProc,
+	regexp.MustCompile("^/instances/([-0-9]+)/object$"):                                        pathIns,
+	regexp.MustCompile("^/instances/([-0-9]+)/status$"):                                        pathInsStatus,
+	regexp.MustCompile("^/instances/([-0-9]+)/start$"):                                         pathInsStart,
+	regexp.MustCompile("^/instances/([-0-9]+)/stop$"):                                          pathInsStop,
+	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                            pathSrv,
+	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-0-9]+)$"):                   pathEp,
+	regexp.MustCompile("^/apps/(" + charPat + "+)/revs/(" + charPat + "+)/entity-definition$"): pathRevision,
 }
 
 func (ev *Event) String() string {
@@ -225,7 +225,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 				} else if src.IsDel() {
 					etype = EvAppUnreg
 				}
-			case pathRev:
+			case pathRevision:
 				uncanonicalized.App = &match[1]
 				uncanonicalized.Revision = &match[2]
 

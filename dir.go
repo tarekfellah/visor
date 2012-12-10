@@ -14,6 +14,15 @@ func (p *dir) set(key string, val string) (int64, error) {
 	return s.Rev, err
 }
 
+func (p *dir) setBytes(key string, val []byte) (int64, error) {
+	s, err := p.Snapshot.setBytes(p.prefix(key), val)
+	return s.Rev, err
+}
+
+func (p *dir) getBytes(key string) ([]byte, int64, error) {
+	return p.Snapshot.getBytes(p.prefix(key))
+}
+
 func (p *dir) del(key string) error {
 	return p.Snapshot.del(p.prefix(key))
 }

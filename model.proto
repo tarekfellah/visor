@@ -1,0 +1,41 @@
+/*
+ * This file defines the initial model-level definitions for the various object
+ * types that Bazooka uses.
+ */
+
+package generated;
+
+/*
+ * A Revision refers to a distinct version of an Application.
+ */
+message Revision {
+  /*
+   * The version of this entity record's schema definition---not its values.
+   */
+  optional int32 version = 1 [default = 0];
+
+  /*
+   * A Revision possesses several lifecycle states.
+   */
+  enum State {
+    /*
+     * A given Revision is in the process of being created or built and has not
+     * been finalized.
+     */
+    PROPOSED = 0;
+    /*
+     * A Revision has been promoted from being proposed to actually being
+     * accepted.
+     */
+    ACCEPTED = 1;
+  }
+
+  optional State state = 2;
+
+  /*
+   * The link the the artifact that encapsulates this given revision.
+   */
+  optional string archive_url = 3;
+
+  optional int64 registration_timestamp = 4;
+}

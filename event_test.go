@@ -61,7 +61,7 @@ func expectEvent(etype EventType, s snapshotable, l chan *Event, t *testing.T) (
 
 func TestEventAppRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regcat", s)
+	app := eventAppSetup("TestEventAppRegistered", s)
 
 	go WatchEvent(s, l)
 
@@ -78,7 +78,7 @@ func TestEventAppRegistered(t *testing.T) {
 
 func TestEventAppUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregcat", s)
+	app := eventAppSetup("TestEventAppUnregistered", s)
 
 	app, err := app.Register()
 	if err != nil {
@@ -103,7 +103,7 @@ func TestEventAppUnregistered(t *testing.T) {
 
 func TestEventRevRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regdog", s)
+	app := eventAppSetup("TestEventRevRegistered", s)
 
 	app, err := app.Register()
 	if err != nil {
@@ -117,7 +117,7 @@ func TestEventRevRegistered(t *testing.T) {
 
 	go WatchEvent(s, l)
 
-	_, err = rev.Register()
+	_, err = rev.Propose()
 	if err != nil {
 		t.Error(err)
 	}
@@ -133,7 +133,7 @@ func TestEventRevRegistered(t *testing.T) {
 
 func TestEventRevUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregdog", s)
+	app := eventAppSetup("TestEventRevUnregistered", s)
 
 	app, err := app.Register()
 	if err != nil {
@@ -143,7 +143,7 @@ func TestEventRevUnregistered(t *testing.T) {
 	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	rev := NewRevision(app, "stable", s)
-	rev, err = rev.FastForward(s.Rev).Register()
+	rev, err = rev.FastForward(s.Rev).Propose()
 	if err != nil {
 		t.Error(err)
 		return
@@ -152,7 +152,7 @@ func TestEventRevUnregistered(t *testing.T) {
 
 	go WatchEvent(s, l)
 
-	err = rev.Unregister()
+	err = rev.Purge()
 	if err != nil {
 		t.Error(err)
 	}
@@ -165,7 +165,7 @@ func TestEventRevUnregistered(t *testing.T) {
 
 func TestEventProcTypeRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regstar", s)
+	app := eventAppSetup("TestEventProcTypeRegistered", s)
 
 	app, err := app.Register()
 	if err != nil {
@@ -175,7 +175,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 	s = s.FastForward(app.Dir.Snapshot.Rev)
 
 	rev := NewRevision(app, "bang", s)
-	rev, err = rev.FastForward(s.Rev).Register()
+	rev, err = rev.FastForward(s.Rev).Propose()
 	if err != nil {
 		t.Error(err)
 		return
@@ -202,7 +202,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 
 func TestEventProcTypeUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregstar", s)
+	app := eventAppSetup("TestEventProcTypeUnregistered", s)
 	pty := NewProcType(app, "all", s)
 
 	pty, err := pty.Register()
@@ -228,7 +228,7 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 
 func TestEventInstanceRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regmouse", s)
+	app := eventAppSetup("TestEventInstanceRegistered", s)
 
 	go WatchEvent(s, l)
 
@@ -247,7 +247,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, l := eventSetup()
 
-	ins, err := RegisterInstance("unregmouse", "stable", "web", s)
+	ins, err := RegisterInstance("TestEventInstanceUnregistered", "stable", "web", s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -272,7 +272,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 	host := "mouse.org"
 	s, l := eventSetup()
 
-	ins, err := RegisterInstance("statemouse", "stable-state", "web-state", s)
+	ins, err := RegisterInstance("TestEventInstanceStateChange", "stable-state", "web-state", s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 
 func TestEventSrvRegistered(t *testing.T) {
 	s, l := eventSetup()
-	srv := NewService("eventsrv", s)
+	srv := NewService("TestEventSrvRegistered", s)
 
 	go WatchEvent(s, l)
 
@@ -329,7 +329,7 @@ func TestEventSrvRegistered(t *testing.T) {
 
 func TestEventSrvUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	srv := NewService("eventunsrv", s)
+	srv := NewService("TestEventSrvUnregistered", s)
 
 	srv, err := srv.Register()
 	if err != nil {
@@ -350,7 +350,7 @@ func TestEventSrvUnregistered(t *testing.T) {
 
 func TestEventEpRegistered(t *testing.T) {
 	s, l := eventSetup()
-	srv := NewService("eventep", s)
+	srv := NewService("TestEventEpRegistered", s)
 	ep, err := NewEndpoint(srv, "1.2.3.4", 1000, s)
 	if err != nil {
 		t.Error(err)
@@ -368,7 +368,7 @@ func TestEventEpRegistered(t *testing.T) {
 
 func TestEventEpUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	srv := NewService("eventunep", s)
+	srv := NewService("TestEventEpUnregistered", s)
 	ep, err := NewEndpoint(srv, "4.3.2.1", 2000, s)
 	if err != nil {
 		t.Error(err)

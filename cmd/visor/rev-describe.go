@@ -45,5 +45,7 @@ func runRevDescribe(cmd *Command, args []string) {
 	}
 
 	fmt.Fprintf(os.Stdout, "name: %s\n", rev.Ref)
-	fmt.Fprintf(os.Stdout, "archive-url: %s\n", rev.ArchiveUrl)
+	fmt.Fprintf(os.Stdout, "registration time: %s\n", rev.RegistrationTimestamp())
+	fmt.Fprintf(os.Stdout, "state: %s\n", rev.State())
+	fmt.Fprintf(os.Stdout, "archive-url: %s\n", rev.ArchiveUrl())
 }

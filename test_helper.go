@@ -21,7 +21,7 @@ func genApp(s Snapshot) (app *App) {
 func genRevision(app *App) (rev *Revision) {
 	name := randItem(revNames)
 	rev = NewRevision(app, name, app.Dir.Snapshot)
-	rev, err := rev.Register()
+	rev, err := rev.Propose()
 	if err != nil {
 		panic(err)
 	}
