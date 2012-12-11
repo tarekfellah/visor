@@ -28,6 +28,10 @@ message Revision {
      * accepted.
      */
     ACCEPTED = 1;
+    /*
+     * A Revision has been recently demoted and slated for deletion.
+     */
+    REJECTED = 2;
   }
 
   optional State state = 2;

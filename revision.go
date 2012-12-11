@@ -181,6 +181,8 @@ func (r *Revision) Ratify(archiveUrl string) (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Purge() (err error) {
+	r.state.State = generated.Revision_REJECTED.Enum()
+
 	return r.Dir.del("/")
 }
 
@@ -255,6 +257,10 @@ func (r *Revision) ArchiveUrl() string {
 
 func (r *Revision) RegistrationTimestamp() time.Time {
 	return time.Unix(*r.state.RegistrationTimestamp, 0)
+}
+
+func (r *Revision) IsScalable() (s bool) {
+	return *r.state.State == generated.Revision_ACCEPTED
 }
 
 // AppRevisions returns an array of all registered revisions belonging

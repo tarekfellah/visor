@@ -67,6 +67,10 @@ func TestRevisionRegister(t *testing.T) {
 	if rev.State() != "PROPOSED" {
 		t.Errorf("Revision must be in state PROPOSED")
 	}
+
+	if rev.IsScalable() {
+		t.Error("An unpromoted revision should not be scalable")
+	}
 }
 
 func TestRevisionRatify(t *testing.T) {
@@ -83,10 +87,18 @@ func TestRevisionRatify(t *testing.T) {
 		return
 	}
 
+	if rev.IsScalable() {
+		t.Error("An unpromoted revision should not be scalable")
+	}
+
 	rev, err = rev.Propose()
 	if err != nil {
 		t.Error(err)
 		return
+	}
+
+	if rev.IsScalable() {
+		t.Error("An unpromoted revision should not be scalable")
 	}
 
 	check, _, err = s.conn.Exists(rev.Dir.Name)
@@ -114,6 +126,10 @@ func TestRevisionRatify(t *testing.T) {
 	if rev.ArchiveUrl() != "path/to/artifact" {
 		t.Errorf("Archive URL is incorrect")
 	}
+
+	if !rev.IsScalable() {
+		t.Error("An promoted revision should be scalable")
+	}
 }
 
 func TestRevisionUnregister(t *testing.T) {
@@ -136,6 +152,10 @@ func TestRevisionUnregister(t *testing.T) {
 	}
 	if check {
 		t.Error("Revision still registered")
+	}
+
+	if rev.IsScalable() {
+		t.Error("Deleted revision should not be scalable")
 	}
 }
 
@@ -174,5 +194,9 @@ func TestRevisionUpgrade(t *testing.T) {
 
 	if rev.RegistrationTimestamp().Unix() != instant.Unix() {
 		t.Error("Upgraded registration timestamp is incorrect")
+	}
+
+	if !rev.IsScalable() {
+		t.Error("Antiques are expected to be scalable")
 	}
 }
