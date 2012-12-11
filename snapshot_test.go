@@ -142,7 +142,12 @@ func TestSnapshotGetScale(t *testing.T) {
 	if _, err := app.Register(); err != nil {
 		panic(err)
 	}
-	if _, err := rev.Propose(); err != nil {
+	rev, err := rev.Propose()
+	if err != nil {
+		panic(err)
+	}
+	rev, err = rev.Ratify("/path/to/artifact")
+	if err != nil {
 		panic(err)
 	}
 	if _, err := pty.Register(); err != nil {

@@ -25,6 +25,10 @@ func genRevision(app *App) (rev *Revision) {
 	if err != nil {
 		panic(err)
 	}
+	rev, err = rev.Ratify("/path/to/artifact")
+	if err != nil {
+		panic(err)
+	}
 	return
 }
 

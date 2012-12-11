@@ -111,6 +111,19 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 		return nil, -1, fmt.Errorf("proc '%s' doesn't exist", processName)
 	}
 
+	a, err := GetApp(s, app)
+	if err != nil {
+		return nil, -1, err
+	}
+	r, err := GetRevision(s, a, revision)
+	if err != nil {
+		return nil, -1, err
+	}
+	if !r.IsScalable() {
+		err := fmt.Errorf("This revision %s is in state %s and cannot be scaled.", revision, r.State())
+		return nil, -1, err
+	}
+
 	list, err := getInstanceIds(s, app, revision, processName)
 	if err != nil {
 		return nil, -1, err

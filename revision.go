@@ -181,6 +181,7 @@ func (r *Revision) Ratify(archiveUrl string) (revision *Revision, err error) {
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Purge() (err error) {
+	// TODO(mtp): Invalidate purges against revisions with scale > 0.
 	r.state.State = generated.Revision_REJECTED.Enum()
 
 	return r.Dir.del("/")
