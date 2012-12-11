@@ -56,12 +56,14 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 
 	f, err := s.getFile(p+"/start", new(listCodec))
 	if IsErrNoEnt(err) {
+		// Ignore
 	} else if err != nil {
 		return
 	} else {
 		fields := f.Value.([]string)
 
 		if len(fields) > 0 { // IP
+			status = InsStatusClaimed
 			ip = fields[0]
 		}
 		if len(fields) > 1 { // Port
