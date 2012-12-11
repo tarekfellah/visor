@@ -25,6 +25,10 @@ type Revision struct {
 const (
 	pathRevisionRoot             = "revs"
 	pathRevisionEntityDefinition = "entity-definition"
+
+	// Pending Deprecation:
+	pathRevisionRegistered = "registered"
+	pathRevisionArchiveUrl = "archive-url"
 )
 
 const (
@@ -59,6 +63,75 @@ func (r *Revision) createSnapshot(rev int64) snapshotable {
 // a new instance of Revision with the supplied revision.
 func (r *Revision) FastForward(rev int64) *Revision {
 	return r.Dir.Snapshot.fastForward(r, rev).(*Revision)
+}
+
+// Pending Deprecation:
+func (r *Revision) upgrade() (revision *Revision, err error) {
+	root := r.Dir.Name
+	revision = r
+
+	if revision.state.State == nil {
+		revision.state.State = generated.Revision_ACCEPTED.Enum()
+	}
+
+	exists, _, err := revision.Dir.Snapshot.conn.Exists(root + "/" + pathRevisionArchiveUrl)
+	if err != nil {
+		return
+	}
+
+	if exists {
+		v := "<undefined>"
+		v, _, err = revision.Dir.get(pathRevisionArchiveUrl)
+		if err != nil {
+			return
+		}
+
+		revision.state.ArchiveUrl = proto.String(v)
+
+		revision, err = revision.put()
+		if err != nil {
+			return
+		}
+
+		err = revision.Dir.del(pathRevisionArchiveUrl)
+		if err != nil {
+			return
+		}
+	}
+
+	exists, _, err = revision.Dir.Snapshot.conn.Exists(root + "/" + pathRevisionRegistered)
+	if err != nil {
+		return
+	}
+
+	if exists {
+		v := "<undefined>"
+		v, _, err = revision.Dir.get(pathRevisionRegistered)
+		if err != nil {
+			return
+		}
+
+		t := time.Time{}
+
+		t, err = time.Parse(time.RFC3339, v)
+		if err != nil {
+			return
+		}
+
+		revision.state.RegistrationTimestamp = proto.Int64(t.Unix())
+
+		revision, err = revision.put()
+		if err != nil {
+			return
+		}
+
+		err = revision.Dir.del(pathRevisionRegistered)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
 
 func (r *Revision) put() (revision *Revision, err error) {
@@ -139,6 +212,9 @@ func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
 			}
 		}
 	}
+
+	// Pending Deprecation:
+	r, err = r.upgrade()
 
 	return
 }

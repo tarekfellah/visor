@@ -7,6 +7,7 @@ package visor
 
 import (
 	"testing"
+	"time"
 )
 
 func revSetup() (s Snapshot, app *App) {
@@ -135,5 +136,43 @@ func TestRevisionUnregister(t *testing.T) {
 	}
 	if check {
 		t.Error("Revision still registered")
+	}
+}
+
+func TestRevisionUpgrade(t *testing.T) {
+	_, app := revSetup()
+	rev := NewRevision(app, "antique-pending-upgrade", app.Dir.Snapshot)
+	rev.state.State = nil
+
+	r, err := rev.Dir.set("archive-url", "path/to/artifact")
+	if err != nil {
+		t.Error(err)
+	}
+
+	rev = rev.FastForward(r)
+
+	instant := time.Now()
+	r, err = rev.Dir.set("registered", instant.Format(time.RFC3339))
+	if err != nil {
+		t.Error(err)
+	}
+
+	rev = rev.FastForward(r)
+
+	rev, err = rev.upgrade()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if rev.State() != "ACCEPTED" {
+		t.Error("Upgraded revision was not in correct state")
+	}
+
+	if rev.ArchiveUrl() != "path/to/artifact" {
+		t.Error("Upgraded artifact path is incorrect")
+	}
+
+	if rev.RegistrationTimestamp().Unix() != instant.Unix() {
+		t.Error("Upgraded registration timestamp is incorrect")
 	}
 }
