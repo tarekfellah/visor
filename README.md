@@ -122,16 +122,6 @@ func main() {
         ./make.sh
         go install
 
-#### Installation
-
-Debian in our internal network:
-
-    apt-get install visor
-
-Compile yourself:
-
- * install [golang](http://golang.org) and `make install`
-
 ### Testing
 
 First start `doozerd` with default configuration. Then run:
