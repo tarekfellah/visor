@@ -20,6 +20,8 @@ const startPath = "start"
 const statusPath = "status"
 const stopPath = "stop"
 
+type InsStatus string
+
 const (
 	InsStatusPending  InsStatus = "pending"
 	InsStatusClaimed            = "claimed"

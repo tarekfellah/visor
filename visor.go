@@ -56,8 +56,6 @@ const (
 // Set *automatically* at link time (see Makefile)
 var Version string
 
-type InsStatus string
-
 func Init(s Snapshot) (rev int64, err error) {
 	exists, _, err := s.conn.Exists(nextPortPath)
 	if err != nil {
