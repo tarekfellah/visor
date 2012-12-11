@@ -53,6 +53,9 @@ const (
 	pmDir               = "/pms"
 )
 
+// Set *automatically* at link time (see Makefile)
+var Version string
+
 type InsStatus string
 
 func Init(s Snapshot) (rev int64, err error) {
