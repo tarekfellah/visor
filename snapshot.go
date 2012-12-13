@@ -135,6 +135,8 @@ func (s Snapshot) get(path string) (string, int64, error) {
 
 // getFile returns the value at the specified path as a file, at this snapshot's revision
 func (s Snapshot) getFile(path string, codec codec) (f *file, err error) {
+	f = &file{dir: path, codec: codec, Snapshot: s}
+
 	bytes, rev, err := s.getBytes(path)
 	if err != nil {
 		return
@@ -145,7 +147,8 @@ func (s Snapshot) getFile(path string, codec codec) (f *file, err error) {
 		return
 	}
 
-	f = &file{dir: path, Value: value, FileRev: rev, codec: codec, Snapshot: s}
+	f.Value = value
+	f.FileRev = rev
 
 	return
 }
