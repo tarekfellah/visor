@@ -242,6 +242,38 @@ func TestInstanceExited(t *testing.T) {
 	testInstanceStatus(t, ins.Id, InsStatusExited, ins3.Dir.Snapshot)
 }
 
+func TestInstanceRestarted(t *testing.T) {
+	ip := "10.0.0.1"
+	ins := instanceSetupClaimed("fat-pat", ip)
+
+	ins, err := ins.Started(ip, 9999, "fat-pat.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ins.Restarts != 0 {
+		t.Error("expected restart count to be 0")
+	}
+
+	ins1, err := ins.Restarted()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ins1.Restarts != 1 {
+		t.Error("expected restart count to be set to 1")
+	}
+
+	ins2, err := ins1.Restarted()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if ins2.Restarts != 2 {
+		t.Error("expected restart count to be set to 2")
+	}
+}
+
 func TestInstanceFailed(t *testing.T) {
 	ip := "10.0.0.1"
 	ins := instanceSetupClaimed("fat-cat", ip)
