@@ -65,6 +65,9 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 	if ins1.Status != ins.Status {
 		t.Error("statuses don't match")
 	}
+	if ins1.Restarts != 0 {
+		t.Error("restarts != 0")
+	}
 }
 
 func TestInstanceClaiming(t *testing.T) {
@@ -270,6 +273,14 @@ func TestInstanceRestarted(t *testing.T) {
 	}
 
 	if ins2.Restarts != 2 {
+		t.Error("expected restart count to be set to 2")
+	}
+
+	ins3, err := GetInstance(ins2.Dir.Snapshot, ins.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ins3.Restarts != 2 {
 		t.Error("expected restart count to be set to 2")
 	}
 }
