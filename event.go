@@ -8,6 +8,7 @@ package visor
 import (
 	"fmt"
 	"github.com/soundcloud/doozer"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,6 +21,29 @@ type EventData struct {
 	Proctype *string
 	Revision *string
 	Service  *string
+}
+
+func (d EventData) String() string {
+	str := "EventData{"
+
+	t := reflect.TypeOf(d)
+
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		v := reflect.ValueOf(d).Field(i)
+
+		if !v.IsNil() {
+			if i != 0 {
+				str += ", "
+			}
+
+			str += fmt.Sprintf("%s: %v", f.Name, v.Elem().Interface())
+		}
+	}
+
+	str += "}"
+
+	return str
 }
 
 // An Event represents a change to a file in the registry.
