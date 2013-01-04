@@ -24,26 +24,18 @@ type EventData struct {
 }
 
 func (d EventData) String() string {
-	str := "EventData{"
-
+	fields := []string{}
 	t := reflect.TypeOf(d)
 
 	for i := 0; i < t.NumField(); i++ {
-		f := t.Field(i)
 		v := reflect.ValueOf(d).Field(i)
 
 		if !v.IsNil() {
-			if i != 0 {
-				str += ", "
-			}
-
-			str += fmt.Sprintf("%s: %v", f.Name, v.Elem().Interface())
+			fields = append(fields, fmt.Sprintf("%s: %v", t.Field(i).Name, v.Elem().Interface()))
 		}
 	}
 
-	str += "}"
-
-	return str
+	return fmt.Sprintf("EventData{%s}", strings.Join(fields, ", "))
 }
 
 // An Event represents a change to a file in the registry.
