@@ -19,6 +19,7 @@ const failedPath = "failed"
 const startPath = "start"
 const statusPath = "status"
 const stopPath = "stop"
+const restartsPath = "restarts"
 
 type InsStatus string
 
@@ -43,6 +44,7 @@ type Instance struct {
 	Port         int
 	Host         string
 	Status       InsStatus
+	Restarts     int
 }
 
 // GetInstance returns an Instance from the given id
@@ -115,6 +117,13 @@ func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 		Host:         host,
 		Dir:          dir{s, instancePath(id)},
 	}
+
+	restarts, _, err := ins.getRestarts()
+	if err != nil {
+		return
+	}
+	ins.Restarts = restarts
+
 	return
 }
 
@@ -299,6 +308,18 @@ func (i *Instance) claimed(ip string) {
 	i.Status = InsStatusClaimed
 }
 
+func (i *Instance) getRestarts() (int, *file, error) {
+	restarts := 0
+
+	f, err := i.Dir.getFile(i.Dir.prefix(restartsPath), new(intCodec))
+	if err == nil {
+		restarts = f.Value.(int)
+	} else if !IsErrNoEnt(err) {
+		return -1, nil, err
+	}
+	return restarts, f, nil
+}
+
 func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance, err error) {
 	//
 	//   instances/
@@ -321,6 +342,42 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 		return
 	}
 	i1 = i1.FastForward(f.FileRev)
+
+	return
+}
+
+// Restarted tells the coordinator that the instance has been restarted.
+func (i *Instance) Restarted() (i1 *Instance, err error) {
+	//
+	//   instances/
+	//       6868/
+	//           object   = <app> <rev> <proc>
+	//           start    = 10.0.0.1 24690 localhost
+	// -         restarts = 1
+	// +         restarts = 2
+	//
+	//   instances/
+	//       6869/
+	//           object   = <app> <rev> <proc>
+	//           start    = 10.0.0.1 24691 localhost
+	// +         restarts = 1
+	//
+	if i.Status != InsStatusRunning {
+		return i, nil
+	}
+
+	restarts, f, err := i.getRestarts()
+	if err != nil {
+		return
+	}
+	i.Restarts = restarts + 1
+
+	f, err = f.Set(i.Restarts)
+	if err != nil {
+		return
+	}
+
+	i1 = i.FastForward(f.FileRev)
 
 	return
 }
