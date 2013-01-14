@@ -34,7 +34,7 @@ func endpointSetup(srvName string) (s Snapshot, srv *Service) {
 
 func TestEndpointRegister(t *testing.T) {
 	s, srv := endpointSetup("dahoopz")
-	ep, err := NewEndpoint(srv, "1.2.3.4", 1000, s)
+	ep, err := NewEndpoint(srv, "1.2.3.4:1000", s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,7 +55,7 @@ func TestEndpointRegister(t *testing.T) {
 
 func TestEndpointUnregister(t *testing.T) {
 	s, srv := endpointSetup("megahoopz")
-	ep, err := NewEndpoint(srv, "4.3.2.1", 2000, s)
+	ep, err := NewEndpoint(srv, "4.3.2.1:2000", s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -78,7 +78,7 @@ func TestEndpointUnregister(t *testing.T) {
 
 func TestEndpointGet(t *testing.T) {
 	s, srv := endpointSetup("gethoopz")
-	ep, err := NewEndpoint(srv, "5.6.7.8", 8000, s)
+	ep, err := NewEndpoint(srv, "5.6.7.8:8000", s)
 	if err != nil {
 		t.Error(err)
 	}

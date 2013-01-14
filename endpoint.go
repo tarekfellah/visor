@@ -27,8 +27,8 @@ type Endpoint struct {
 	Weight   int
 }
 
-func NewEndpoint(srv *Service, addr string, port int, s Snapshot) (e *Endpoint, err error) {
-	tcpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:%d", addr, port))
+func NewEndpoint(srv *Service, addr string, s Snapshot) (e *Endpoint, err error) {
+	tcpAddr, err := net.ResolveTCPAddr("tcp", addr)
 	if err != nil {
 		return
 	}
@@ -89,7 +89,7 @@ func (e *Endpoint) Unregister() error {
 }
 
 func (e *Endpoint) Id() string {
-	return EndpointId(e.Addr, e.Port)
+	return EndpointId(e.IP, e.Port)
 }
 
 func (e *Endpoint) String() string {

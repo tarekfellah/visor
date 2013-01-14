@@ -99,6 +99,8 @@ func (s *Service) GetEndpoints() (endpoints []*Endpoint, err error) {
 
 // GetService fetches a service with the given name.
 func GetService(s Snapshot, name string) (srv *Service, err error) {
+	// TODO: Does this function make sense?
+
 	service := NewService(name, s)
 
 	exists, _, err := s.conn.Exists(service.Dir.Name)

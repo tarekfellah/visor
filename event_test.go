@@ -351,7 +351,7 @@ func TestEventSrvUnregistered(t *testing.T) {
 func TestEventEpRegistered(t *testing.T) {
 	s, l := eventSetup()
 	srv := NewService("eventep", s)
-	ep, err := NewEndpoint(srv, "1.2.3.4", 1000, s)
+	ep, err := NewEndpoint(srv, "1.2.3.4:1000", s)
 	if err != nil {
 		t.Error(err)
 	}
@@ -369,7 +369,7 @@ func TestEventEpRegistered(t *testing.T) {
 func TestEventEpUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	srv := NewService("eventunep", s)
-	ep, err := NewEndpoint(srv, "4.3.2.1", 2000, s)
+	ep, err := NewEndpoint(srv, "4.3.2.1:2000", s)
 	if err != nil {
 		t.Error(err)
 	}
