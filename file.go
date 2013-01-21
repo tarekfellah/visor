@@ -18,9 +18,12 @@ type file struct {
 	codec codec
 }
 
+func newFile(s Snapshot, path string, value interface{}, c codec) *file {
+	return &file{dir: path, Value: value, codec: c, Snapshot: s}
+}
+
 func createFile(snapshot Snapshot, path string, value interface{}, codec codec) (*file, error) {
-	file := &file{dir: path, Value: value, codec: codec, Snapshot: snapshot}
-	return file.Create()
+	return newFile(snapshot, path, value, codec).Create()
 }
 
 func (f *file) createSnapshot(rev int64) (file snapshotable) {
