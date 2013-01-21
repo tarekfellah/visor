@@ -148,7 +148,7 @@ func (s Snapshot) getFile(path string, codec codec) (f *file, err error) {
 	}
 
 	f.Value = value
-	f.FileRev = rev
+	f.Snapshot = f.Snapshot.FastForward(rev)
 
 	return
 }

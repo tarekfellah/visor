@@ -13,14 +13,13 @@ import (
 // at a specific point in time.
 type file struct {
 	Snapshot
-	FileRev int64 // File rev, or 0 if path doesn't exist
-	dir     string
-	Value   interface{}
-	codec   codec
+	dir   string
+	Value interface{}
+	codec codec
 }
 
 func createFile(snapshot Snapshot, path string, value interface{}, codec codec) (*file, error) {
-	file := &file{dir: path, Value: value, codec: codec, Snapshot: snapshot, FileRev: -1}
+	file := &file{dir: path, Value: value, codec: codec, Snapshot: snapshot}
 	return file.Create()
 }
 
@@ -73,7 +72,7 @@ func (f *file) Set(value interface{}) (file *file, err error) {
 		return
 	}
 	file.Value = value
-	file.FileRev = s.Rev
+	file.Snapshot = s
 
 	return
 }

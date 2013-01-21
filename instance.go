@@ -341,7 +341,7 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 	if err != nil {
 		return
 	}
-	i1 = i1.FastForward(f.FileRev)
+	i1 = i1.FastForward(f.Rev)
 
 	return
 }
@@ -377,7 +377,7 @@ func (i *Instance) Restarted() (i1 *Instance, err error) {
 		return
 	}
 
-	i1 = i.FastForward(f.FileRev)
+	i1 = i.FastForward(f.Rev)
 
 	return
 }

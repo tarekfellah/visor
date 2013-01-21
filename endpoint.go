@@ -132,7 +132,7 @@ func GetEndpoint(s Snapshot, srv *Service, id string) (e *Endpoint, err error) {
 	}
 	e.Weight = int(w)
 
-	e = e.FastForward(f.FileRev)
+	e = e.FastForward(f.Rev)
 
 	return
 }
