@@ -521,6 +521,19 @@ func (i *Instance) WaitStarted() (i1 *Instance, err error) {
 	return i.waitStartPathStatus(InsStatusRunning)
 }
 
+func (i *Instance) WaitFailed() (*Instance, error) {
+	for {
+		i, err := i.WaitStatus()
+		if err != nil {
+			return nil, err
+		}
+		if i.Status == InsStatusFailed {
+			break
+		}
+	}
+	return i, nil
+}
+
 func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
 	for {
 		i, err = i.waitStartPath()
