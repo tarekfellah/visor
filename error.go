@@ -40,3 +40,7 @@ func IsErrNoEnt(e error) (r bool) {
 	}
 	return
 }
+
+func IsErrKeyConflict(e error) bool {
+  return e == ErrKeyConflict
+}
