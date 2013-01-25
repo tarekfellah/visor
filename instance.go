@@ -270,7 +270,14 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 }
 
 func (i *Instance) Unregister() (err error) {
-	err = i.Dir.Snapshot.del(i.ptyInstancesPath())
+	var path string
+
+	if i.Status == InsStatusFailed {
+		path = i.ptyFailedPath()
+	} else {
+		path = i.ptyInstancesPath()
+	}
+	err = i.Dir.Snapshot.del(path)
 	if err != nil {
 		if IsErrNoEnt(err) {
 			err = nil
