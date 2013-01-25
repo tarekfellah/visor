@@ -534,6 +534,14 @@ func (i *Instance) WaitFailed() (*Instance, error) {
 	return i, nil
 }
 
+func (i *Instance) GetStatusInfo() (info string, err error) {
+	if i.Status == InsStatusFailed {
+		info, _, err = i.Dir.Snapshot.get(i.ptyFailedPath())
+		info = strings.TrimSpace(info)
+	}
+	return
+}
+
 func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
 	for {
 		i, err = i.waitStartPath()
