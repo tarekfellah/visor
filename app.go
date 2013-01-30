@@ -197,14 +197,16 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 		}
 		return
 	}
-	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+	ch, errch := getSnapshotables(names, func(name string) (snapshotable, error) {
 		return GetProcType(a.Dir.Snapshot, a, name)
 	})
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range results {
-		ptys = append(ptys, r.(*ProcType))
+	for i := 0; i < len(names); i++ {
+		select {
+		case r := <-ch:
+			ptys = append(ptys, r.(*ProcType))
+		case err := <-errch:
+			return nil, err
+		}
 	}
 	return
 }
@@ -268,15 +270,17 @@ func Apps(s Snapshot) (apps []*App, err error) {
 		return
 	}
 
-	results, err := getSnapshotables(names, func(name string) (snapshotable, error) {
+	ch, errch := getSnapshotables(names, func(name string) (snapshotable, error) {
 		return GetApp(s, name)
 	})
-	if err != nil {
-		return nil, err
-	}
 
-	for _, r := range results {
-		apps = append(apps, r.(*App))
+	for i := 0; i < len(names); i++ {
+		select {
+		case r := <-ch:
+			apps = append(apps, r.(*App))
+		case err := <-errch:
+			return nil, err
+		}
 	}
 	return
 }

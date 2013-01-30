@@ -132,15 +132,16 @@ func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
 		return
 	}
 
-	results, err := getSnapshotables(revs, func(name string) (snapshotable, error) {
+	ch, errch := getSnapshotables(revs, func(name string) (snapshotable, error) {
 		return GetRevision(s, app, name)
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	for _, r := range results {
-		revisions = append(revisions, r.(*Revision))
+	for i := 0; i < len(revs); i++ {
+		select {
+		case r := <-ch:
+			revisions = append(revisions, r.(*Revision))
+		case err := <-errch:
+			return nil, err
+		}
 	}
 	return
 }

@@ -181,13 +181,10 @@ func TestSnapshotGetScale(t *testing.T) {
 func TestSnapshotGetSnapshotablesError(t *testing.T) {
 	s := snapshotSetup()
 
-	results, err := getSnapshotables([]string{"not", "real"}, func(name string) (snapshotable, error) {
+	_, errch := getSnapshotables([]string{"not", "real"}, func(name string) (snapshotable, error) {
 		return GetApp(s, name)
 	})
-	if err == nil {
+	if <-errch == nil {
 		t.Error("expected error")
-	}
-	if results != nil {
-		t.Error("expected result to be nil")
 	}
 }

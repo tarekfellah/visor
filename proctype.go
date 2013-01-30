@@ -153,18 +153,20 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 }
 
 func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
-	results, err := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
+	ch, errch := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
 		id, err := strconv.ParseInt(idstr, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		return GetInstance(p.Dir.Snapshot, id)
 	})
-	if err != nil {
-		return nil, err
-	}
-	for _, r := range results {
-		ins = append(ins, r.(*Instance))
+	for i := 0; i < len(ids); i++ {
+		select {
+		case r := <-ch:
+			ins = append(ins, r.(*Instance))
+		case err := <-errch:
+			return nil, err
+		}
 	}
 	return
 }
