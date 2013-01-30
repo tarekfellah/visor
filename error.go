@@ -42,5 +42,5 @@ func IsErrNoEnt(e error) (r bool) {
 }
 
 func IsErrKeyConflict(e error) bool {
-  return e == ErrKeyConflict
+	return e == ErrKeyConflict
 }
