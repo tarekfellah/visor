@@ -47,6 +47,33 @@ type Instance struct {
 	Restarts     int
 }
 
+func Instances(s Snapshot) (ins []*Instance, err error) {
+	ids, err := s.getdir("instances")
+	if err != nil {
+		return
+	}
+	ch, errch := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
+		id, err := strconv.ParseInt(idstr, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return GetInstance(s, id)
+	})
+	for i := 0; i < len(ids); i++ {
+		select {
+		case r := <-ch:
+			ins = append(ins, r.(*Instance))
+		case e := <-errch:
+			if err == nil {
+				err = e
+			} else {
+				err = fmt.Errorf("%s\n%s", err, e)
+			}
+		}
+	}
+	return
+}
+
 // GetInstance returns an Instance from the given id
 func GetInstance(s Snapshot, id int64) (ins *Instance, err error) {
 	p := instancePath(id)

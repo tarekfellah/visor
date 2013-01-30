@@ -93,6 +93,10 @@ func (s Snapshot) GetPms() ([]string, error) {
 	return s.getdir(pmDir)
 }
 
+func (s Snapshot) GetApps() ([]string, error) {
+	return s.getdir("apps")
+}
+
 func (s Snapshot) RegisterPm(host, version string) (Snapshot, error) {
 	return s.set(path.Join(pmDir, host), timestamp()+" "+version)
 }
