@@ -186,6 +186,28 @@ func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
 	return
 }
 
+// GetRevisions returns all registered Revisions for the App
+func (a *App) GetRevisions() (revisions []*Revision, err error) {
+	s := a.Dir.Snapshot
+	revs, err := s.getdir(a.Dir.prefix("revs"))
+	if err != nil {
+		return
+	}
+
+	ch, errch := getSnapshotables(revs, func(name string) (snapshotable, error) {
+		return GetRevision(s, a, name)
+	})
+	for i := 0; i < len(revs); i++ {
+		select {
+		case r := <-ch:
+			revisions = append(revisions, r.(*Revision))
+		case err := <-errch:
+			return nil, err
+		}
+	}
+	return
+}
+
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 	p := a.Dir.prefix(procsPath)

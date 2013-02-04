@@ -114,34 +114,12 @@ func Revisions(s Snapshot) (revisions []*Revision, err error) {
 	revisions = []*Revision{}
 
 	for i := range apps {
-		revs, e := AppRevisions(s, apps[i])
+		revs, e := apps[i].GetRevisions()
 		if e != nil {
 			return nil, e
 		}
 		revisions = append(revisions, revs...)
 	}
 
-	return
-}
-
-// AppRevisions returns an array of all registered revisions belonging
-// to the given application.
-func AppRevisions(s Snapshot, app *App) (revisions []*Revision, err error) {
-	revs, err := s.getdir(app.Dir.prefix("revs"))
-	if err != nil {
-		return
-	}
-
-	ch, errch := getSnapshotables(revs, func(name string) (snapshotable, error) {
-		return GetRevision(s, app, name)
-	})
-	for i := 0; i < len(revs); i++ {
-		select {
-		case r := <-ch:
-			revisions = append(revisions, r.(*Revision))
-		case err := <-errch:
-			return nil, err
-		}
-	}
 	return
 }
