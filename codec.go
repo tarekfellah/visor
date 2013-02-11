@@ -48,12 +48,20 @@ func (*stringCodec) Decode(input []byte) (interface{}, error) {
 	return string(input), nil
 }
 
-type jsonCodec struct{}
+type jsonCodec struct {
+	// If non-nil, unmarshal into this receiver. This is needed to decode JSON
+	// values into Go structs.
+	decodedVal interface{}
+}
 
 func (*jsonCodec) Encode(input interface{}) ([]byte, error) {
 	return json.Marshal(input)
 }
-func (*jsonCodec) Decode(input []byte) (val interface{}, err error) {
+func (c *jsonCodec) Decode(input []byte) (val interface{}, err error) {
+	// If the user specified an explicit receiver object, unmarshal into that.
+	if c.decodedVal != nil {
+		val = c.decodedVal
+	}
 	err = json.Unmarshal(input, &val)
 	return
 }

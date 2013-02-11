@@ -16,13 +16,29 @@ var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
-	Dir  dir
-	Name string
-	App  *App
-	Port int
+	Dir   dir
+	Name  string
+	App   *App
+	Port  int
+	Attrs ProcTypeAttrs
 }
 
-const procsPath = "procs"
+// Mutable extra ProcType attributes.
+type ProcTypeAttrs struct {
+	Limits ResourceLimits `json:"limits"`
+}
+
+// Per-proctype resource limits.
+type ResourceLimits struct {
+	// Maximum memory allowance in MB for an instance of this ProcType.
+	MemoryLimitMb *int `json:"memory-limit-mb,omitempty"`
+}
+
+const (
+	procsPath      = "procs"
+	procsPortPath  = "port"
+	procsAttrsPath = "attrs"
+)
 
 func NewProcType(app *App, name string, s Snapshot) *ProcType {
 	return &ProcType{
@@ -171,18 +187,45 @@ func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
 	return
 }
 
+func (p *ProcType) StoreAttrs() (ptype *ProcType, err error) {
+	attrs := &file{
+		Snapshot: p.Dir.Snapshot,
+		codec:    new(jsonCodec),
+		dir:      p.Dir.prefix(procsAttrsPath),
+		Value:    p.Attrs,
+	}
+
+	f, err := attrs.Create()
+	if err != nil {
+		return
+	}
+
+	ptype = p.FastForward(f.Rev)
+	return
+}
+
 // TODO consider moving to (*App).GetProcType(name)
 
 // GetProcType fetches a ProcType from the coordinator
 func GetProcType(s Snapshot, app *App, name string) (p *ProcType, err error) {
 	path := app.Dir.prefix(procsPath, string(name))
 
-	port, err := s.getFile(path+"/port", new(intCodec))
+	dir := dir{
+		Snapshot: s,
+		Name:     path,
+	}
+
+	port, err := dir.getFile(procsPortPath, new(intCodec))
 	if err != nil {
 		return
 	}
 	p = NewProcType(app, name, s)
 	p.Port = port.Value.(int)
+
+	_, err = s.getFile(dir.prefix(procsAttrsPath), &jsonCodec{decodedVal: &p.Attrs})
+	if IsErrNoEnt(err) {
+		err = nil
+	}
 
 	return
 }

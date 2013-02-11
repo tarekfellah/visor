@@ -174,3 +174,40 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 		t.Errorf("list is missing instances: %s", is)
 	}
 }
+
+func TestProcTypeAttributes(t *testing.T) {
+	appid := "app-with-attributes"
+	var memoryLimitMb = 100
+	s, app := proctypeSetup(appid)
+
+	pty := NewProcType(app, "web", s)
+	pty, err := pty.Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pty, err = GetProcType(pty.Dir.Snapshot, app, "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pty.Attrs.Limits.MemoryLimitMb != nil {
+		t.Fatal("MemoryLimitMb should not be set at this point")
+	}
+
+	pty.Attrs.Limits.MemoryLimitMb = &memoryLimitMb
+	pty, err = pty.StoreAttrs()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pty, err = GetProcType(pty.Dir.Snapshot, app, "web")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pty.Attrs.Limits.MemoryLimitMb == nil {
+		t.Fatalf("MemoryLimitMb is nil")
+	}
+	if *pty.Attrs.Limits.MemoryLimitMb != memoryLimitMb {
+		t.Fatalf("MemoryLimitMb does not contain the value that was set")
+	}
+}
