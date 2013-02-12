@@ -53,7 +53,7 @@ func Instances(s Snapshot) (ins []*Instance, err error) {
 		return
 	}
 	ch, errch := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
-		id, err := strconv.ParseInt(idstr, 10, 64)
+		id, err := parseInstanceId(idstr)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +167,7 @@ func getInstanceIds(s Snapshot, app, rev, pty string) (ids []int64, err error) {
 	}
 	ids = []int64{}
 	for _, f := range dir {
-		id, e := strconv.ParseInt(f, 10, 64)
+		id, e := parseInstanceId(f)
 		if e != nil {
 			return nil, e
 		}
@@ -511,7 +511,7 @@ func WatchInstanceStart(s Snapshot, listener chan *Instance, errors chan error) 
 		}
 		idstr := strings.Split(ev.Path, "/")[2]
 
-		id, err := strconv.ParseInt(idstr, 0, 64)
+		id, err := parseInstanceId(idstr)
 		if err != nil {
 			panic(err)
 		}
@@ -619,6 +619,10 @@ func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 
 func ptyInstancesPath(app, rev, pty string) string {
 	return path.Join(appsPath, app, procsPath, pty, instancesPath, rev)
+}
+
+func parseInstanceId(idstr string) (int64, error) {
+	return strconv.ParseInt(idstr, 10, 64)
 }
 
 func (i *Instance) idString() string {
