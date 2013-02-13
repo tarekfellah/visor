@@ -54,7 +54,7 @@ func RunnersByHost(s Snapshot, host string) (runners []*Runner, err error) {
 		return
 	}
 	ch, errch := getSnapshotables(ids, func(id string) (snapshotable, error) {
-		return GetRunner(s, id)
+		return GetRunner(s, runnerAddr(host, id))
 	})
 	for i := 0; i < len(ids); i++ {
 		select {
@@ -84,6 +84,36 @@ func GetRunner(s Snapshot, addr string) (*Runner, error) {
 	}
 
 	return NewRunner(addr, insId, s), nil
+}
+
+func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error) {
+	rev := s.Rev
+
+	for {
+		ev, err := s.conn.Wait(path.Join(runnersPath, host, "*"), rev+1)
+		if err != nil {
+			errch <- err
+			return
+		}
+		rev = ev.Rev
+
+		if !ev.IsSet() {
+			continue
+		}
+		port := strings.Split(ev.Path, "/")[3]
+		addr := runnerAddr(host, port)
+
+		runner, err := GetRunner(s.FastForward(rev), addr)
+		if err != nil {
+			errch <- err
+			return
+		}
+		ch <- runner
+	}
+}
+
+func runnerAddr(host, port string) string {
+	return fmt.Sprintf("%s:%s", host, port)
 }
 
 func runnerPath(addr string) string {
