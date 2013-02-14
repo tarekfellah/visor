@@ -157,6 +157,17 @@ func (c *conn) Close() {
 func (c *conn) Del(path string, rev int64) (err error) {
 	path = c.prefixPath(path)
 
+	err = c.conn.Del(path, rev)
+	if e, ok := err.(*doozer.Error); ok && e.Err == doozer.ErrIsDir {
+		return c.delDir(path, rev)
+	}
+	if err == doozer.ErrNoEnt || (err != nil && err.Error() == "NOENT") {
+		return NewError(ErrNoEnt, fmt.Sprintf(`path "%s" not found @ %d`, path, rev))
+	}
+	return
+}
+
+func (c *conn) delDir(path string, rev int64) (err error) {
 	err = doozer.Walk(c.conn, rev, path, func(path string, f *doozer.FileInfo, e error) error {
 		if e != nil {
 			return e
