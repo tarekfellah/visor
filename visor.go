@@ -146,6 +146,20 @@ func Scale(app string, revision string, processName string, factor int, s Snapsh
 	return
 }
 
+func Lock(key, value string, s Snapshot) (Snapshot, error) {
+	s1, e := s.set(path.Join("locks", key), value)
+	if err, ok := e.(*Error); ok {
+		if err.Err == ErrRevMismatch {
+			return s, ErrLocked
+		}
+	}
+	return s1, nil
+}
+
+func Unlock(key string, s Snapshot) error {
+	return s.del(path.Join("locks", key))
+}
+
 func timestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
