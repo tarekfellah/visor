@@ -156,3 +156,35 @@ func TestGetuid(t *testing.T) {
 		<-ch
 	}
 }
+
+func TestLock(t *testing.T) {
+	s, err := Dial(DefaultAddr, "/lock-test")
+	if err != nil {
+		panic(err)
+	}
+
+	s1, err := Lock("my-lock", "secret", s)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Lock("my-lock", "secret", s)
+	if err != ErrLocked {
+		t.Fatal("expected lock to be taken")
+	}
+
+	err = Unlock("my-lock", s)
+	if err == nil {
+		t.Fatal("expected lock to be taken")
+	}
+
+	err = Unlock("my-lock", s1)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = Lock("my-lock", "secret", s1)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
