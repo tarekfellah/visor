@@ -36,6 +36,10 @@ func (r *Runner) Register() (*Runner, error) {
 	return r.FastForward(f.Snapshot.Rev), nil
 }
 
+func (r *Runner) Unregister() error {
+	return r.Dir.Snapshot.del("/")
+}
+
 func (r *Runner) createSnapshot(rev int64) snapshotable {
 	tmp := *r
 	tmp.Dir.Snapshot = Snapshot{rev, r.Dir.Snapshot.conn}

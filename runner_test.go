@@ -53,6 +53,16 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 	if r2.InstanceId != r1.InstanceId {
 		t.Error("instance ids don't match")
 	}
+
+	err = r2.Unregister()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = GetRunner(r2.Dir.Snapshot.FastForward(-1), addr)
+	if !IsErrNoEnt(err) {
+		t.Fatal("expected runner to be unregistered")
+	}
 }
 
 func TestRunnersByHost(t *testing.T) {
