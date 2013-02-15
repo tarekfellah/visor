@@ -141,3 +141,36 @@ func TestWatchRunnerStart(t *testing.T) {
 		t.Errorf("expected runner, got timeout")
 	}
 }
+
+func TestWatchRunnerStop(t *testing.T) {
+	var insId int64 = 797979
+
+	addr := "127.0.0.1:9898"
+	s := runnerSetup()
+	ch := make(chan string)
+	errch := make(chan error)
+
+	go WatchRunnerStop("127.0.0.1", s, ch, errch)
+
+	r := NewRunner(addr, insId, s)
+	r1, err := r.Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = r1.Unregister()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case addr1 := <-ch:
+		if addr == addr {
+			break
+		}
+		t.Errorf("received unexpected addr: %#v", addr1)
+	case err := <-errch:
+		t.Fatal(err)
+	case <-time.After(time.Second):
+		t.Errorf("expected runner, got timeout")
+	}
+}

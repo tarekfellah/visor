@@ -7,6 +7,7 @@ package visor
 
 import (
 	"fmt"
+	"github.com/soundcloud/doozer"
 	"path"
 	"strconv"
 	"strings"
@@ -94,7 +95,7 @@ func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error
 	rev := s.Rev
 
 	for {
-		ev, err := s.conn.Wait(path.Join(runnersPath, host, "*"), rev+1)
+		ev, err := waitRunnersByHost(host, rev, s)
 		if err != nil {
 			errch <- err
 			return
@@ -104,8 +105,7 @@ func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error
 		if !ev.IsSet() {
 			continue
 		}
-		port := strings.Split(ev.Path, "/")[3]
-		addr := runnerAddr(host, port)
+		addr := addrFromPath(ev.Path)
 
 		runner, err := GetRunner(s.FastForward(rev), addr)
 		if err != nil {
@@ -114,6 +114,35 @@ func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error
 		}
 		ch <- runner
 	}
+}
+
+func WatchRunnerStop(host string, s Snapshot, ch chan string, errch chan error) {
+	rev := s.Rev
+
+	for {
+		ev, err := waitRunnersByHost(host, rev, s)
+		if err != nil {
+			errch <- err
+			return
+		}
+		rev = ev.Rev
+
+		if !ev.IsDel() {
+			continue
+		}
+		ch <- addrFromPath(ev.Path)
+	}
+}
+
+func addrFromPath(path string) string {
+	parts := strings.Split(path, "/")
+	addr := runnerAddr(parts[2], parts[3])
+
+	return addr
+}
+
+func waitRunnersByHost(host string, rev int64, s Snapshot) (doozer.Event, error) {
+	return s.conn.Wait(path.Join(runnersPath, host, "*"), rev+1)
 }
 
 func runnerAddr(host, port string) string {
