@@ -9,6 +9,10 @@ func (p *dir) get(key string) (string, int64, error) {
 	return p.Snapshot.get(p.prefix(key))
 }
 
+func (p *dir) getFile(key string, codec codec) (*file, error) {
+	return p.Snapshot.getFile(p.prefix(key), codec)
+}
+
 func (p *dir) set(key string, val string) (int64, error) {
 	s, err := p.Snapshot.set(p.prefix(key), val)
 	return s.Rev, err
