@@ -62,10 +62,6 @@ const (
 	EvInsStart  = EventType("instance-start")
 	EvInsFail   = EventType("instance-fail")
 	EvInsExit   = EventType("instance-exit")
-	EvSrvReg    = EventType("service-register")
-	EvSrvUnreg  = EventType("service-unregister")
-	EvEpReg     = EventType("endpoint-register")
-	EvEpUnreg   = EventType("endpoint-unregister")
 	EvUnknown   = EventType("UNKNOWN")
 )
 
@@ -83,8 +79,6 @@ const (
 	pathInsStatus
 	pathInsStart
 	pathInsStop
-	pathSrv
-	pathEp
 )
 
 var eventPatterns = map[*regexp.Regexp]eventPath{
@@ -95,8 +89,6 @@ var eventPatterns = map[*regexp.Regexp]eventPath{
 	regexp.MustCompile("^/instances/([-0-9]+)/status$"):                                  pathInsStatus,
 	regexp.MustCompile("^/instances/([-0-9]+)/start$"):                                   pathInsStart,
 	regexp.MustCompile("^/instances/([-0-9]+)/stop$"):                                    pathInsStop,
-	regexp.MustCompile("^/services/(" + charPat + "+)/registered$"):                      pathSrv,
-	regexp.MustCompile("^/services/(" + charPat + "+)/endpoints/([-0-9]+)$"):             pathEp,
 }
 
 func (ev *Event) String() string {
@@ -153,8 +145,6 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 		rev *Revision
 		pty *ProcType
 		ins *Instance
-		srv *Service
-		edp *Endpoint
 	)
 
 	if uncanonicalized.App != nil {
@@ -190,21 +180,6 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 		}
 	}
 
-	if uncanonicalized.Service != nil {
-		srv, err = GetService(s, *uncanonicalized.Service)
-		if err != nil {
-			return
-		}
-
-	}
-
-	if uncanonicalized.Endpoint != nil {
-		edp, err = GetEndpoint(s, srv, *uncanonicalized.Endpoint)
-		if err != nil {
-			return
-		}
-	}
-
 	switch etype {
 	case EvAppReg:
 		source = app
@@ -214,10 +189,6 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 		source = pty
 	case EvInsReg, EvInsStart, EvInsFail, EvInsExit:
 		source = ins
-	case EvSrvReg:
-		source = srv
-	case EvEpReg:
-		source = edp
 	}
 
 	return
@@ -296,22 +267,6 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 					etype = EvInsExit
 				case InsStatusFailed:
 					etype = EvInsFail
-				}
-			case pathSrv:
-				uncanonicalized.Service = &match[1]
-
-				if src.IsSet() {
-					etype = EvSrvReg
-				} else if src.IsDel() {
-					etype = EvSrvUnreg
-				}
-			case pathEp:
-				uncanonicalized.Service = &match[1]
-				uncanonicalized.Endpoint = &match[2]
-				if src.IsSet() {
-					etype = EvEpReg
-				} else if src.IsDel() {
-					etype = EvEpUnreg
 				}
 			}
 			break
