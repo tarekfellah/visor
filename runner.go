@@ -6,26 +6,41 @@
 package visor
 
 import (
+	"bufio"
 	"fmt"
 	"github.com/soundcloud/doozer"
+	"github.com/soundcloud/visor/net"
+	"io"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const runnersPath = "runners"
+
+type rStatus string
+
+const (
+	rUp      rStatus = "up"
+	rDown    rStatus = "down"
+	rUnknown rStatus = "unkknown"
+)
 
 type Runner struct {
 	Dir        dir
 	Addr       string
 	InstanceId int64
+	conn       io.ReadWriteCloser
+	net        net.Network
 }
 
-func NewRunner(addr string, instanceId int64, s Snapshot) *Runner {
+func NewRunner(addr string, instanceId int64, network net.Network, s Snapshot) *Runner {
 	return &Runner{
 		Dir:        dir{s, runnerPath(addr)},
 		Addr:       addr,
 		InstanceId: instanceId,
+		net:        network,
 	}
 }
 
@@ -51,6 +66,71 @@ func (r *Runner) createSnapshot(rev int64) snapshotable {
 // a new instance of Runner with the supplied revision.
 func (r *Runner) FastForward(rev int64) *Runner {
 	return r.Dir.Snapshot.fastForward(r, rev).(*Runner)
+}
+
+func (r *Runner) Connect() (err error) {
+	if r.conn != nil {
+		return
+	}
+
+	for i := 0; i < 3; i++ {
+		var conn io.ReadWriteCloser
+
+		conn, err = r.net.Dial(r.Addr)
+		if err == nil {
+			r.conn = conn
+			_, err = r.cmd("raw") // Activate 'raw' mode
+			break
+		}
+		time.Sleep(time.Second / 2)
+	}
+	return
+}
+
+func (r *Runner) Disconnect() {
+	r.conn.Close()
+	r.conn = nil
+}
+
+func (r *Runner) send(cmd string) (err error) {
+	_, err = fmt.Fprintf(r.conn, "%s\n", cmd)
+
+	return
+}
+
+func (r *Runner) cmd(c string) (out string, err error) {
+	if err = r.send(c); err != nil {
+		return
+	}
+	out, err = bufio.NewReader(r.conn).ReadString('\n')
+
+	return
+}
+
+func (r *Runner) GetStatus() (s rStatus, srvRestarts, logRestarts int, err error) {
+	out, err := r.cmd("status")
+	if err != nil {
+		return rUnknown, -1, -1, err
+	}
+	fields := strings.Fields(out) // example: "up 6 0"
+
+	s = rStatus(fields[0])
+
+	srvRestarts, err = strconv.Atoi(fields[1])
+	if err != nil {
+		return rUnknown, -1, -1, err
+	}
+
+	logRestarts, err = strconv.Atoi(fields[2])
+	if err != nil {
+		return rUnknown, -1, -1, err
+	}
+
+	return
+}
+
+func (r *Runner) Exit() error {
+	return r.send("kill")
 }
 
 func RunnersByHost(s Snapshot, host string) (runners []*Runner, err error) {
@@ -88,7 +168,7 @@ func GetRunner(s Snapshot, addr string) (*Runner, error) {
 		return nil, err
 	}
 
-	return NewRunner(addr, insId, s), nil
+	return NewRunner(addr, insId, new(net.Net), s), nil
 }
 
 func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error) {

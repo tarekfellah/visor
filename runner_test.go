@@ -6,6 +6,7 @@
 package visor
 
 import (
+	"github.com/soundcloud/visor/net"
 	"testing"
 	"time"
 )
@@ -29,7 +30,7 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 	s := runnerSetup()
 	addr := "127.0.0.1:9999"
 
-	r := NewRunner(addr, insId, s)
+	r := NewRunner(addr, insId, new(net.Net), s)
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -68,15 +69,15 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 func TestRunnersByHost(t *testing.T) {
 	s := runnerSetup()
 
-	_, err := NewRunner("10.0.1.1:7777", 9, s).Register()
+	_, err := NewRunner("10.0.1.1:7777", 9, new(net.Net), s).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = NewRunner("10.0.1.2:7777", 7, s).Register()
+	_, err = NewRunner("10.0.1.2:7777", 7, new(net.Net), s).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := NewRunner("10.0.1.2:7778", 8, s).Register()
+	r, err := NewRunner("10.0.1.2:7778", 8, new(net.Net), s).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +124,7 @@ func TestWatchRunnerStart(t *testing.T) {
 
 	go WatchRunnerStart("127.0.0.1", s, ch, errch)
 
-	r := NewRunner(addr, insId, s)
+	r := NewRunner(addr, insId, new(net.Net), s)
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -152,7 +153,7 @@ func TestWatchRunnerStop(t *testing.T) {
 
 	go WatchRunnerStop("127.0.0.1", s, ch, errch)
 
-	r := NewRunner(addr, insId, s)
+	r := NewRunner(addr, insId, new(net.Net), s)
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)
