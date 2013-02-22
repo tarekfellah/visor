@@ -19,12 +19,12 @@ import (
 
 const runnersPath = "runners"
 
-type rStatus string
+type RStatus string
 
 const (
-	rUp      rStatus = "up"
-	rDown    rStatus = "down"
-	rUnknown rStatus = "unkknown"
+	RunnerUp      RStatus = "up"
+	RunnerDown    RStatus = "down"
+	RunnerUnknown RStatus = "unkknown"
 )
 
 type Runner struct {
@@ -107,23 +107,23 @@ func (r *Runner) cmd(c string) (out string, err error) {
 	return
 }
 
-func (r *Runner) GetStatus() (s rStatus, srvRestarts, logRestarts int, err error) {
+func (r *Runner) GetStatus() (s RStatus, srvRestarts, logRestarts int, err error) {
 	out, err := r.cmd("status")
 	if err != nil {
-		return rUnknown, -1, -1, err
+		return RunnerUnknown, -1, -1, err
 	}
 	fields := strings.Fields(out) // example: "up 6 0"
 
-	s = rStatus(fields[0])
+	s = RStatus(fields[0])
 
 	srvRestarts, err = strconv.Atoi(fields[1])
 	if err != nil {
-		return rUnknown, -1, -1, err
+		return RunnerUnknown, -1, -1, err
 	}
 
 	logRestarts, err = strconv.Atoi(fields[2])
 	if err != nil {
-		return rUnknown, -1, -1, err
+		return RunnerUnknown, -1, -1, err
 	}
 
 	return
