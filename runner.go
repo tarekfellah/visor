@@ -24,7 +24,7 @@ type RStatus string
 const (
 	RunnerUp      RStatus = "up"
 	RunnerDown    RStatus = "down"
-	RunnerUnknown RStatus = "unkknown"
+	RunnerUnknown RStatus = "unknown"
 )
 
 type Runner struct {
