@@ -133,6 +133,22 @@ func (r *Runner) Exit() error {
 	return r.send("kill")
 }
 
+func Runners(s Snapshot) (runners []*Runner, err error) {
+	hosts, err := s.getdir(runnersPath)
+	if err != nil {
+		return
+	}
+
+	for _, host := range hosts {
+		rns, err := RunnersByHost(s, host)
+		if err != nil {
+			return runners, err
+		}
+		runners = append(runners, rns...)
+	}
+	return
+}
+
 func RunnersByHost(s Snapshot, host string) (runners []*Runner, err error) {
 	ids, err := s.getdir(path.Join(runnersPath, host))
 	if err != nil {
