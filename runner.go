@@ -53,7 +53,7 @@ func (r *Runner) Register() (*Runner, error) {
 }
 
 func (r *Runner) Unregister() error {
-	return r.Dir.Snapshot.del("/")
+	return r.Dir.del("/")
 }
 
 func (r *Runner) createSnapshot(rev int64) snapshotable {
