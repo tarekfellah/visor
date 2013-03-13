@@ -107,6 +107,14 @@ func (r *Runner) cmd(c string) (out string, err error) {
 	return
 }
 
+func (r *Runner) GetPid() (pid int, err error) {
+	out, err := r.cmd("pid")
+	if err != nil {
+		return -1, err
+	}
+	return strconv.Atoi(strings.TrimSpace(out))
+}
+
 func (r *Runner) GetStatus() (s RStatus, srvRestarts, logRestarts int, err error) {
 	out, err := r.cmd("status")
 	if err != nil {
@@ -131,6 +139,14 @@ func (r *Runner) GetStatus() (s RStatus, srvRestarts, logRestarts int, err error
 
 func (r *Runner) Exit() error {
 	return r.send("kill")
+}
+
+func (r *Runner) Down() error {
+	out, err := r.cmd("down")
+	if out != "OK\n" {
+		return fmt.Errorf(out)
+	}
+	return err
 }
 
 func Runners(s Snapshot) (runners []*Runner, err error) {
