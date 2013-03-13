@@ -313,6 +313,7 @@ func (i *Instance) Unregister() (err error) {
 		}
 	}
 	err = i.Dir.del("/")
+
 	return
 }
 
@@ -553,6 +554,19 @@ func (i *Instance) WaitClaimed() (i1 *Instance, err error) {
 
 func (i *Instance) WaitStarted() (i1 *Instance, err error) {
 	return i.waitStartPathStatus(InsStatusRunning)
+}
+
+func (i *Instance) WaitExited() (*Instance, error) {
+	for {
+		i, err := i.WaitStatus()
+		if err != nil {
+			return nil, err
+		}
+		if i.Status == InsStatusExited {
+			break
+		}
+	}
+	return i, nil
 }
 
 func (i *Instance) WaitFailed() (*Instance, error) {
