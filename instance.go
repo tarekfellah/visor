@@ -21,6 +21,26 @@ const statusPath = "status"
 const stopPath = "stop"
 const restartsPath = "restarts"
 
+type InsRestarts struct {
+	OOM, Fail int
+}
+
+func (r *InsRestarts) Fields() []int {
+	return []int{r.Fail, r.OOM}
+}
+
+type RestartReason string
+
+const (
+	RestartFail = "restart-fail"
+	RestartOOM  = "restart-oom"
+)
+
+const (
+	restartFailField = 0
+	restartOOMField  = 1
+)
+
 type InsStatus string
 
 const (
@@ -44,7 +64,7 @@ type Instance struct {
 	Port         int
 	Host         string
 	Status       InsStatus
-	Restarts     int
+	Restarts     *InsRestarts
 }
 
 func Instances(s Snapshot) (ins []*Instance, err error) {
@@ -197,6 +217,7 @@ func RegisterInstance(app string, rev string, pty string, s Snapshot) (ins *Inst
 		ProcessName:  pty,
 		Status:       InsStatusPending,
 		Dir:          dir{s, instancePath(id)},
+		Restarts:     new(InsRestarts),
 	}
 
 	_, err = createFile(s, ins.Dir.prefix("object"), ins.objectArray(), new(listCodec))
@@ -343,14 +364,20 @@ func (i *Instance) claimed(ip string) {
 	i.Status = InsStatusClaimed
 }
 
-func (i *Instance) getRestarts() (int, *file, error) {
-	restarts := 0
+func (i *Instance) getRestarts() (*InsRestarts, *file, error) {
+	restarts := new(InsRestarts)
 
-	f, err := i.Dir.getFile(i.Dir.prefix(restartsPath), new(intCodec))
+	f, err := i.Dir.getFile(i.Dir.prefix(restartsPath), new(listIntCodec))
 	if err == nil {
-		restarts = f.Value.(int)
+		fields := f.Value.([]int)
+
+		restarts.Fail = fields[restartFailField]
+
+		if len(fields) > 1 {
+			restarts.OOM = fields[restartOOMField]
+		}
 	} else if !IsErrNoEnt(err) {
-		return -1, nil, err
+		return nil, nil, err
 	}
 	return restarts, f, nil
 }
@@ -382,20 +409,20 @@ func (i *Instance) Started(host string, port int, hostname string) (i1 *Instance
 }
 
 // Restarted tells the coordinator that the instance has been restarted.
-func (i *Instance) Restarted() (i1 *Instance, err error) {
+func (i *Instance) Restarted(reason RestartReason, count int) (i1 *Instance, err error) {
 	//
 	//   instances/
 	//       6868/
 	//           object   = <app> <rev> <proc>
 	//           start    = 10.0.0.1 24690 localhost
-	// -         restarts = 1
-	// +         restarts = 2
+	// -         restarts = 1 4
+	// +         restarts = 2 4
 	//
 	//   instances/
 	//       6869/
 	//           object   = <app> <rev> <proc>
 	//           start    = 10.0.0.1 24691 localhost
-	// +         restarts = 1
+	// +         restarts = 1 0
 	//
 	if i.Status != InsStatusRunning {
 		return i, nil
@@ -405,9 +432,15 @@ func (i *Instance) Restarted() (i1 *Instance, err error) {
 	if err != nil {
 		return
 	}
-	i.Restarts = restarts + 1
 
-	f, err = f.Set(i.Restarts)
+	switch reason {
+	case RestartFail:
+		i.Restarts.Fail = restarts.Fail + count
+	case RestartOOM:
+		i.Restarts.OOM = restarts.OOM + count
+	}
+
+	f, err = f.Set(i.Restarts.Fields())
 	if err != nil {
 		return
 	}
