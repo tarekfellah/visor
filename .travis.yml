@@ -11,7 +11,7 @@ install:
   - git clone git://github.com/soundcloud/doozerd.git
   - pushd doozerd
   - make compile
-  - ./doozerd -hist=100 &> /dev/null &
+  - ./doozerd -hist=100 &
   - sleep 3
   - nc -z 127.0.0.1 8046
   - popd
