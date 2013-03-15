@@ -1,1 +1,5 @@
 language: go
+install:
+  - go get github.com/soundcloud/doozer
+  - go get github.com/soundcloud/cotterpin
+script: go test -v
