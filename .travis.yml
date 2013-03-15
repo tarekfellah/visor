@@ -1,5 +1,7 @@
 language: go
 install:
+  - go get -a code.google.com/p/goprotobuf/proto
+  - go get -a code.google.com/p/go.net/websocket
   - go get -a github.com/soundcloud/doozer
   - go get -a github.com/soundcloud/cotterpin
   - mkdir -p $GOPATH/src/github.com/soundcloud/visor
