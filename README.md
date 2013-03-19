@@ -1,4 +1,4 @@
-# Visor
+# Visor [![Build Status](https://travis-ci.org/soundcloud/visor.png?branch=master)](https://travis-ci.org/soundcloud/visor)
 
 Visor is a library which provides an abstraction over a global process state.
 
