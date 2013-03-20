@@ -124,19 +124,15 @@ func main() {
 
 ### Testing
 
-First start `doozerd` with default configuration. Then run:
+First start `doozerd` locally with default configuration. Then run:
 
 ```
-go test
+go test -v
 ```
 
 ### Conventions
 
-This repository follows the code conventions dictated by [gofmt](http://golang.org/cmd/gofmt/). To automate the formatting process install this [pre-commit hook](https://gist.github.com/e689d5de0982543cce8c), which runs `gofmt` and adds the files. Don't forget to make the file executable: `chmod +x .git/hooks/pre-commit`.
-
-### Branching
-
-See [Guide](https://github.com/soundcloud/soundcloud/wiki/conventions-git#wiki-using-git-flow).
+This repository follows the code conventions dictated by [gofmt](http://golang.org/cmd/gofmt/).
 
 ### Versioning
 
