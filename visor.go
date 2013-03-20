@@ -1,35 +1,8 @@
-// Copyright (c) 2012, SoundCloud Ltd.
+// Copyright (c) 2013, SoundCloud Ltd.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 // Source code and contact info at http://github.com/soundcloud/visor
 
-// Visor is a library which provides an abstract interface
-// over a global process state.
-//
-// This process state is referred to as the registry.
-//
-// Example usage:
-//
-//     package main
-//
-//     import "visor"
-//
-//     func main() {
-//         snapshot, err := visor.Dial("coordinator:8046", "/")
-//         if err != nil {
-//           panic(err)
-//         }
-//
-//         l := make(chan *visor.Event)
-//
-//         // Watch for changes in the global process state
-//         go visor.WatchEvent(snapshot, l)
-//
-//         for {
-//             fmt.Println(<-l)
-//         }
-//     }
-//
 package visor
 
 import (
