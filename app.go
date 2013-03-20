@@ -7,6 +7,7 @@ package visor
 
 import (
 	"fmt"
+	cp "github.com/soundcloud/cotterpin"
 	"path"
 	"strings"
 )
@@ -17,7 +18,7 @@ const DeployLXC = "lxc"
 type Env map[string]string
 
 type App struct {
-	Dir        dir
+	Dir        cp.Dir
 	Name       string
 	RepoUrl    string
 	Stack      string
@@ -27,84 +28,87 @@ type App struct {
 }
 
 // NewApp returns a new App given a name, repository url and stack.
-func NewApp(name string, repourl string, stack string, snapshot Snapshot) (app *App) {
+func (s *Store) NewApp(name string, repourl string, stack string) (app *App) {
 	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
-	app.Dir = dir{snapshot, path.Join(appsPath, app.Name)}
+	app.Dir = cp.Dir{s.GetSnapshot(), path.Join(appsPath, app.Name)}
 
 	return
 }
 
-func (a *App) createSnapshot(rev int64) snapshotable {
+func (a *App) GetSnapshot() cp.Snapshot {
+	return a.Dir.Snapshot
+}
+
+// Join advances the App in time. It returns a new
+// instance of Application at the rev of the supplied
+// cp.Snapshotable.
+func (a *App) Join(s cp.Snapshotable) *App {
 	tmp := *a
-	tmp.Dir.Snapshot = Snapshot{rev, a.Dir.Snapshot.conn}
+	tmp.Dir.Snapshot = s.GetSnapshot()
 	return &tmp
 }
 
-// FastForward advances the application in time. It returns
-// a new instance of Application with the supplied revision.
-func (a *App) FastForward(rev int64) (app *App) {
-	return a.Dir.Snapshot.fastForward(a, rev).(*App)
-}
-
 // Register adds the App to the global process state.
-func (a *App) Register() (app *App, err error) {
-	exists, _, err := a.Dir.Snapshot.conn.Exists(a.Dir.Name)
+func (a *App) Register() (*App, error) {
+	// Explicit FastForward to assure existence
+	// check against latest state
+	s, err := a.Dir.Snapshot.FastForward()
+	if err != nil {
+		return nil, err
+	}
+	a = a.Join(s)
+
+	exists, _, err := a.Dir.Snapshot.Exists(a.Dir.Name)
 	if err != nil {
 		return nil, err
 	}
 	if exists {
-		return nil, ErrKeyConflict
+		return nil, ErrConflict
 	}
 
 	if a.DeployType == "" {
 		a.DeployType = DeployLXC
 	}
 
-	attrs := &file{
-		Snapshot: a.Dir.Snapshot,
-		codec:    new(jsonCodec),
-		dir:      a.Dir.prefix("attrs"),
-		Value: map[string]interface{}{
-			"repo-url":    a.RepoUrl,
-			"stack":       a.Stack,
-			"deploy-type": a.DeployType,
-		},
+	v := map[string]interface{}{
+		"repo-url":    a.RepoUrl,
+		"stack":       a.Stack,
+		"deploy-type": a.DeployType,
 	}
+	attrs := cp.NewFile(a.Dir.Prefix("attrs"), v, new(cp.JsonCodec), a.Dir.Snapshot)
 
-	_, err = attrs.Create()
+	_, err = attrs.Save()
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	for k, v := range a.Env {
 		_, err = a.SetEnvironmentVar(k, v)
 		if err != nil {
-			return
+			return nil, err
 		}
 	}
 
-	rev, err := a.Dir.set("registered", timestamp())
+	d, err := a.Dir.Set("registered", timestamp())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	app = a.FastForward(rev)
-
-	return
+	return a.Join(d), err
 }
 
 // Unregister removes the App form the global process state.
 func (a *App) Unregister() error {
-	return a.Dir.del("/")
+	return a.Dir.Del("/")
 }
 
 // SetHead sets the application's latest revision
 func (a *App) SetHead(head string) (a1 *App, err error) {
-	rev, err := a.Dir.set("head", head)
+	d, err := a.Dir.Set("head", head)
 	if err != nil {
 		return
 	}
-	a1 = a.FastForward(rev)
+	a1 = a.Join(d)
 	a1.Head = head
 
 	return
@@ -112,7 +116,7 @@ func (a *App) SetHead(head string) (a1 *App, err error) {
 
 // EnvironmentVars returns all set variables for this app as a map.
 func (a *App) EnvironmentVars() (vars Env, err error) {
-	names, err := a.Dir.Snapshot.getdir(a.Dir.prefix("env"))
+	names, err := a.Dir.Snapshot.Getdir(a.Dir.Prefix("env"))
 
 	vars = Env{}
 
@@ -123,7 +127,7 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 	ch := make(chan resp, len(names))
 
 	if err != nil {
-		if IsErrNoEnt(err) {
+		if cp.IsErrNoEnt(err) {
 			return vars, nil
 		} else {
 			return
@@ -154,8 +158,11 @@ func (a *App) EnvironmentVars() (vars Env, err error) {
 // GetEnvironmentVar returns the value stored for the given key.
 func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	k = strings.Replace(k, "_", "-", -1)
-	val, _, err := a.Dir.get("env/" + k)
+	val, _, err := a.Dir.Get("env/" + k)
 	if err != nil {
+		if IsErrNoEnt(err) {
+			err = ErrNotFound
+		}
 		return
 	}
 	value = string(val)
@@ -165,37 +172,40 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 
 // SetEnvironmentVar stores the value for the given key.
 func (a *App) SetEnvironmentVar(k string, v string) (app *App, err error) {
-	rev, err := a.Dir.set("env/"+strings.Replace(k, "_", "-", -1), v)
+	d, err := a.Dir.Set("env/"+strings.Replace(k, "_", "-", -1), v)
 	if err != nil {
 		return
 	}
 	if _, present := a.Env[k]; !present {
 		a.Env[k] = v
 	}
-	app = a.FastForward(rev)
+	app = a.Join(d)
 	return
 }
 
 // DelEnvironmentVar removes the env variable for the given key.
-func (a *App) DelEnvironmentVar(k string) (app *App, err error) {
-	err = a.Dir.del("env/" + strings.Replace(k, "_", "-", -1))
+func (a *App) DelEnvironmentVar(k string) (*App, error) {
+	err := a.Dir.Del("env/" + strings.Replace(k, "_", "-", -1))
 	if err != nil {
-		return
+		return nil, err
 	}
-	app = a.FastForward(a.Dir.Snapshot.Rev + 1)
-	return
+	s, err := a.Dir.Snapshot.FastForward()
+	if err != nil {
+		return nil, err
+	}
+	return a.Join(s), nil
 }
 
 // GetRevisions returns all registered Revisions for the App
 func (a *App) GetRevisions() (revisions []*Revision, err error) {
-	s := a.Dir.Snapshot
-	revs, err := s.getdir(a.Dir.prefix("revs"))
+	s := storeFromSnapshotable(a)
+	revs, err := s.GetSnapshot().Getdir(a.Dir.Prefix("revs"))
 	if err != nil {
 		return
 	}
 
-	ch, errch := getSnapshotables(revs, func(name string) (snapshotable, error) {
-		return GetRevision(s, a, name)
+	ch, errch := cp.GetSnapshotables(revs, func(name string) (cp.Snapshotable, error) {
+		return s.GetRevision(a, name)
 	})
 	for i := 0; i < len(revs); i++ {
 		select {
@@ -210,17 +220,18 @@ func (a *App) GetRevisions() (revisions []*Revision, err error) {
 
 // GetProcTypes returns all registered ProcTypes for the App
 func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
-	p := a.Dir.prefix(procsPath)
+	s := storeFromSnapshotable(a)
+	p := a.Dir.Prefix(procsPath)
 
-	names, err := a.Dir.Snapshot.getdir(p)
+	names, err := a.Dir.Snapshot.Getdir(p)
 	if err != nil || len(names) == 0 {
-		if IsErrNoEnt(err) {
+		if cp.IsErrNoEnt(err) {
 			err = nil
 		}
 		return
 	}
-	ch, errch := getSnapshotables(names, func(name string) (snapshotable, error) {
-		return GetProcType(a.Dir.Snapshot, a, name)
+	ch, errch := cp.GetSnapshotables(names, func(name string) (cp.Snapshotable, error) {
+		return s.GetProcType(a, name)
 	})
 	for i := 0; i < len(names); i++ {
 		select {
@@ -235,8 +246,9 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 
 // WatchEvent watches for events related to the app
 func (a *App) WatchEvent(listener chan *Event) {
+	s := storeFromSnapshotable(a)
 	ch := make(chan *Event)
-	go WatchEvent(a.Dir.Snapshot, ch)
+	go s.WatchEvent(ch)
 
 	for e := range ch {
 		if e.Path.App != nil && *e.Path.App == a.Name {
@@ -257,12 +269,12 @@ func (a *App) Inspect() string {
 }
 
 // GetApp fetches an app with the given name.
-func GetApp(s Snapshot, name string) (app *App, err error) {
-	app = NewApp(name, "", "", s)
+func (s *Store) GetApp(name string) (app *App, err error) {
+	app = s.NewApp(name, "", "")
 
-	f, err := s.getFile(app.Dir.prefix("attrs"), new(jsonCodec))
+	f, err := s.GetSnapshot().GetFile(app.Dir.Prefix("attrs"), new(cp.JsonCodec))
 	if err != nil {
-		return nil, err
+		return nil, ErrNotFound
 	}
 
 	value := f.Value.(map[string]interface{})
@@ -271,29 +283,29 @@ func GetApp(s Snapshot, name string) (app *App, err error) {
 	app.Stack = value["stack"].(string)
 	app.DeployType = value["deploy-type"].(string)
 
-	f, err = s.getFile(app.Dir.prefix("head"), new(stringCodec))
+	f, err = s.GetSnapshot().GetFile(app.Dir.Prefix("head"), new(cp.StringCodec))
 	if err == nil {
 		app.Head = f.Value.(string)
-	} else if IsErrNoEnt(err) {
+	} else if cp.IsErrNoEnt(err) {
 		err = nil
 	}
 	return
 }
 
 // Apps returns the list of all registered Apps.
-func Apps(s Snapshot) (apps []*App, err error) {
-	exists, _, err := s.conn.Exists(appsPath)
+func (s *Store) Apps() (apps []*App, err error) {
+	exists, _, err := s.GetSnapshot().Exists(appsPath)
 	if err != nil || !exists {
 		return
 	}
 
-	names, err := s.getdir(appsPath)
+	names, err := s.GetSnapshot().Getdir(appsPath)
 	if err != nil {
 		return
 	}
 
-	ch, errch := getSnapshotables(names, func(name string) (snapshotable, error) {
-		return GetApp(s, name)
+	ch, errch := cp.GetSnapshotables(names, func(name string) (cp.Snapshotable, error) {
+		return s.GetApp(name)
 	})
 
 	for i := 0; i < len(names); i++ {

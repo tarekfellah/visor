@@ -8,7 +8,7 @@ package visor
 import (
 	"bufio"
 	"fmt"
-	"github.com/soundcloud/doozer"
+	cp "github.com/soundcloud/cotterpin"
 	"github.com/soundcloud/visor/net"
 	"io"
 	"path"
@@ -28,44 +28,46 @@ const (
 )
 
 type Runner struct {
-	Dir        dir
+	Dir        cp.Dir
 	Addr       string
 	InstanceId int64
 	conn       io.ReadWriteCloser
 	net        net.Network
 }
 
-func NewRunner(addr string, instanceId int64, network net.Network, s Snapshot) *Runner {
+func (s *Store) NewRunner(addr string, instanceId int64, network net.Network) *Runner {
 	return &Runner{
-		Dir:        dir{s, runnerPath(addr)},
+		Dir:        cp.Dir{s.GetSnapshot(), runnerPath(addr)},
 		Addr:       addr,
 		InstanceId: instanceId,
 		net:        network,
 	}
 }
 
-func (r *Runner) Register() (*Runner, error) {
-	f, err := createFile(r.Dir.Snapshot, r.Dir.Name, []string{strconv.FormatInt(r.InstanceId, 10)}, new(listCodec))
-	if err != nil {
-		return nil, err
-	}
-	return r.FastForward(f.Snapshot.Rev), nil
+func (r *Runner) GetSnapshot() cp.Snapshot {
+	return r.Dir.Snapshot
 }
 
-func (r *Runner) Unregister() error {
-	return r.Dir.del("/")
-}
-
-func (r *Runner) createSnapshot(rev int64) snapshotable {
+// Join advances the Runner in time. It returns
+// a new instance of Runner at the rev of the
+// supplied cp.Snapshotable.
+func (r *Runner) Join(s cp.Snapshotable) *Runner {
 	tmp := *r
-	tmp.Dir.Snapshot = Snapshot{rev, r.Dir.Snapshot.conn}
+	tmp.Dir.Snapshot = s.GetSnapshot()
 	return &tmp
 }
 
-// FastForward advances the runner in time. It returns
-// a new instance of Runner with the supplied revision.
-func (r *Runner) FastForward(rev int64) *Runner {
-	return r.Dir.Snapshot.fastForward(r, rev).(*Runner)
+func (r *Runner) Register() (*Runner, error) {
+	f := cp.NewFile(r.Dir.Name, []string{strconv.FormatInt(r.InstanceId, 10)}, new(cp.ListCodec), r.Dir.Snapshot)
+	f, err := f.Save()
+	if err != nil {
+		return nil, err
+	}
+	return r.Join(f), nil
+}
+
+func (r *Runner) Unregister() error {
+	return r.Dir.Del("/")
 }
 
 func (r *Runner) Connect() (err error) {
@@ -149,14 +151,14 @@ func (r *Runner) Down() error {
 	return err
 }
 
-func Runners(s Snapshot) (runners []*Runner, err error) {
-	hosts, err := s.getdir(runnersPath)
+func (s *Store) Runners() (runners []*Runner, err error) {
+	hosts, err := s.GetSnapshot().Getdir(runnersPath)
 	if err != nil {
 		return
 	}
 
 	for _, host := range hosts {
-		rns, err := RunnersByHost(s, host)
+		rns, err := s.RunnersByHost(host)
 		if err != nil {
 			return runners, err
 		}
@@ -165,13 +167,13 @@ func Runners(s Snapshot) (runners []*Runner, err error) {
 	return
 }
 
-func RunnersByHost(s Snapshot, host string) (runners []*Runner, err error) {
-	ids, err := s.getdir(path.Join(runnersPath, host))
+func (s *Store) RunnersByHost(host string) (runners []*Runner, err error) {
+	ids, err := s.GetSnapshot().Getdir(path.Join(runnersPath, host))
 	if err != nil {
 		return
 	}
-	ch, errch := getSnapshotables(ids, func(id string) (snapshotable, error) {
-		return GetRunner(s, runnerAddr(host, id))
+	ch, errch := cp.GetSnapshotables(ids, func(id string) (cp.Snapshotable, error) {
+		return s.GetRunner(runnerAddr(host, id))
 	})
 	for i := 0; i < len(ids); i++ {
 		select {
@@ -188,8 +190,8 @@ func RunnersByHost(s Snapshot, host string) (runners []*Runner, err error) {
 	return
 }
 
-func GetRunner(s Snapshot, addr string) (*Runner, error) {
-	f, err := s.getFile(runnerPath(addr), new(listCodec))
+func (s *Store) GetRunner(addr string) (*Runner, error) {
+	f, err := s.GetSnapshot().GetFile(runnerPath(addr), new(cp.ListCodec))
 	if err != nil {
 		return nil, err
 	}
@@ -200,14 +202,13 @@ func GetRunner(s Snapshot, addr string) (*Runner, error) {
 		return nil, err
 	}
 
-	return NewRunner(addr, insId, new(net.Net), s), nil
+	return s.NewRunner(addr, insId, new(net.Net)), nil
 }
 
-func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error) {
-	rev := s.Rev
-
+func (s *Store) WatchRunnerStart(host string, ch chan *Runner, errch chan error) {
+	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := waitRunnersByHost(host, rev, s)
+		ev, err := waitRunnersByHost(s, host, rev)
 		if err != nil {
 			errch <- err
 			return
@@ -219,7 +220,7 @@ func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error
 		}
 		addr := addrFromPath(ev.Path)
 
-		runner, err := GetRunner(s.FastForward(rev), addr)
+		runner, err := s.Join(ev).GetRunner(addr)
 		if err != nil {
 			errch <- err
 			return
@@ -228,11 +229,10 @@ func WatchRunnerStart(host string, s Snapshot, ch chan *Runner, errch chan error
 	}
 }
 
-func WatchRunnerStop(host string, s Snapshot, ch chan string, errch chan error) {
-	rev := s.Rev
-
+func (s *Store) WatchRunnerStop(host string, ch chan string, errch chan error) {
+	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := waitRunnersByHost(host, rev, s)
+		ev, err := waitRunnersByHost(s, host, rev)
 		if err != nil {
 			errch <- err
 			return
@@ -253,8 +253,9 @@ func addrFromPath(path string) string {
 	return addr
 }
 
-func waitRunnersByHost(host string, rev int64, s Snapshot) (doozer.Event, error) {
-	return s.conn.Wait(path.Join(runnersPath, host, "*"), rev+1)
+func waitRunnersByHost(s *Store, host string, rev int64) (cp.Event, error) {
+	sp := s.GetSnapshot()
+	return sp.Wait(path.Join(runnersPath, host, "*"), rev+1)
 }
 
 func runnerAddr(host, port string) string {

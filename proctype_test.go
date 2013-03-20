@@ -10,37 +10,41 @@ import (
 	"testing"
 )
 
-func proctypeSetup(appid string) (s Snapshot, app *App) {
-	s, err := Dial(DefaultAddr, "/proctype-test")
+func proctypeSetup(appid string) (s *Store, app *App) {
+	s, err := DialUri(DefaultUri, "/proctype-test")
+	if err != nil {
+		panic(err)
+	}
+	err = s.reset()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.FastForward()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.Init()
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	s.conn.Del("/", r)
-	s = s.FastForward(-1)
-
-	r, err = Init(s)
-	if err != nil {
-		panic(err)
-	}
-	s = s.FastForward(r)
-
-	app = NewApp(appid, "git://proctype.git", "master", s)
+	app = s.NewApp(appid, "git://proctype.git", "master")
 
 	return
 }
 
 func TestProcTypeRegister(t *testing.T) {
 	s, app := proctypeSetup("reg123")
-	pty := NewProcType(app, "whoop", s)
+	pty := s.NewProcType(app, "whoop")
 
 	pty, err := pty.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(pty.Dir.Name)
+	s = s.Join(pty)
+
+	check, _, err := s.GetSnapshot().Exists(pty.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -51,7 +55,7 @@ func TestProcTypeRegister(t *testing.T) {
 
 func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
 	s, app := proctypeSetup("reg1232")
-	pty := NewProcType(app, "who-op", s)
+	pty := s.NewProcType(app, "who-op")
 
 	pty, err := pty.Register()
 	if err != ErrBadPtyName {
@@ -64,7 +68,7 @@ func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
 
 func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
 	s, app := proctypeSetup("reg1233")
-	pty := NewProcType(app, "who_op", s)
+	pty := s.NewProcType(app, "who_op")
 
 	pty, err := pty.Register()
 	if err != ErrBadPtyName {
@@ -77,7 +81,7 @@ func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
 
 func TestProcTypeUnregister(t *testing.T) {
 	s, app := proctypeSetup("unreg123")
-	pty := NewProcType(app, "whoop", s)
+	pty := s.NewProcType(app, "whoop")
 
 	pty, err := pty.Register()
 	if err != nil {
@@ -89,7 +93,7 @@ func TestProcTypeUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.exists(pty.Dir.Name)
+	check, _, err := s.GetSnapshot().Exists(pty.Dir.Name)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
 	}
@@ -99,14 +103,14 @@ func TestProcTypeGetInstances(t *testing.T) {
 	appid := "get-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := NewProcType(app, "web", s)
+	pty := s.NewProcType(app, "web")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	for i := 0; i < 3; i++ {
-		ins, err := RegisterInstance(appid, "128af90", "web", s)
+		ins, err := s.RegisterInstance(appid, "128af90", "web")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -118,7 +122,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
+		pty = pty.Join(ins)
 	}
 
 	is, err := pty.GetInstances()
@@ -134,7 +138,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 	appid := "get-failed-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := NewProcType(app, "web", s)
+	pty := s.NewProcType(app, "web")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -143,7 +147,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 	instances := []*Instance{}
 
 	for i := 0; i < 7; i++ {
-		ins, err := RegisterInstance(appid, "128af9", "web", s)
+		ins, err := s.RegisterInstance(appid, "128af9", "web")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -156,14 +160,14 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 			t.Fatal(err)
 		}
 		instances = append(instances, ins)
-		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
+		pty = pty.Join(ins)
 	}
 	for i := 0; i < 4; i++ {
 		ins, err := instances[i].Failed("10.0.0.1", errors.New("no reason."))
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.FastForward(ins.Dir.Snapshot.Rev)
+		pty = pty.Join(ins)
 	}
 
 	is, err := pty.GetFailedInstances()
@@ -180,13 +184,13 @@ func TestProcTypeAttributes(t *testing.T) {
 	var memoryLimitMb = 100
 	s, app := proctypeSetup(appid)
 
-	pty := NewProcType(app, "web", s)
+	pty := s.NewProcType(app, "web")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pty, err = GetProcType(pty.Dir.Snapshot, app, "web")
+	pty, err = s.Join(pty.Dir.Snapshot).GetProcType(app, "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +204,7 @@ func TestProcTypeAttributes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pty, err = GetProcType(pty.Dir.Snapshot, app, "web")
+	pty, err = s.Join(pty.Dir.Snapshot).GetProcType(app, "web")
 	if err != nil {
 		t.Fatal(err)
 	}

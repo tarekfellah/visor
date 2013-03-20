@@ -7,39 +7,39 @@ package visor
 
 import (
 	"errors"
+	cp "github.com/soundcloud/cotterpin"
 	"reflect"
 	"strconv"
 	"testing"
 	"time"
 )
 
-func eventSetup() (s Snapshot, l chan *Event) {
-	s, err := Dial(DefaultAddr, "/event-test")
+func eventSetup() (*Store, chan *Event) {
+	s, err := DialUri(DefaultUri, "/event-test")
 	if err != nil {
 		panic(err)
 	}
-	r, _ := s.conn.Rev()
-	err = s.conn.Del("/", r)
-
-	s = s.FastForward(-1)
-
-	rev, err := Init(s)
+	err = s.reset()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.FastForward()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.Init()
 	if err != nil {
 		panic(err)
 	}
 
-	s = s.FastForward(rev)
-
-	l = make(chan *Event)
-
-	return
+	return s, make(chan *Event)
 }
 
-func eventAppSetup(name string, s Snapshot) *App {
-	return NewApp(name, "git://"+name, name+"stack", s)
+func eventAppSetup(s *Store, name string) *App {
+	return s.NewApp(name, "git://"+name, name+"stack")
 }
 
-func expectEvent(etype EventType, s snapshotable, l chan *Event, t *testing.T) (event *Event) {
+func expectEvent(etype EventType, s cp.Snapshotable, l chan *Event, t *testing.T) (event *Event) {
 	for {
 		select {
 		case event = <-l:
@@ -52,8 +52,7 @@ func expectEvent(etype EventType, s snapshotable, l chan *Event, t *testing.T) (
 			}
 			return
 		case <-time.After(time.Second):
-			t.Errorf("expected event type %s got timeout", etype)
-			return
+			t.Fatalf("expected event type %s got timeout", etype)
 		}
 	}
 	return
@@ -61,9 +60,9 @@ func expectEvent(etype EventType, s snapshotable, l chan *Event, t *testing.T) (
 
 func TestEventAppRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regcat", s)
+	app := eventAppSetup(s, "regcat")
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	_, err := app.Register()
 	if err != nil {
@@ -78,17 +77,16 @@ func TestEventAppRegistered(t *testing.T) {
 
 func TestEventAppUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregcat", s)
+	app := eventAppSetup(s, "unregcat")
 
 	app, err := app.Register()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 
-	s = s.FastForward(app.Dir.Snapshot.Rev)
+	s = s.Join(app)
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	err = app.Unregister()
 	if err != nil {
@@ -103,19 +101,19 @@ func TestEventAppUnregistered(t *testing.T) {
 
 func TestEventRevRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regdog", s)
+	app := eventAppSetup(s, "regdog")
 
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Dir.Snapshot.Rev)
+	s = s.Join(app)
 
-	rev := NewRevision(app, "stable", s)
-	rev = rev.FastForward(s.Rev)
+	rev := s.NewRevision(app, "stable")
+	rev = rev.Join(s)
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	_, err = rev.Register()
 	if err != nil {
@@ -133,24 +131,24 @@ func TestEventRevRegistered(t *testing.T) {
 
 func TestEventRevUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregdog", s)
+	app := eventAppSetup(s, "unregdog")
 
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Dir.Snapshot.Rev)
+	s = s.Join(app)
 
-	rev := NewRevision(app, "stable", s)
-	rev, err = rev.FastForward(s.Rev).Register()
+	rev := s.NewRevision(app, "stable")
+	rev, err = rev.Join(s).Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	s = s.FastForward(rev.Dir.Snapshot.Rev)
+	s = s.Join(rev)
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	err = rev.Unregister()
 	if err != nil {
@@ -165,26 +163,25 @@ func TestEventRevUnregistered(t *testing.T) {
 
 func TestEventProcTypeRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regstar", s)
+	app := eventAppSetup(s, "proc-register")
 
 	app, err := app.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	s = s.FastForward(app.Dir.Snapshot.Rev)
+	s = s.Join(app)
 
-	rev := NewRevision(app, "bang", s)
-	rev, err = rev.FastForward(s.Rev).Register()
+	rev := s.NewRevision(app, "bang")
+	rev, err = rev.Join(s).Register()
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
-	s = s.FastForward(rev.Dir.Snapshot.Rev)
+	s = s.Join(rev)
 
-	pty := NewProcType(app, "all", s)
+	pty := s.NewProcType(app, "all")
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	_, err = pty.Register()
 	if err != nil {
@@ -202,21 +199,21 @@ func TestEventProcTypeRegistered(t *testing.T) {
 
 func TestEventProcTypeUnregistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("unregstar", s)
-	pty := NewProcType(app, "all", s)
+	app := eventAppSetup(s, "proc-unregister")
+	pty := s.NewProcType(app, "all")
 
 	pty, err := pty.Register()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	s = s.FastForward(pty.Dir.Snapshot.Rev)
+	s = s.Join(pty)
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	err = pty.Unregister()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	ev := expectEvent(EvProcUnreg, nil, l, t)
@@ -228,11 +225,11 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 
 func TestEventInstanceRegistered(t *testing.T) {
 	s, l := eventSetup()
-	app := eventAppSetup("regmouse", s)
+	app := eventAppSetup(s, "regmouse")
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
-	ins, err := RegisterInstance(app.Name, "stable", "web", s)
+	ins, err := s.RegisterInstance(app.Name, "stable", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,13 +244,13 @@ func TestEventInstanceRegistered(t *testing.T) {
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, l := eventSetup()
 
-	ins, err := RegisterInstance("unregmouse", "stable", "web", s)
+	ins, err := s.RegisterInstance("unregmouse", "stable", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(ins.Dir.Snapshot.Rev)
+	s = s.Join(ins)
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	err = ins.Unregister()
 	if err != nil {
@@ -272,18 +269,18 @@ func TestEventInstanceStateChange(t *testing.T) {
 	host := "mouse.org"
 	s, l := eventSetup()
 
-	ins, err := RegisterInstance("statemouse", "stable-state", "web-state", s)
+	ins, err := s.RegisterInstance("statemouse", "stable-state", "web-state")
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(ins.Dir.Snapshot.Rev)
+	s = s.Join(ins)
 
 	ins, err = ins.Claim(ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	go WatchEvent(s, l)
+	go s.WatchEvent(l)
 
 	ins, err = ins.Started(ip, port, host)
 	if err != nil {

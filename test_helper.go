@@ -8,9 +8,9 @@ var ticketId int64 = 10
 var appNames = []string{"cat", "dog", "bird", "wolf", "bear", "lion", "tiger"}
 var revNames = []string{"master", "slave", "e7fa81", "a91748", "f7ea91", "dev", "stable"}
 
-func genApp(s Snapshot) (app *App) {
+func genApp(s *Store) (app *App) {
 	name := randItem(appNames)
-	app = NewApp(name, "git://"+name+".git", "my-stack", s)
+	app = s.NewApp(name, "git://"+name+".git", "my-stack")
 	app, err := app.Register()
 	if err != nil {
 		panic(err)
@@ -19,8 +19,9 @@ func genApp(s Snapshot) (app *App) {
 }
 
 func genRevision(app *App) (rev *Revision) {
+	s := storeFromSnapshotable(app)
 	name := randItem(revNames)
-	rev = NewRevision(app, name, app.Dir.Snapshot)
+	rev = s.NewRevision(app, name)
 	rev, err := rev.Register()
 	if err != nil {
 		panic(err)
@@ -29,7 +30,8 @@ func genRevision(app *App) (rev *Revision) {
 }
 
 func genProctype(app *App, name string) (pty *ProcType) {
-	pty = NewProcType(app, name, app.Dir.Snapshot)
+	s := storeFromSnapshotable(app)
+	pty = s.NewProcType(app, name)
 	pty, err := pty.Register()
 	if err != nil {
 		panic(err)

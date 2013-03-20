@@ -7,12 +7,14 @@ package visor
 
 import (
 	"fmt"
-	"github.com/soundcloud/doozer"
+	cp "github.com/soundcloud/cotterpin"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 )
+
+const charPat = `[-.[:alnum:]]`
 
 type EventData struct {
 	App      *string
@@ -42,9 +44,9 @@ func (d EventData) String() string {
 type Event struct {
 	Type   EventType // Type of event
 	Body   string    // Body of the changed file
-	Source snapshotable
+	Source cp.Snapshotable
 	Path   EventData
-	raw    *doozer.Event // Original event returned by doozer
+	raw    *cp.Event // Original event returned by cotterpin
 	Rev    int64
 }
 
@@ -66,7 +68,7 @@ const (
 )
 
 const (
-	doozerGlobPlural = "**"
+	globPlural = "**"
 )
 
 type eventPath int
@@ -97,16 +99,16 @@ func (ev *Event) String() string {
 
 // WatchEventRaw watches for changes to the registry and sends
 // them as *Event objects to the provided channel.
-func WatchEventRaw(s Snapshot, listener chan *Event) error {
-	rev := s.Rev
+func (s *Store) WatchEventRaw(listener chan *Event) error {
+	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
+		ev, err := s.snapshot.Wait(globPlural, rev+1)
 		if err != nil {
 			return err
 		}
 		rev = ev.Rev
 
-		event, err := enrichEvent(s.FastForward(rev), &ev)
+		event, err := enrichEvent(s.Join(ev), &ev)
 		if err != nil {
 			return err
 		}
@@ -117,15 +119,16 @@ func WatchEventRaw(s Snapshot, listener chan *Event) error {
 }
 
 // WatchEvent wraps WatchEventRaw with additional information.
-func WatchEvent(s Snapshot, listener chan *Event) error {
-	rev := s.Rev
+func (s *Store) WatchEvent(listener chan *Event) error {
+	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := s.conn.Wait(doozerGlobPlural, rev+1)
+		ev, err := s.snapshot.Wait(globPlural, rev+1)
 		if err != nil {
 			return err
 		}
+		s = s.Join(ev)
 		rev = ev.Rev
-		event, err := enrichEvent(s.FastForward(rev), &ev)
+		event, err := enrichEvent(s, &ev)
 		if err != nil {
 			return err
 		}
@@ -139,7 +142,7 @@ func WatchEvent(s Snapshot, listener chan *Event) error {
 	return nil
 }
 
-func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData) (source snapshotable, err error) {
+func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) (source cp.Snapshotable, err error) {
 	var (
 		app *App
 		rev *Revision
@@ -148,7 +151,7 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 	)
 
 	if uncanonicalized.App != nil {
-		app, err = GetApp(s, *uncanonicalized.App)
+		app, err = s.GetApp(*uncanonicalized.App)
 
 		if err != nil {
 			return
@@ -156,7 +159,7 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 	}
 
 	if uncanonicalized.Revision != nil {
-		rev, err = GetRevision(s, app, *uncanonicalized.Revision)
+		rev, err = s.GetRevision(app, *uncanonicalized.Revision)
 
 		if err != nil {
 			return
@@ -164,7 +167,7 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 	}
 
 	if uncanonicalized.Proctype != nil {
-		pty, err = GetProcType(s, app, *uncanonicalized.Proctype)
+		pty, err = s.GetProcType(app, *uncanonicalized.Proctype)
 		if err != nil {
 			return
 		}
@@ -175,7 +178,7 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 		if id, err = strconv.ParseInt(*uncanonicalized.Instance, 10, 64); err != nil {
 			return
 		}
-		if ins, err = GetInstance(s, id); err != nil {
+		if ins, err = s.GetInstance(id); err != nil {
 			return
 		}
 	}
@@ -194,8 +197,8 @@ func canonicalizeMetadata(s Snapshot, etype EventType, uncanonicalized EventData
 	return
 }
 
-func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
-	var canonicalized snapshotable
+func enrichEvent(s *Store, src *cp.Event) (event *Event, err error) {
+	var canonicalized cp.Snapshotable
 
 	path := src.Path
 	etype := EvUnknown

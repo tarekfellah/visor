@@ -9,35 +9,25 @@ import (
 	"testing"
 )
 
-func visorSetup(root string) (s Snapshot) {
-	s, err := Dial(DefaultAddr, root)
+func visorSetup(root string) *Store {
+	s, err := DialUri(DefaultUri, root)
 	if err != nil {
 		panic(err)
 	}
-	s.del("/")
-	s = s.FastForward(-1)
-
-	rev, err := Init(s)
+	err = s.reset()
 	if err != nil {
 		panic(err)
 	}
-	s = s.FastForward(rev)
-
-	return
-}
-
-func TestDialWithDefaultAddrAndRoot(t *testing.T) {
-	_, err := Dial(DefaultAddr, DefaultRoot)
+	s, err = s.FastForward()
 	if err != nil {
-		t.Error(err)
+		panic(err)
 	}
-}
+	s, err = s.Init()
+	if err != nil {
+		panic(err)
+	}
 
-func TestDialWithInvalidAddr(t *testing.T) {
-	_, err := Dial("foo.bar:123:876", "wrong")
-	if err == nil {
-		t.Error("Dialed with invalid addr")
-	}
+	return s
 }
 
 func TestScaleErrors(t *testing.T) {
@@ -48,19 +38,19 @@ func TestScaleErrors(t *testing.T) {
 	rev := genRevision(app)
 	pty := genProctype(app, "web")
 
-	s = s.FastForward(-1)
+	s = s.Join(pty)
 
 	// Scale up
 
-	_, _, err := Scale("fnord", rev.Ref, pty.Name, scale, s)
+	_, _, err := s.Scale("fnord", rev.Ref, pty.Name, scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	_, _, err = Scale(app.Name, "fnord", pty.Name, scale, s)
+	_, _, err = s.Scale(app.Name, "fnord", pty.Name, scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	_, _, err = Scale(app.Name, rev.Ref, "fnord", scale, s)
+	_, _, err = s.Scale(app.Name, rev.Ref, "fnord", scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
@@ -74,18 +64,20 @@ func TestScale(t *testing.T) {
 	rev := genRevision(app)
 	pty := genProctype(app, "web")
 
-	s = s.FastForward(-1)
+	s = s.Join(pty)
 
 	// Scale up
-
-	_, current, err := Scale(app.Name, rev.Ref, pty.Name, scale, s)
+	_, current, err := s.Scale(app.Name, rev.Ref, pty.Name, scale)
 	if current != 0 {
 		t.Fatal("expected current scale to = 0")
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(-1)
+	s, err = s.FastForward()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scale1, _, err := s.GetScale(app.Name, rev.Ref, pty.Name)
 	if err != nil {
@@ -97,30 +89,36 @@ func TestScale(t *testing.T) {
 
 	// Scale down
 
-	_, _, err = Scale(app.Name, rev.Ref, pty.Name, -1, s)
+	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, -1)
 	if err == nil {
 		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	_, current, err = Scale(app.Name, rev.Ref, pty.Name, 1, s)
+	_, current, err = s.Scale(app.Name, rev.Ref, pty.Name, 1)
 	if current != 5 {
-		t.Fatal("expected current scale to = 5")
+		t.Fatalf("expected current scale (%d) to = %d", current, 5)
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(-1)
+	s, err = s.FastForward()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
 	if scale1 != scale {
 		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 
-	_, _, err = Scale(app.Name, rev.Ref, pty.Name, 0, s)
+	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.FastForward(-1)
+	s, err = s.FastForward()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
 	if err != nil {
@@ -131,60 +129,58 @@ func TestScale(t *testing.T) {
 	}
 }
 
-func TestGetuid(t *testing.T) {
-	s, err := Dial(DefaultAddr, "/scale-test")
+func TestGetScale(t *testing.T) {
+	s := visorSetup("/getscale-test")
+	scale := 5
+
+	app := s.NewApp("scale-app", "git://scale.git", "scale-stack")
+	pty := s.NewProcType(app, "scaleproc")
+	rev := s.NewRevision(app, "scale-ref")
+
+	_, err := app.Register()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-	uids := map[int64]bool{}
-	ch := make(chan bool)
-
-	for i := 0; i < 30; i++ {
-		go func(i int) {
-			uid, err := Getuid(s)
-			if err != nil {
-				t.Error(err)
-			}
-			if uids[uid] {
-				t.Error("duplicate UID")
-			}
-			uids[uid] = true
-			ch <- true
-		}(i)
-	}
-	for i := 0; i < 30; i++ {
-		<-ch
-	}
-}
-
-func TestLock(t *testing.T) {
-	s, err := Dial(DefaultAddr, "/lock-test")
+	_, err = rev.Register()
 	if err != nil {
-		panic(err)
+		t.Fatal(err)
 	}
-
-	s1, err := Lock("my-lock", "secret", s)
+	_, err = pty.Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err = s.FastForward()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = Lock("my-lock", "secret", s)
-	if err != ErrLocked {
-		t.Fatal("expected lock to be taken")
+	scale, _, err = s.GetScale(app.Name, rev.Ref, string(pty.Name))
+	if err != nil {
+		t.Error(err)
+	}
+	if scale != 0 {
+		t.Error("expected initial scale of 0")
 	}
 
-	err = Unlock("my-lock", s)
-	if err == nil {
-		t.Fatal("expected lock to be taken")
+	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 9)
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	err = Unlock("my-lock", s1)
+	s, err = s.FastForward()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = Lock("my-lock", "secret", s1)
+	scale, _, err = s.GetScale(app.Name, rev.Ref, string(pty.Name))
 	if err != nil {
-		t.Fatal(err)
+		t.Error(err)
+	}
+	if scale != 9 {
+		t.Errorf("expected scale of 9, got %d", scale)
+	}
+
+	scale, _, err = s.GetScale("invalid-app", rev.Ref, string(pty.Name))
+	if scale != 0 {
+		t.Errorf("expected scale to be 0")
 	}
 }

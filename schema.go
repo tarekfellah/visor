@@ -12,10 +12,10 @@ type SchemaEvent struct {
 
 // WatchSchema notifies the specified ch channel on schema change,
 // and errch on error. If an error occures, WatchSchema exits.
-func WatchSchema(s Snapshot, ch chan SchemaEvent, errch chan error) {
-	rev := s.Rev
+func (s *Store) WatchSchema(ch chan SchemaEvent, errch chan error) {
+	rev := s.snapshot.Rev
 	for {
-		ev, err := s.conn.Wait(schemaPath, rev+1)
+		ev, err := s.snapshot.Wait(schemaPath, rev+1)
 		if err != nil {
 			errch <- err
 			return
@@ -35,20 +35,8 @@ func WatchSchema(s Snapshot, ch chan SchemaEvent, errch chan error) {
 // the coordinator's. If this is not the case, ErrSchemaMism is returned.
 //
 // See WatchSchema to get notified on schema change.
-func VerifySchema(s Snapshot) (int, error) {
-	return verifySchemaVersion(s, SchemaVersion)
-}
-
-func SetSchemaVersion(s Snapshot, version int) (newSnapshot Snapshot, err error) {
-	strVersion := strconv.Itoa(version)
-
-	newSnapshot, err = s.set(schemaPath, strVersion)
-
-	return
-}
-
-func verifySchemaVersion(s Snapshot, version int) (int, error) {
-	value, _, err := s.get(schemaPath)
+func (s *Store) VerifySchema() (int, error) {
+	value, _, err := s.GetSnapshot().Get(schemaPath)
 	if err != nil {
 		return -1, err
 	}
@@ -58,9 +46,20 @@ func verifySchemaVersion(s Snapshot, version int) (int, error) {
 		return intValue, err
 	}
 
-	if intValue != version {
+	if intValue != SchemaVersion {
 		return intValue, ErrSchemaMism
 	}
 
 	return -1, nil
+}
+
+func (s *Store) SetSchemaVersion(version int) (*Store, error) {
+	strVersion := strconv.Itoa(version)
+
+	sp, err := s.GetSnapshot().Set(schemaPath, strVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	return storeFromSnapshotable(sp), nil
 }
