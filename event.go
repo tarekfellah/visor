@@ -276,8 +276,7 @@ func enrichEvent(s Snapshot, src *doozer.Event) (event *Event, err error) {
 	if src.IsSet() {
 		canonicalized, err = canonicalizeMetadata(s, etype, uncanonicalized)
 		if err != nil {
-			fmt.Printf("error canonicalizing inputs: %s\n", err)
-			return nil, err
+			return nil, fmt.Errorf("error canonicalizing inputs: %s", err)
 		}
 	}
 
