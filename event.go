@@ -18,7 +18,6 @@ const charPat = `[-.[:alnum:]]`
 
 type EventData struct {
 	App      *string
-	Endpoint *string
 	Instance *string
 	Proctype *string
 	Revision *string
