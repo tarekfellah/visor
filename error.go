@@ -7,7 +7,6 @@ package visor
 
 import (
 	"errors"
-	cp "github.com/soundcloud/cotterpin"
 )
 
 var (
@@ -35,10 +34,6 @@ func (e *Error) Error() string {
 
 func IsErrSchemaMism(e error) bool {
 	return e == ErrSchemaMism
-}
-
-func IsErrNoEnt(e error) bool {
-	return cp.IsErrNoEnt(e)
 }
 
 func IsErrConflict(e error) bool {

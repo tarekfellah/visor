@@ -160,7 +160,7 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	k = strings.Replace(k, "_", "-", -1)
 	val, _, err := a.Dir.Get("env/" + k)
 	if err != nil {
-		if IsErrNoEnt(err) {
+		if cp.IsErrNoEnt(err) {
 			err = ErrNotFound
 		}
 		return
