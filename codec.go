@@ -83,3 +83,28 @@ func (*listCodec) Encode(input interface{}) ([]byte, error) {
 func (*listCodec) Decode(input []byte) (interface{}, error) {
 	return strings.Fields(string(input)), nil
 }
+
+type listIntCodec struct{}
+
+func (*listIntCodec) Encode(input interface{}) ([]byte, error) {
+	list := []string{}
+
+	for _, item := range input.([]int) {
+		str := strconv.Itoa(item)
+		list = append(list, str)
+	}
+	return []byte(strings.Join(list, " ")), nil
+}
+func (*listIntCodec) Decode(input []byte) (interface{}, error) {
+	list := []int{}
+	fields := strings.Fields(string(input))
+
+	for _, field := range fields {
+		n, err := strconv.Atoi(field)
+		if err != nil {
+			return nil, err
+		}
+		list = append(list, n)
+	}
+	return list, nil
+}
