@@ -10,16 +10,13 @@ import (
 )
 
 var (
-	ErrKeyConflict  = errors.New("key is already set")
-	ErrLocked       = errors.New("lock is already taken")
-	ErrRevMismatch  = errors.New("revision mismatch")
+	ErrConflict     = errors.New("object already exists")
 	ErrInsClaimed   = errors.New("instance is already claimed")
-	ErrUnauthorized = errors.New("operation is not permitted")
 	ErrInvalidState = errors.New("invalid state")
-	ErrNoEnt        = errors.New("file not found")
-	ErrBadPath      = errors.New("invalid path: only ASCII letters, numbers, '.', or '-' are allowed")
 	ErrSchemaMism   = errors.New("visor version not compatible with current coordinator schema")
 	ErrBadPtyName   = errors.New("invalid proc type name: only alphanumeric chars allowed")
+	ErrUnauthorized = errors.New("operation is not permitted")
+	ErrNotFound     = errors.New("object not found")
 )
 
 type Error struct {
@@ -35,13 +32,18 @@ func (e *Error) Error() string {
 	return e.Message
 }
 
-func IsErrNoEnt(e error) (r bool) {
-	if err, ok := e.(*Error); ok {
-		r = err.Err == ErrNoEnt
-	}
-	return
+func IsErrSchemaMism(e error) bool {
+	return e == ErrSchemaMism
 }
 
-func IsErrKeyConflict(e error) bool {
-	return e == ErrKeyConflict
+func IsErrConflict(e error) bool {
+	return e == ErrConflict
+}
+
+func IsErrUnauthorized(e error) bool {
+	return e == ErrUnauthorized
+}
+
+func IsErrNotFound(e error) bool {
+	return e == ErrNotFound
 }

@@ -8,15 +8,17 @@ package visor
 import (
 	"errors"
 	"fmt"
+	cp "github.com/soundcloud/cotterpin"
 	"regexp"
 	"strconv"
+	"time"
 )
 
 var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
-	Dir   dir
+	Dir   cp.Dir
 	Name  string
 	App   *App
 	Port  int
@@ -40,79 +42,87 @@ const (
 	procsAttrsPath = "attrs"
 )
 
-func NewProcType(app *App, name string, s Snapshot) *ProcType {
+func (s *Store) NewProcType(app *App, name string) *ProcType {
 	return &ProcType{
 		Name: name,
 		App:  app,
-		Dir: dir{
-			s, app.Dir.prefix(procsPath, string(name)),
+		Dir: cp.Dir{
+			s.GetSnapshot(), app.Dir.Prefix(procsPath, string(name)),
 		},
 	}
 }
 
-func (p *ProcType) createSnapshot(rev int64) snapshotable {
+func (p *ProcType) GetSnapshot() cp.Snapshot {
+	return p.Dir.Snapshot
+}
+
+// Join advances the instance in time. It returns
+// a new instance of ProcType at rev of the supplied
+// cp.Snapshotable.
+func (p *ProcType) Join(s cp.Snapshotable) *ProcType {
 	tmp := *p
-	tmp.Dir.Snapshot = Snapshot{rev, p.Dir.Snapshot.conn}
+	tmp.Dir.Snapshot = s.GetSnapshot()
 	return &tmp
 }
 
-// FastForward advances the instance in time. It returns
-// a new instance of Instance with the supplied revision.
-func (p *ProcType) FastForward(rev int64) *ProcType {
-	return p.Dir.Snapshot.fastForward(p, rev).(*ProcType)
-}
-
 // Register registers a proctype with the registry.
-func (p *ProcType) Register() (ptype *ProcType, err error) {
-	exists, _, err := p.Dir.Snapshot.conn.Exists(p.Dir.Name)
+func (p *ProcType) Register() (pty *ProcType, err error) {
+	// Explicit FastForward to assure existence
+	// check against latest state
+	s, err := p.Dir.Snapshot.FastForward()
+	if err != nil {
+		return nil, err
+	}
+	p = p.Join(s)
+
+	exists, _, err := p.Dir.Snapshot.Exists(p.Dir.Name)
 	if err != nil {
 		return
 	}
 	if exists {
-		return nil, ErrKeyConflict
+		return nil, cp.ErrKeyConflict
 	}
 
 	if !reProcName.MatchString(p.Name) {
 		return nil, ErrBadPtyName
 	}
 
-	p.Port, err = ClaimNextPort(p.Dir.Snapshot)
+	p.Port, err = claimNextPort(p.Dir.Snapshot)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
 	}
 
-	port := &file{p.Dir.Snapshot, p.Dir.prefix("port"), p.Port, new(intCodec)}
+	port := &cp.File{p.Dir.Snapshot, p.Dir.Prefix("port"), p.Port, new(cp.IntCodec)}
 
-	port, err = port.Create()
+	port, err = port.Save()
 	if err != nil {
 		return p, err
 	}
 
-	rev, err := p.Dir.set("registered", timestamp())
-
+	d, err := p.Dir.Set("registered", timestamp())
 	if err != nil {
 		return p, err
 	}
-	ptype = p.FastForward(rev)
+	pty = p.Join(d)
 
 	return
 }
 
 // Unregister unregisters a proctype from the registry.
 func (p *ProcType) Unregister() (err error) {
-	return p.Dir.del("/")
+	return p.Dir.Del("/")
 }
 
 func (p *ProcType) instancesPath() string {
-	return p.Dir.prefix(instancesPath)
+	return p.Dir.Prefix(instancesPath)
 }
 
 func (p *ProcType) failedInstancesPath() string {
-	return p.Dir.prefix(failedPath)
+	return p.Dir.Prefix(failedPath)
 }
 
 func (p *ProcType) NumInstances() (int, error) {
-	revs, err := p.Dir.Snapshot.getdir(p.Dir.prefix("instances"))
+	revs, err := p.Dir.Snapshot.Getdir(p.Dir.Prefix("instances"))
 	if err != nil {
 		return -1, err
 	}
@@ -123,7 +133,7 @@ func (p *ProcType) NumInstances() (int, error) {
 		if len(rev) != 7 {
 			continue
 		}
-		size, _, err := p.Dir.Snapshot.conn.Stat(p.Dir.prefix("instances", rev), &p.Dir.Snapshot.Rev)
+		size, _, err := p.Dir.Snapshot.Stat(p.Dir.Prefix("instances", rev), &p.Dir.Snapshot.Rev)
 		if err != nil {
 			return -1, err
 		}
@@ -133,7 +143,7 @@ func (p *ProcType) NumInstances() (int, error) {
 }
 
 func (p *ProcType) InstanceIds() (ids []string, err error) {
-	revs, err := p.Dir.Snapshot.getdir(p.Dir.prefix("instances"))
+	revs, err := p.Dir.Snapshot.Getdir(p.Dir.Prefix("instances"))
 	if err != nil {
 		return
 	}
@@ -143,7 +153,7 @@ func (p *ProcType) InstanceIds() (ids []string, err error) {
 			continue
 		}
 
-		iids, e := p.Dir.Snapshot.getdir(p.Dir.prefix("instances", rev))
+		iids, e := p.Dir.Snapshot.Getdir(p.Dir.Prefix("instances", rev))
 		if e != nil {
 			return nil, e
 		}
@@ -153,11 +163,11 @@ func (p *ProcType) InstanceIds() (ids []string, err error) {
 }
 
 func (p *ProcType) GetFailedInstances() (ins []*Instance, err error) {
-	ids, err := p.Dir.Snapshot.getdir(p.failedInstancesPath())
+	ids, err := p.Dir.Snapshot.Getdir(p.failedInstancesPath())
 	if err != nil {
 		return
 	}
-	return p.getInstances(ids)
+	return getInstances(storeFromSnapshotable(p), ids)
 }
 
 func (p *ProcType) GetInstances() (ins []*Instance, err error) {
@@ -165,16 +175,61 @@ func (p *ProcType) GetInstances() (ins []*Instance, err error) {
 	if err != nil {
 		return
 	}
-	return p.getInstances(ids)
+	return getInstances(storeFromSnapshotable(p), ids)
 }
 
-func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
-	ch, errch := getSnapshotables(ids, func(idstr string) (snapshotable, error) {
+func (p *ProcType) StoreAttrs() (ptype *ProcType, err error) {
+	attrs := cp.NewFile(p.Dir.Prefix(procsAttrsPath), p.Attrs, new(cp.JsonCodec), p.Dir.Snapshot)
+	attrs, err = attrs.Save()
+	if err != nil {
+		return
+	}
+
+	ptype = p.Join(attrs)
+	return
+}
+
+func (p *ProcType) String() string {
+	return fmt.Sprintf("ProcType<%s:%s>", p.App.Name, p.Name)
+}
+
+func (p *ProcType) Inspect() string {
+	return fmt.Sprintf("%#v", p)
+}
+
+// TODO consider moving to (*App).GetProcType(name)
+
+// GetProcType fetches a ProcType from the coordinator
+func (s *Store) GetProcType(app *App, name string) (p *ProcType, err error) {
+	path := app.Dir.Prefix(procsPath, string(name))
+
+	dir := cp.Dir{
+		Snapshot: s.GetSnapshot(),
+		Name:     path,
+	}
+
+	port, err := dir.GetFile(procsPortPath, new(cp.IntCodec))
+	if err != nil {
+		return nil, ErrNotFound
+	}
+	p = s.NewProcType(app, name)
+	p.Port = port.Value.(int)
+
+	_, err = s.GetSnapshot().GetFile(dir.Prefix(procsAttrsPath), &cp.JsonCodec{DecodedVal: &p.Attrs})
+	if cp.IsErrNoEnt(err) {
+		err = nil
+	}
+
+	return
+}
+
+func getInstances(s *Store, ids []string) (ins []*Instance, err error) {
+	ch, errch := cp.GetSnapshotables(ids, func(idstr string) (cp.Snapshotable, error) {
 		id, err := strconv.ParseInt(idstr, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		return GetInstance(p.Dir.Snapshot, id)
+		return s.GetInstance(id)
 	})
 	for i := 0; i < len(ids); i++ {
 		select {
@@ -187,53 +242,28 @@ func (p *ProcType) getInstances(ids []string) (ins []*Instance, err error) {
 	return
 }
 
-func (p *ProcType) StoreAttrs() (ptype *ProcType, err error) {
-	attrs := &file{
-		Snapshot: p.Dir.Snapshot,
-		codec:    new(jsonCodec),
-		dir:      p.Dir.prefix(procsAttrsPath),
-		Value:    p.Attrs,
+func claimNextPort(s cp.Snapshot) (int, error) {
+	for {
+		var err error
+		s, err = s.FastForward()
+		if err != nil {
+			return -1, err
+		}
+
+		f, err := s.GetFile(nextPortPath, new(cp.IntCodec))
+		if err == nil {
+			port := f.Value.(int)
+
+			f, err = f.Set(port + 1)
+			if err == nil {
+				return port, nil
+			} else {
+				time.Sleep(time.Second / 10)
+			}
+		} else {
+			return -1, err
+		}
 	}
 
-	f, err := attrs.Create()
-	if err != nil {
-		return
-	}
-
-	ptype = p.FastForward(f.Rev)
-	return
-}
-
-// TODO consider moving to (*App).GetProcType(name)
-
-// GetProcType fetches a ProcType from the coordinator
-func GetProcType(s Snapshot, app *App, name string) (p *ProcType, err error) {
-	path := app.Dir.prefix(procsPath, string(name))
-
-	dir := dir{
-		Snapshot: s,
-		Name:     path,
-	}
-
-	port, err := dir.getFile(procsPortPath, new(intCodec))
-	if err != nil {
-		return
-	}
-	p = NewProcType(app, name, s)
-	p.Port = port.Value.(int)
-
-	_, err = s.getFile(dir.prefix(procsAttrsPath), &jsonCodec{decodedVal: &p.Attrs})
-	if IsErrNoEnt(err) {
-		err = nil
-	}
-
-	return
-}
-
-func (p *ProcType) String() string {
-	return fmt.Sprintf("ProcType<%s:%s>", p.App.Name, p.Name)
-}
-
-func (p *ProcType) Inspect() string {
-	return fmt.Sprintf("%#v", p)
+	return -1, nil
 }

@@ -6,30 +6,31 @@
 package visor
 
 import (
+	"github.com/soundcloud/cotterpin"
 	"testing"
 	"time"
 )
 
-func cleanSchemaVersion(s Snapshot, t *testing.T) Snapshot {
-	var exists bool
-	var err error
-
-	if exists, _, err = s.exists(schemaPath); err != nil {
+func cleanSchemaVersion(s *Store, t *testing.T) *Store {
+	exists, _, err := s.GetSnapshot().Exists(schemaPath)
+	if err != nil {
 		t.Fatal("error calling del on '%s': %s", schemaPath, err.Error())
 	}
-
 	if exists {
-		if err := s.del(schemaPath); err != nil {
+		if err := s.GetSnapshot().Del(schemaPath); err != nil {
 			t.Fatal("error calling get on '" + schemaPath + "': " + err.Error())
 		}
-		s = s.FastForward(-1)
+	}
+	s, err = s.FastForward()
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	return s
 }
 
 func TestSchemaMissing(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := DialUri(DefaultUri, DefaultRoot)
 
 	if err != nil {
 		panic(err)
@@ -37,7 +38,7 @@ func TestSchemaMissing(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if _, err := VerifySchema(s); !IsErrNoEnt(err) {
+	if _, err := s.VerifySchema(); !cotterpin.IsErrNoEnt(err) {
 		if err == nil {
 			t.Error("missing schema version did not error out")
 		} else {
@@ -47,7 +48,7 @@ func TestSchemaMissing(t *testing.T) {
 }
 
 func TestSetVersion(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := DialUri(DefaultUri, DefaultRoot)
 
 	if err != nil {
 		panic(err)
@@ -55,17 +56,17 @@ func TestSetVersion(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = SetSchemaVersion(s, SchemaVersion); err != nil {
+	if s, err = s.SetSchemaVersion(SchemaVersion); err != nil {
 		t.Fatal("setting schema version failed")
 	}
 
-	if _, err := VerifySchema(s); err != nil {
+	if _, err := s.VerifySchema(); err != nil {
 		t.Error("setting new version failed: " + err.Error())
 	}
 }
 
 func TestVersionTooNew(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := DialUri(DefaultUri, DefaultRoot)
 	coordinatorVersion := 0
 
 	if err != nil {
@@ -74,11 +75,11 @@ func TestVersionTooNew(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+	if s, err = s.SetSchemaVersion(coordinatorVersion); err != nil {
 		t.Fatal("setting schema version failed")
 	}
 
-	if _, err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := s.VerifySchema(); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("newer schema version did not error out")
 		} else {
@@ -88,7 +89,7 @@ func TestVersionTooNew(t *testing.T) {
 }
 
 func TestVersionTooOld(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := DialUri(DefaultUri, DefaultRoot)
 	coordinatorVersion := 99
 
 	if err != nil {
@@ -97,11 +98,11 @@ func TestVersionTooOld(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+	if s, err = s.SetSchemaVersion(coordinatorVersion); err != nil {
 		t.Fatal("setting schema version failed")
 	}
 
-	if _, err := VerifySchema(s); err != ErrSchemaMism {
+	if _, err := s.VerifySchema(); err != ErrSchemaMism {
 		if err == nil {
 			t.Error("older schema version did not error out")
 		} else {
@@ -111,7 +112,7 @@ func TestVersionTooOld(t *testing.T) {
 }
 
 func TestSchemaWatcher(t *testing.T) {
-	s, err := Dial(DefaultAddr, DefaultRoot)
+	s, err := DialUri(DefaultUri, DefaultRoot)
 	coordinatorVersion := 2
 
 	if err != nil {
@@ -120,17 +121,17 @@ func TestSchemaWatcher(t *testing.T) {
 
 	s = cleanSchemaVersion(s, t)
 
-	if s, err = SetSchemaVersion(s, coordinatorVersion); err != nil {
+	if s, err = s.SetSchemaVersion(coordinatorVersion); err != nil {
 		t.Fatal(err)
 	}
 
 	schemaEvents := make(chan SchemaEvent, 1)
 	errch := make(chan error, 1)
 
-	go WatchSchema(s, schemaEvents, errch)
+	go s.WatchSchema(schemaEvents, errch)
 
 	go func() {
-		if s, err = SetSchemaVersion(s, coordinatorVersion+1); err != nil {
+		if s, err = s.SetSchemaVersion(coordinatorVersion + 1); err != nil {
 			t.Fatal(err)
 		}
 	}()

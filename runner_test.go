@@ -6,22 +6,28 @@
 package visor
 
 import (
+	cp "github.com/soundcloud/cotterpin"
 	"github.com/soundcloud/visor/net"
 	"testing"
 	"time"
 )
 
-func runnerSetup() (s Snapshot) {
-	s, err := Dial(DefaultAddr, "/runner-test")
+func runnerSetup() (s *Store) {
+	s, err := DialUri(DefaultUri, "/runner-test")
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	s.conn.Del("/", r)
-	s = s.FastForward(-1)
+	err = s.reset()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.FastForward()
+	if err != nil {
+		panic(err)
+	}
 
-	return
+	return s
 }
 
 func TestRunnerRegisterAndGet(t *testing.T) {
@@ -30,7 +36,7 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 	s := runnerSetup()
 	addr := "127.0.0.1:9999"
 
-	r := NewRunner(addr, insId, new(net.Net), s)
+	r := s.NewRunner(addr, insId, new(net.Net))
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -43,7 +49,7 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 		t.Error("runner instance-id wasn't set correctly")
 	}
 
-	r2, err := GetRunner(r1.Dir.Snapshot, addr)
+	r2, err := s.Join(r1.Dir.Snapshot).GetRunner(addr)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,8 +66,13 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = GetRunner(r2.Dir.Snapshot.FastForward(-1), addr)
-	if !IsErrNoEnt(err) {
+	sp, err := r2.Dir.Snapshot.FastForward()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.Join(sp).GetRunner(addr)
+	if !cp.IsErrNoEnt(err) {
 		t.Fatal("expected runner to be unregistered")
 	}
 }
@@ -69,20 +80,20 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 func TestRunnersByHost(t *testing.T) {
 	s := runnerSetup()
 
-	_, err := NewRunner("10.0.1.1:7777", 9, new(net.Net), s).Register()
+	_, err := s.NewRunner("10.0.1.1:7777", 9, new(net.Net)).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = NewRunner("10.0.1.2:7777", 7, new(net.Net), s).Register()
+	_, err = s.NewRunner("10.0.1.2:7777", 7, new(net.Net)).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := NewRunner("10.0.1.2:7778", 8, new(net.Net), s).Register()
+	r, err := s.NewRunner("10.0.1.2:7778", 8, new(net.Net)).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rs, err := RunnersByHost(r.Dir.Snapshot, "10.0.1.2")
+	rs, err := s.Join(r.Dir.Snapshot).RunnersByHost("10.0.1.2")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,9 +133,9 @@ func TestWatchRunnerStart(t *testing.T) {
 	ch := make(chan *Runner)
 	errch := make(chan error)
 
-	go WatchRunnerStart("127.0.0.1", s, ch, errch)
+	go s.WatchRunnerStart("127.0.0.1", ch, errch)
 
-	r := NewRunner(addr, insId, new(net.Net), s)
+	r := s.NewRunner(addr, insId, new(net.Net))
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -151,9 +162,9 @@ func TestWatchRunnerStop(t *testing.T) {
 	ch := make(chan string)
 	errch := make(chan error)
 
-	go WatchRunnerStop("127.0.0.1", s, ch, errch)
+	go s.WatchRunnerStop("127.0.0.1", ch, errch)
 
-	r := NewRunner(addr, insId, new(net.Net), s)
+	r := s.NewRunner(addr, insId, new(net.Net))
 	r1, err := r.Register()
 	if err != nil {
 		t.Fatal(err)

@@ -7,12 +7,13 @@ package visor
 
 import (
 	"fmt"
+	cp "github.com/soundcloud/cotterpin"
 )
 
 // A Revision represents an application revision,
 // identifiable by its `ref`.
 type Revision struct {
-	Dir        dir
+	Dir        cp.Dir
 	App        *App
 	Ref        string
 	ArchiveUrl string
@@ -21,60 +22,69 @@ type Revision struct {
 const revsPath = "revs"
 
 // NewRevision returns a new instance of Revision.
-func NewRevision(app *App, ref string, snapshot Snapshot) (rev *Revision) {
+func (s *Store) NewRevision(app *App, ref string) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref}
-	rev.Dir = dir{snapshot, app.Dir.prefix(revsPath, ref)}
+	rev.Dir = cp.Dir{s.GetSnapshot(), app.Dir.Prefix(revsPath, ref)}
 
 	return
 }
 
-func (r *Revision) createSnapshot(rev int64) snapshotable {
-	tmp := *r
-	tmp.Dir.Snapshot = Snapshot{rev, r.Dir.Snapshot.conn}
-	return &tmp
+func (r *Revision) GetSnapshot() cp.Snapshot {
+	return r.Dir.Snapshot
 }
 
-// FastForward advances the revision in time. It returns
-// a new instance of Revision with the supplied revision.
-func (r *Revision) FastForward(rev int64) *Revision {
-	return r.Dir.Snapshot.fastForward(r, rev).(*Revision)
+// Join advances the Revision in time. It returns a new
+// instance of Revision at the rev of the supplied
+// cp.Snapshotable.
+func (r *Revision) Join(s cp.Snapshotable) *Revision {
+	tmp := *r
+	tmp.Dir.Snapshot = s.GetSnapshot()
+	return &tmp
 }
 
 // Register registers a new Revision with the registry.
 func (r *Revision) Register() (revision *Revision, err error) {
-	exists, _, err := r.Dir.Snapshot.conn.Exists(r.Dir.Name)
+	// Explicit FastForward to assure existence
+	// check against latest state
+	s, err := r.Dir.Snapshot.FastForward()
+	if err != nil {
+		return nil, err
+	}
+	r = r.Join(s)
+
+	exists, _, err := r.Dir.Snapshot.Exists(r.Dir.Name)
 	if err != nil {
 		return
 	}
 	if exists {
-		return nil, ErrKeyConflict
+		return nil, cp.ErrKeyConflict
 	}
 
-	rev, err := r.Dir.set("archive-url", r.ArchiveUrl)
+	_, err = r.Dir.Set("archive-url", r.ArchiveUrl)
 	if err != nil {
 		return
 	}
-	rev, err = r.Dir.set("registered", timestamp())
+	d, err := r.Dir.Set("registered", timestamp())
 	if err != nil {
 		return
 	}
 
-	revision = r.FastForward(rev)
+	revision = r.Join(d)
 
 	return
 }
 
 // Unregister unregisters a revision from the registry.
 func (r *Revision) Unregister() (err error) {
-	return r.Dir.del("/")
+	return r.Dir.Del("/")
 }
 
 func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	rev, err := r.Dir.set("archive-url", url)
+	d, err := r.Dir.Set("archive-url", url)
 	if err != nil {
 		return
 	}
-	revision = r.FastForward(rev)
+	revision = r.Join(d)
 	return
 }
 
@@ -86,17 +96,17 @@ func (r *Revision) Inspect() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
-	path := app.Dir.prefix(revsPath, ref)
-	codec := new(stringCodec)
+func (s *Store) GetRevision(app *App, ref string) (r *Revision, err error) {
+	path := app.Dir.Prefix(revsPath, ref)
+	codec := new(cp.StringCodec)
 
-	f, err := s.getFile(path+"/archive-url", codec)
+	f, err := s.GetSnapshot().GetFile(path+"/archive-url", codec)
 	if err != nil {
-		return
+		return nil, ErrNotFound
 	}
 
 	r = &Revision{
-		Dir:        dir{s, path},
+		Dir:        cp.Dir{s.GetSnapshot(), path},
 		App:        app,
 		Ref:        ref,
 		ArchiveUrl: f.Value.(string),
@@ -105,8 +115,8 @@ func GetRevision(s Snapshot, app *App, ref string) (r *Revision, err error) {
 }
 
 // Revisions returns an array of all registered revisions.
-func Revisions(s Snapshot) (revisions []*Revision, err error) {
-	apps, err := Apps(s)
+func (s *Store) Revisions() (revisions []*Revision, err error) {
+	apps, err := s.Apps()
 	if err != nil {
 		return
 	}

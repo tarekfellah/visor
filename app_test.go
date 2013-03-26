@@ -9,36 +9,39 @@ import (
 	"testing"
 )
 
-func appSetup(name string) (app *App) {
-	s, err := Dial(DefaultAddr, "/app-test")
+func appSetup(name string) (*Store, *App) {
+	s, err := DialUri(DefaultUri, "/app-test")
+	if err != nil {
+		panic(err)
+	}
+	err = s.reset()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.FastForward()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.Init()
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	err = s.conn.Del("apps", r)
-	rev, err := Init(s)
-	if err != nil {
-		panic(err)
-	}
+	app := s.NewApp(name, "git://cat.git", "whiskers")
+	app = app.Join(s)
 
-	app = NewApp(name, "git://cat.git", "whiskers", s)
-	app = app.FastForward(rev)
-
-	return
+	return s, app
 }
 
 func TestAppRegistration(t *testing.T) {
-	app := appSetup("lolcatapp")
+	_, app := appSetup("lolcatapp")
 
-	check, _, err := app.Dir.Snapshot.conn.Exists(app.Dir.Name)
+	check, _, err := app.Dir.Snapshot.Exists(app.Dir.Name)
 	if err != nil {
-		t.Error(err)
-		return
+		t.Fatal(err)
 	}
 	if check {
-		t.Error("App already registered")
-		return
+		t.Fatal("App already registered")
 	}
 
 	app2, err := app.Register()
@@ -46,7 +49,7 @@ func TestAppRegistration(t *testing.T) {
 		t.Error(err)
 		return
 	}
-	check, _, err = app2.Dir.Snapshot.conn.Exists(app.Dir.Name)
+	check, _, err = app2.Dir.Snapshot.Exists(app.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -66,7 +69,7 @@ func TestAppRegistration(t *testing.T) {
 }
 
 func TestEnvPersistenceOnRegister(t *testing.T) {
-	app := appSetup("envyapp")
+	_, app := appSetup("envyapp")
 
 	app.Env["VAR1"] = "VAL1"
 	app.Env["VAR2"] = "VAL2"
@@ -89,8 +92,8 @@ func TestEnvPersistenceOnRegister(t *testing.T) {
 	}
 }
 
-func TestAppUnregistration(t *testing.T) {
-	app := appSetup("dog")
+func TestAppUnregister(t *testing.T) {
+	_, app := appSetup("dog")
 
 	app, err := app.Register()
 	if err != nil {
@@ -104,7 +107,13 @@ func TestAppUnregistration(t *testing.T) {
 		return
 	}
 
-	check, _, err := app.Dir.Snapshot.conn.Exists(app.Dir.Name)
+	s, err := app.Dir.Snapshot.FastForward()
+	if err != nil {
+		t.Error(err)
+	}
+	app = app.Join(s)
+
+	check, _, err := app.Dir.Snapshot.Exists(app.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -114,7 +123,7 @@ func TestAppUnregistration(t *testing.T) {
 }
 
 func TestAppUnregistrationFailure(t *testing.T) {
-	app := appSetup("dog-fail")
+	_, app := appSetup("dog-fail")
 
 	app2, err := app.Register()
 	if err != nil {
@@ -134,7 +143,13 @@ func TestAppUnregistrationFailure(t *testing.T) {
 		return
 	}
 
-	app3 := app2.FastForward(-1)
+	s, err := app.Dir.Snapshot.FastForward()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	app3 := app2.Join(s)
 	_, err = app3.Register()
 	if err != nil {
 		t.Error(err)
@@ -143,7 +158,7 @@ func TestAppUnregistrationFailure(t *testing.T) {
 }
 
 func TestSetAndGetEnvironmentVar(t *testing.T) {
-	app := appSetup("lolcatapp")
+	_, app := appSetup("lolcatapp")
 
 	app, err := app.SetEnvironmentVar("meow", "w00t")
 	if err != nil {
@@ -166,7 +181,7 @@ func TestSetAndGetEnvironmentVar(t *testing.T) {
 }
 
 func TestSetAndDelEnvironmentVar(t *testing.T) {
-	app := appSetup("catalolna")
+	_, app := appSetup("catalolna")
 
 	app, err := app.SetEnvironmentVar("wuff", "lulz")
 	if err != nil {
@@ -187,7 +202,7 @@ func TestSetAndDelEnvironmentVar(t *testing.T) {
 }
 
 func TestEnvironmentVars(t *testing.T) {
-	app := appSetup("cat-A-log")
+	_, app := appSetup("cat-A-log")
 
 	_, err := app.SetEnvironmentVar("whiskers", "purr")
 	if err != nil {
@@ -211,21 +226,22 @@ func TestEnvironmentVars(t *testing.T) {
 }
 
 func TestAppGetProcTypes(t *testing.T) {
-	app := appSetup("bob-the-sponge")
+	s, app := appSetup("bob-the-sponge")
 	names := map[string]bool{"api": true, "web": true, "worker": true}
 
 	var pty *ProcType
 	var err error
 
 	for name := range names {
-		pty = NewProcType(app, name, app.Dir.Snapshot)
+		pty = s.NewProcType(app, name)
 		pty, err = pty.Register()
 		if err != nil {
 			t.Fatal(err)
 		}
+		s = s.Join(pty)
 	}
 
-	ptys, err := app.FastForward(pty.Dir.Snapshot.Rev).GetProcTypes()
+	ptys, err := app.Join(pty).GetProcTypes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -241,21 +257,19 @@ func TestAppGetProcTypes(t *testing.T) {
 }
 
 func TestApps(t *testing.T) {
-	var s Snapshot
-
-	app := appSetup("mat-the-sponge")
+	s, _ := appSetup("mat-the-sponge")
 	names := map[string]bool{"cat": true, "dog": true, "lol": true}
 
 	for k := range names {
-		a := NewApp(k, "zebra", "joke", app.Dir.Snapshot)
+		a := s.NewApp(k, "zebra", "joke")
 		a, err := a.Register()
 		if err != nil {
-			t.Error(err)
+			t.Fatal(err)
 		}
-		s = a.Dir.Snapshot
+		s = s.Join(a)
 	}
 
-	apps, err := Apps(s)
+	apps, err := s.Apps()
 	if err != nil {
 		t.Error(err)
 	}

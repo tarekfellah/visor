@@ -7,27 +7,32 @@ package visor
 
 import (
 	"errors"
+	cp "github.com/soundcloud/cotterpin"
 	"testing"
 	"time"
 )
 
-func instanceSetup() (s Snapshot) {
-	s, err := Dial(DefaultAddr, "/instance-test")
+func instanceSetup() *Store {
+	s, err := DialUri(DefaultUri, "/instance-test")
+	if err != nil {
+		panic(err)
+	}
+	err = s.reset()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.FastForward()
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	s.conn.Del("/", r)
-	s = s.FastForward(-1)
-
-	return
+	return s
 }
 
 func instanceSetupClaimed(name, host string) (i *Instance) {
 	s := instanceSetup()
 
-	i, err := RegisterInstance(name, "128af9", "web", s)
+	i, err := s.RegisterInstance(name, "128af9", "web")
 	if err != nil {
 		panic(err)
 	}
@@ -42,7 +47,7 @@ func instanceSetupClaimed(name, host string) (i *Instance) {
 func TestInstanceRegisterAndGet(t *testing.T) {
 	s := instanceSetup()
 
-	ins, err := RegisterInstance("cat", "128af9", "web", s)
+	ins, err := s.RegisterInstance("cat", "128af9", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +59,7 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 		t.Error("instance id wasn't set correctly")
 	}
 
-	ins1, err := GetInstance(ins.Dir.Snapshot, ins.Id)
+	ins1, err := s.Join(ins).GetInstance(ins.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +79,7 @@ func TestInstanceClaiming(t *testing.T) {
 	host := "10.0.0.1"
 	s := instanceSetup()
 
-	ins, err := RegisterInstance("bat", "128af9", "web", s)
+	ins, err := s.RegisterInstance("bat", "128af9", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,7 +90,7 @@ func TestInstanceClaiming(t *testing.T) {
 	}
 
 	_, err = ins.Claim(host) // Already claimed
-	if err.(*Error).Err != ErrRevMismatch {
+	if err.(*cp.Error).Err != cp.ErrRevMismatch {
 		t.Error("expected re-claim to fail")
 	}
 
@@ -120,12 +125,12 @@ func TestInstanceClaiming(t *testing.T) {
 	}
 
 	_, err = ins1.Unclaim("9.9.9.9") // Wrong host
-	if err != ErrUnauthorized {
+	if !IsErrUnauthorized(err) {
 		t.Error("expected unclaim to fail")
 	}
 
 	_, err = ins2.Unclaim(host) // Already unclaimed
-	if err != ErrUnauthorized {
+	if !IsErrUnauthorized(err) {
 		t.Error("expected unclaim to fail")
 	}
 }
@@ -139,7 +144,7 @@ func TestInstanceStarted(t *testing.T) {
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
-	ins, err := RegisterInstance(appid, revid, ptyid, s)
+	ins, err := s.RegisterInstance(appid, revid, ptyid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +166,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not set correctly for %#v", ins2)
 	}
 
-	ins3, err := GetInstance(ins2.Dir.Snapshot, ins2.Id)
+	ins3, err := s.Join(ins2).GetInstance(ins2.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +174,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not stored correctly for %#v", ins3)
 	}
 
-	ids, err := getInstanceIds(ins2.Dir.Snapshot, appid, revid, ptyid)
+	ids, err := getInstanceIds(s.Join(ins3), appid, revid, ptyid)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -190,16 +195,16 @@ func TestInstanceStop(t *testing.T) {
 	ip := "10.0.0.1"
 	s := instanceSetup()
 
-	ins, err := RegisterInstance("rat", "128af9", "web", s)
+	ins, err := s.RegisterInstance("rat", "128af9", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
-	ins1, err := ins.Claim(ip)
+	_, err = ins.Claim(ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = StopInstance(ins.Id, ins1.Dir.Snapshot)
+	_, err = s.StopInstance(ins.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +219,7 @@ func TestInstanceExited(t *testing.T) {
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
-	ins, err := RegisterInstance("rat-cat", "128af9", "web", s)
+	ins, err := s.RegisterInstance("rat-cat", "128af9", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,21 +233,18 @@ func TestInstanceExited(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//_, err = ins2.Exited(ip)
-	//if err != ErrUnauthorized {
-	//	t.Error("expected command to fail")
-	//}
-
-	s1, err := StopInstance(ins2.Id, ins2.Dir.Snapshot)
+	s.Join(ins2)
+	s1, err := s.StopInstance(ins2.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ins3, err := ins2.FastForward(s1.Rev).Exited(ip)
+	ins3, err := ins2.Join(s1).Exited(ip)
 	if err != nil {
 		t.Fatal(err)
 	}
-	testInstanceStatus(t, ins.Id, InsStatusExited, ins3.Dir.Snapshot)
+	s = s.Join(ins3)
+	testInstanceStatus(s, t, ins.Id, InsStatusExited)
 }
 
 func TestInstanceRestarted(t *testing.T) {
@@ -275,8 +277,8 @@ func TestInstanceRestarted(t *testing.T) {
 	if ins2.Restarts.Fail != 2 {
 		t.Error("expected restart count to be set to 2")
 	}
-
-	ins3, err := GetInstance(ins2.Dir.Snapshot, ins.Id)
+	s := storeFromSnapshotable(ins2)
+	ins3, err := s.GetInstance(ins.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,10 +300,11 @@ func TestInstanceFailed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	testInstanceStatus(t, ins.Id, InsStatusFailed, ins1.Dir.Snapshot)
+	s := storeFromSnapshotable(ins1)
+	testInstanceStatus(s, t, ins.Id, InsStatusFailed)
 
 	_, err = ins.Failed("9.9.9.9", errors.New("no reason."))
-	if err != ErrUnauthorized {
+	if !IsErrUnauthorized(err) {
 		t.Error("expected command to fail")
 	}
 
@@ -316,9 +319,9 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	s := instanceSetup()
 	l := make(chan *Instance)
 
-	go WatchInstanceStart(s, l, make(chan error))
+	go s.WatchInstanceStart(l, make(chan error))
 
-	ins, err := RegisterInstance(appid, revid, ptyid, s)
+	ins, err := s.RegisterInstance(appid, revid, ptyid)
 	if err != nil {
 		t.Error(err)
 	}
@@ -346,18 +349,18 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 		ch <- ins
 	}()
 
-	ins1, err := StopInstance(ins.Id, ins.Dir.Snapshot)
+	s, err = s.StopInstance(ins.Id)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	select {
-	case ins2 := <-ch:
-		if ins2 == nil {
+	case ins1 := <-ch:
+		if ins1 == nil {
 			t.Error("instance is nil")
 		}
-		if ins1.Rev != ins2.Dir.Snapshot.Rev {
-			t.Errorf("instance revs don't match: %d != %d", ins1.Rev, ins2.Dir.Snapshot.Rev)
+		if s.GetSnapshot().Rev != ins1.Dir.Snapshot.Rev {
+			t.Errorf("instance revs don't match: %d != %d", s.GetSnapshot().Rev, ins1.Dir.Snapshot.Rev)
 		}
 	case <-time.After(time.Second):
 		t.Errorf("expected instance, got timeout")
@@ -366,7 +369,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 
 func TestInstanceWait(t *testing.T) {
 	s := instanceSetup()
-	ins, err := RegisterInstance("bob", "985245a", "web", s)
+	ins, err := s.RegisterInstance("bob", "985245a", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +406,7 @@ func TestInstanceWait(t *testing.T) {
 
 func TestInstanceWaitStop(t *testing.T) {
 	s := instanceSetup()
-	ins, err := RegisterInstance("bobby", "985245a", "web", s)
+	ins, err := s.RegisterInstance("bobby", "985245a", "web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -416,7 +419,7 @@ func TestInstanceWaitStop(t *testing.T) {
 	}
 
 	go func() {
-		if _, err := StopInstance(ins.Id, s); err != nil {
+		if _, err := s.StopInstance(ins.Id); err != nil {
 			panic(err)
 		}
 	}()
@@ -429,8 +432,8 @@ func TestInstanceWaitStop(t *testing.T) {
 	}
 }
 
-func testInstanceStatus(t *testing.T, id int64, status InsStatus, s Snapshot) {
-	ins, err := GetInstance(s, id)
+func testInstanceStatus(s *Store, t *testing.T, id int64, status InsStatus) {
+	ins, err := s.GetInstance(id)
 	if err != nil {
 		t.Fatal(err)
 	}

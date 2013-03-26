@@ -9,32 +9,35 @@ import (
 	"testing"
 )
 
-func revSetup() (s Snapshot, app *App) {
-	s, err := Dial(DefaultAddr, "/revision-test")
+func revSetup() (s *Store, app *App) {
+	s, err := DialUri(DefaultUri, "/revision-test")
 	if err != nil {
 		panic(err)
 	}
 
-	r, _ := s.conn.Rev()
-	s.conn.Del("/", r)
-	s = s.FastForward(-1)
-
-	rev, err := Init(s)
+	err = s.reset()
 	if err != nil {
 		panic(err)
 	}
-	s = s.FastForward(rev)
+	s, err = s.FastForward()
+	if err != nil {
+		panic(err)
+	}
+	s, err = s.Init()
+	if err != nil {
+		panic(err)
+	}
 
-	app = NewApp("rev-test", "git://rev.git", "references", s)
+	app = s.NewApp("rev-test", "git://rev.git", "references")
 
 	return
 }
 
 func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
-	rev := NewRevision(app, "stable", app.Dir.Snapshot)
+	rev := s.NewRevision(app, "stable")
 
-	check, _, err := s.conn.Exists(rev.Dir.Name)
+	check, _, err := s.GetSnapshot().Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -50,7 +53,9 @@ func TestRevisionRegister(t *testing.T) {
 		return
 	}
 
-	check, _, err = s.conn.Exists(rev.Dir.Name)
+	s = s.Join(rev)
+
+	check, _, err = s.GetSnapshot().Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -66,7 +71,7 @@ func TestRevisionRegister(t *testing.T) {
 
 func TestRevisionUnregister(t *testing.T) {
 	s, app := revSetup()
-	rev := NewRevision(app, "master", app.Dir.Snapshot)
+	rev := s.NewRevision(app, "master")
 
 	rev, err := rev.Register()
 	if err != nil {
@@ -78,7 +83,7 @@ func TestRevisionUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.conn.Exists(rev.Dir.Name)
+	check, _, err := s.GetSnapshot().Exists(rev.Dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
