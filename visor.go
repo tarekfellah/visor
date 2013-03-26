@@ -62,6 +62,10 @@ func (s *Store) FastForward() (*Store, error) {
 }
 
 func (s *Store) Init() (s1 *Store, err error) {
+	s, err = s.FastForward()
+	if err != nil {
+		return
+	}
 	exists, _, err := s.GetSnapshot().Exists(nextPortPath)
 	if err != nil {
 		return
