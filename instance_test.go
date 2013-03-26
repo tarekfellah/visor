@@ -70,7 +70,7 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 	if ins1.Status != ins.Status {
 		t.Error("statuses don't match")
 	}
-	if ins1.Restarts != 0 {
+	if ins1.Restarts.Fail != 0 {
 		t.Error("restarts != 0")
 	}
 }
@@ -256,25 +256,25 @@ func TestInstanceRestarted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if ins.Restarts != 0 {
+	if ins.Restarts.Fail != 0 {
 		t.Error("expected restart count to be 0")
 	}
 
-	ins1, err := ins.Restarted()
+	ins1, err := ins.Restarted(RestartFail, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if ins1.Restarts != 1 {
+	if ins1.Restarts.Fail != 1 {
 		t.Error("expected restart count to be set to 1")
 	}
 
-	ins2, err := ins1.Restarted()
+	ins2, err := ins1.Restarted(RestartFail, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if ins2.Restarts != 2 {
+	if ins2.Restarts.Fail != 2 {
 		t.Error("expected restart count to be set to 2")
 	}
 	s := storeFromSnapshotable(ins2)
@@ -282,7 +282,7 @@ func TestInstanceRestarted(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ins3.Restarts != 2 {
+	if ins3.Restarts.Fail != 2 {
 		t.Error("expected restart count to be set to 2")
 	}
 }
