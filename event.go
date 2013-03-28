@@ -99,13 +99,13 @@ func (ev *Event) String() string {
 // WatchEventRaw watches for changes to the registry and sends
 // them as *Event objects to the provided channel.
 func (s *Store) WatchEventRaw(listener chan *Event) error {
-	rev := s.GetSnapshot().Rev
+	sp := s.GetSnapshot()
 	for {
-		ev, err := s.snapshot.Wait(globPlural, rev+1)
+		ev, err := sp.Wait(globPlural)
 		if err != nil {
 			return err
 		}
-		rev = ev.Rev
+		sp = sp.Join(ev)
 
 		event, err := enrichEvent(s.Join(ev), &ev)
 		if err != nil {
@@ -119,15 +119,15 @@ func (s *Store) WatchEventRaw(listener chan *Event) error {
 
 // WatchEvent wraps WatchEventRaw with additional information.
 func (s *Store) WatchEvent(listener chan *Event) error {
-	rev := s.GetSnapshot().Rev
+	sp := s.GetSnapshot()
 	for {
-		ev, err := s.snapshot.Wait(globPlural, rev+1)
+		ev, err := sp.Wait(globPlural)
 		if err != nil {
 			return err
 		}
-		s = s.Join(ev)
-		rev = ev.Rev
-		event, err := enrichEvent(s, &ev)
+		sp = sp.Join(ev)
+
+		event, err := enrichEvent(s.Join(ev), &ev)
 		if err != nil {
 			return err
 		}

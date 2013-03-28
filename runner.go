@@ -206,14 +206,13 @@ func (s *Store) GetRunner(addr string) (*Runner, error) {
 }
 
 func (s *Store) WatchRunnerStart(host string, ch chan *Runner, errch chan error) {
-	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := waitRunnersByHost(s, host, rev)
+		ev, err := waitRunnersByHost(s, host)
 		if err != nil {
 			errch <- err
 			return
 		}
-		rev = ev.Rev
+		s = s.Join(ev)
 
 		if !ev.IsSet() {
 			continue
@@ -230,14 +229,13 @@ func (s *Store) WatchRunnerStart(host string, ch chan *Runner, errch chan error)
 }
 
 func (s *Store) WatchRunnerStop(host string, ch chan string, errch chan error) {
-	rev := s.GetSnapshot().Rev
 	for {
-		ev, err := waitRunnersByHost(s, host, rev)
+		ev, err := waitRunnersByHost(s, host)
 		if err != nil {
 			errch <- err
 			return
 		}
-		rev = ev.Rev
+		s = s.Join(ev)
 
 		if !ev.IsDel() {
 			continue
@@ -253,9 +251,9 @@ func addrFromPath(path string) string {
 	return addr
 }
 
-func waitRunnersByHost(s *Store, host string, rev int64) (cp.Event, error) {
+func waitRunnersByHost(s *Store, host string) (cp.Event, error) {
 	sp := s.GetSnapshot()
-	return sp.Wait(path.Join(runnersPath, host, "*"), rev+1)
+	return sp.Wait(path.Join(runnersPath, host, "*"))
 }
 
 func runnerAddr(host, port string) string {

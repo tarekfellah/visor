@@ -538,10 +538,14 @@ func (i *Instance) Failed(host string, reason error) (i1 *Instance, err error) {
 
 func (s *Store) WatchInstanceStart(listener chan *Instance, errors chan error) {
 	// instances/*/start =
-	rev := s.GetSnapshot().Rev
+	sp := s.GetSnapshot()
 	for {
-		ev, err := s.snapshot.Wait(path.Join(instancesPath, "*", startPath), rev+1)
-		rev = ev.Rev
+		ev, err := sp.Wait(path.Join(instancesPath, "*", startPath))
+		if err != nil {
+			errors <- err
+			return
+		}
+		sp = sp.Join(ev)
 
 		if !ev.IsSet() || string(ev.Body) != "" {
 			continue
@@ -550,11 +554,13 @@ func (s *Store) WatchInstanceStart(listener chan *Instance, errors chan error) {
 
 		id, err := parseInstanceId(idstr)
 		if err != nil {
-			panic(err)
+			errors <- err
+			return
 		}
 		ins, err := s.Join(ev).GetInstance(id)
 		if err != nil {
-			panic(err)
+			errors <- err
+			return
 		}
 		listener <- ins
 	}
@@ -562,8 +568,8 @@ func (s *Store) WatchInstanceStart(listener chan *Instance, errors chan error) {
 
 func (i *Instance) WaitStop() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), stopPath)
-
-	ev, err := i.Dir.Snapshot.Wait(p, i.Dir.Snapshot.Rev+1)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
 	if err != nil {
 		return
 	}
@@ -574,7 +580,8 @@ func (i *Instance) WaitStop() (i1 *Instance, err error) {
 
 func (i *Instance) WaitStatus() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), statusPath)
-	ev, err := i.Dir.Snapshot.Wait(p, i.Dir.Snapshot.Rev+1)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
 	if err != nil {
 		return
 	}
@@ -641,8 +648,8 @@ func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
 
 func (i *Instance) waitStartPath() (i1 *Instance, err error) {
 	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
-
-	ev, err := i.Dir.Snapshot.Wait(p, i.Dir.Snapshot.Rev+1)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
 	if err != nil {
 		return
 	}

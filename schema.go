@@ -13,14 +13,14 @@ type SchemaEvent struct {
 // WatchSchema notifies the specified ch channel on schema change,
 // and errch on error. If an error occures, WatchSchema exits.
 func (s *Store) WatchSchema(ch chan SchemaEvent, errch chan error) {
-	rev := s.snapshot.Rev
+	sp := s.GetSnapshot()
 	for {
-		ev, err := s.snapshot.Wait(schemaPath, rev+1)
+		ev, err := sp.Wait(schemaPath)
 		if err != nil {
 			errch <- err
 			return
 		}
-		rev = ev.Rev
+		sp = sp.Join(ev)
 
 		v, err := strconv.Atoi(string(ev.Body))
 		if err != nil {
