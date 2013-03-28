@@ -210,7 +210,7 @@ func (s *Store) GetProcType(app *App, name string) (p *ProcType, err error) {
 
 	port, err := dir.GetFile(procsPortPath, new(cp.IntCodec))
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorf(ErrNotFound, "proctype %s not found for %s", name, app.Name)
 	}
 	p = s.NewProcType(app, name)
 	p.Port = port.Value.(int)

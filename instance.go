@@ -149,7 +149,7 @@ func (s *Store) GetInstance(id int64) (ins *Instance, err error) {
 
 	f, err = s.GetSnapshot().GetFile(p+"/object", new(cp.ListCodec))
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorf(ErrNotFound, "object file not found for instance %d", id)
 	}
 	fields := f.Value.([]string)
 

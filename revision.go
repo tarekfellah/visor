@@ -102,7 +102,7 @@ func (s *Store) GetRevision(app *App, ref string) (r *Revision, err error) {
 
 	f, err := s.GetSnapshot().GetFile(path+"/archive-url", codec)
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
 	}
 
 	r = &Revision{

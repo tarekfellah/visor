@@ -161,7 +161,7 @@ func (a *App) GetEnvironmentVar(k string) (value string, err error) {
 	val, _, err := a.Dir.Get("env/" + k)
 	if err != nil {
 		if cp.IsErrNoEnt(err) {
-			err = ErrNotFound
+			err = errorf(ErrNotFound, `"%s" not found in %s's environment`, k, a.Name)
 		}
 		return
 	}
@@ -274,7 +274,7 @@ func (s *Store) GetApp(name string) (app *App, err error) {
 
 	f, err := s.GetSnapshot().GetFile(app.Dir.Prefix("attrs"), new(cp.JsonCodec))
 	if err != nil {
-		return nil, ErrNotFound
+		return nil, errorf(ErrNotFound, `app "%s" not found`, name)
 	}
 
 	value := f.Value.(map[string]interface{})

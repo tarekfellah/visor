@@ -7,6 +7,8 @@ package visor
 
 import (
 	"errors"
+	"fmt"
+	cp "github.com/soundcloud/cotterpin"
 )
 
 var (
@@ -28,6 +30,10 @@ func NewError(err error, msg string) *Error {
 	return &Error{err, msg}
 }
 
+func errorf(err error, format string, args ...interface{}) *Error {
+	return &Error{err, fmt.Sprintf(format, args...)}
+}
+
 func (e *Error) Error() string {
 	return e.Message
 }
@@ -45,5 +51,11 @@ func IsErrUnauthorized(e error) bool {
 }
 
 func IsErrNotFound(e error) bool {
-	return e == ErrNotFound
+	switch e.(type) {
+	case *cp.Error:
+		return e.(*cp.Error).Err == cp.ErrNoEnt
+	case *Error:
+		return e.(*Error).Err == ErrNotFound
+	}
+	return false
 }
