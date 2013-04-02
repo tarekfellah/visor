@@ -61,31 +61,31 @@ func (s *Store) FastForward() (*Store, error) {
 	return &Store{sp}, nil
 }
 
-func (s *Store) Init() (s1 *Store, err error) {
-	s, err = s.FastForward()
+func (s *Store) Init() (*Store, error) {
+	s, err := s.FastForward()
 	if err != nil {
-		return
+		return nil, err
 	}
 	exists, _, err := s.GetSnapshot().Exists(nextPortPath)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if !exists {
-		var sp cp.Snapshot
-		sp, err = s.GetSnapshot().Set(nextPortPath, strconv.Itoa(startPort))
+		sp, err := s.GetSnapshot().Set(nextPortPath, strconv.Itoa(startPort))
 		if err != nil {
-			return
+			return nil, err
 		}
 		s = s.Join(sp)
 	}
 
-	s1, err = s.SetSchemaVersion(SchemaVersion)
+	sp, err := cp.SetSchemaVersion(SchemaVersion, s.GetSnapshot())
 	if err != nil {
-		return
+		return nil, err
 	}
+	s = s.Join(sp)
 
-	return
+	return s, nil
 }
 
 func (s *Store) Scale(app string, revision string, processName string, factor int) (tickets []*Instance, current int, err error) {

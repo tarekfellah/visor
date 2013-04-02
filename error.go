@@ -15,7 +15,6 @@ var (
 	ErrConflict     = errors.New("object already exists")
 	ErrInsClaimed   = errors.New("instance is already claimed")
 	ErrInvalidState = errors.New("invalid state")
-	ErrSchemaMism   = errors.New("visor version not compatible with current coordinator schema")
 	ErrBadPtyName   = errors.New("invalid proc type name: only alphanumeric chars allowed")
 	ErrUnauthorized = errors.New("operation is not permitted")
 	ErrNotFound     = errors.New("object not found")
@@ -36,10 +35,6 @@ func errorf(err error, format string, args ...interface{}) *Error {
 
 func (e *Error) Error() string {
 	return e.Message
-}
-
-func IsErrSchemaMism(e error) bool {
-	return e == ErrSchemaMism
 }
 
 func IsErrConflict(e error) bool {
