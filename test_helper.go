@@ -31,7 +31,7 @@ func genRevision(app *App) (rev *Revision) {
 
 func genProctype(app *App, name string) (pty *ProcType) {
 	s := storeFromSnapshotable(app)
-	pty = s.NewProcType(app, name)
+	pty = s.NewProcType(app, name, "moo")
 	pty, err := pty.Register()
 	if err != nil {
 		panic(err)

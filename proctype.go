@@ -19,6 +19,7 @@ var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 type ProcType struct {
 	Dir   cp.Dir
 	Name  string
+	Cmd   string
 	App   *App
 	Attrs ProcTypeAttrs
 }
@@ -37,12 +38,14 @@ type ResourceLimits struct {
 const (
 	procsPath      = "procs"
 	procsAttrsPath = "attrs"
+	procsCmdPath   = "cmd"
 )
 
-func (s *Store) NewProcType(app *App, name string) *ProcType {
+func (s *Store) NewProcType(app *App, name, cmd string) *ProcType {
 	return &ProcType{
 		Name: name,
 		App:  app,
+		Cmd:  cmd,
 		Dir: cp.Dir{
 			s.GetSnapshot(), app.Dir.Prefix(procsPath, string(name)),
 		},
@@ -82,6 +85,11 @@ func (p *ProcType) Register() (pty *ProcType, err error) {
 
 	if !reProcName.MatchString(p.Name) {
 		return nil, ErrBadPtyName
+	}
+
+	_, err = p.Dir.Set(procsCmdPath, p.Cmd)
+	if err != nil {
+		return nil, err
 	}
 
 	d, err := p.Dir.Set("registered", timestamp())
@@ -192,7 +200,12 @@ func (s *Store) GetProcType(app *App, name string) (p *ProcType, err error) {
 		Snapshot: s.GetSnapshot(),
 		Name:     path,
 	}
-	p = s.NewProcType(app, name)
+
+	cmd, _, err := s.GetSnapshot().Get(dir.Prefix(procsCmdPath))
+	if err != nil {
+		return
+	}
+	p = s.NewProcType(app, name, cmd)
 
 	_, err = s.GetSnapshot().GetFile(dir.Prefix(procsAttrsPath), &cp.JsonCodec{DecodedVal: &p.Attrs})
 	if cp.IsErrNoEnt(err) {

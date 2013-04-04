@@ -134,7 +134,7 @@ func TestGetScale(t *testing.T) {
 	scale := 5
 
 	app := s.NewApp("scale-app", "git://scale.git", "scale-stack")
-	pty := s.NewProcType(app, "scaleproc")
+	pty := s.NewProcType(app, "scaleproc", "scale.sh")
 	rev := s.NewRevision(app, "scale-ref")
 
 	_, err := app.Register()

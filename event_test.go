@@ -179,7 +179,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 	}
 	s = s.Join(rev)
 
-	pty := s.NewProcType(app, "all")
+	pty := s.NewProcType(app, "all", "all.sh")
 
 	go s.WatchEvent(l)
 
@@ -200,7 +200,7 @@ func TestEventProcTypeRegistered(t *testing.T) {
 func TestEventProcTypeUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup(s, "proc-unregister")
-	pty := s.NewProcType(app, "all")
+	pty := s.NewProcType(app, "all", "all.sh")
 
 	pty, err := pty.Register()
 	if err != nil {

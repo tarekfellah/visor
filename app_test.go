@@ -233,7 +233,7 @@ func TestAppGetProcTypes(t *testing.T) {
 	var err error
 
 	for name := range names {
-		pty = s.NewProcType(app, name)
+		pty = s.NewProcType(app, name, "woo.sh")
 		pty, err = pty.Register()
 		if err != nil {
 			t.Fatal(err)

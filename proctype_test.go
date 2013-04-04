@@ -33,9 +33,9 @@ func proctypeSetup(appid string) (s *Store, app *App) {
 	return
 }
 
-func TestProcTypeRegister(t *testing.T) {
+func TestProcTypeRegisterAndGet(t *testing.T) {
 	s, app := proctypeSetup("reg123")
-	pty := s.NewProcType(app, "whoop")
+	pty := s.NewProcType(app, "whoop", "whoop.sh")
 
 	pty, err := pty.Register()
 	if err != nil {
@@ -51,11 +51,19 @@ func TestProcTypeRegister(t *testing.T) {
 	if !check {
 		t.Errorf("proctype %s isn't registered", pty)
 	}
+
+	pty, err = s.GetProcType(app, "whoop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if pty.Cmd != "whoop.sh" {
+		t.Fatal("command was not set properly")
+	}
 }
 
 func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
 	s, app := proctypeSetup("reg1232")
-	pty := s.NewProcType(app, "who-op")
+	pty := s.NewProcType(app, "who-op", "who-op.sh")
 
 	pty, err := pty.Register()
 	if err != ErrBadPtyName {
@@ -68,7 +76,7 @@ func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
 
 func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
 	s, app := proctypeSetup("reg1233")
-	pty := s.NewProcType(app, "who_op")
+	pty := s.NewProcType(app, "who_op", "who_op.sh")
 
 	pty, err := pty.Register()
 	if err != ErrBadPtyName {
@@ -81,7 +89,7 @@ func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
 
 func TestProcTypeUnregister(t *testing.T) {
 	s, app := proctypeSetup("unreg123")
-	pty := s.NewProcType(app, "whoop")
+	pty := s.NewProcType(app, "whoop", "whoop")
 
 	pty, err := pty.Register()
 	if err != nil {
@@ -103,7 +111,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 	appid := "get-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
+	pty := s.NewProcType(app, "web", "web.sh")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -138,7 +146,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 	appid := "get-failed-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
+	pty := s.NewProcType(app, "web", "web.sh")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -184,7 +192,7 @@ func TestProcTypeAttributes(t *testing.T) {
 	var memoryLimitMb = 100
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
+	pty := s.NewProcType(app, "web", "web.sh")
 	pty, err := pty.Register()
 	if err != nil {
 		t.Fatal(err)
