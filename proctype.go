@@ -6,7 +6,6 @@
 package visor
 
 import (
-	"errors"
 	"fmt"
 	cp "github.com/soundcloud/cotterpin"
 	"regexp"
@@ -21,7 +20,6 @@ type ProcType struct {
 	Dir   cp.Dir
 	Name  string
 	App   *App
-	Port  int
 	Attrs ProcTypeAttrs
 }
 
@@ -38,7 +36,6 @@ type ResourceLimits struct {
 
 const (
 	procsPath      = "procs"
-	procsPortPath  = "port"
 	procsAttrsPath = "attrs"
 )
 
@@ -85,18 +82,6 @@ func (p *ProcType) Register() (pty *ProcType, err error) {
 
 	if !reProcName.MatchString(p.Name) {
 		return nil, ErrBadPtyName
-	}
-
-	p.Port, err = claimNextPort(p.Dir.Snapshot)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("couldn't claim port: %s", err.Error()))
-	}
-
-	port := &cp.File{p.Dir.Snapshot, p.Dir.Prefix("port"), p.Port, new(cp.IntCodec)}
-
-	port, err = port.Save()
-	if err != nil {
-		return p, err
 	}
 
 	d, err := p.Dir.Set("registered", timestamp())
@@ -207,13 +192,7 @@ func (s *Store) GetProcType(app *App, name string) (p *ProcType, err error) {
 		Snapshot: s.GetSnapshot(),
 		Name:     path,
 	}
-
-	port, err := dir.GetFile(procsPortPath, new(cp.IntCodec))
-	if err != nil {
-		return nil, errorf(ErrNotFound, "proctype %s not found for %s", name, app.Name)
-	}
 	p = s.NewProcType(app, name)
-	p.Port = port.Value.(int)
 
 	_, err = s.GetSnapshot().GetFile(dir.Prefix(procsAttrsPath), &cp.JsonCodec{DecodedVal: &p.Attrs})
 	if cp.IsErrNoEnt(err) {
