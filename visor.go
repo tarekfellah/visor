@@ -66,6 +66,15 @@ func (s *Store) Init() (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	v, err := cp.VerifySchema(SchemaVersion, s.GetSnapshot())
+	if err != nil {
+		if err == cp.ErrSchemaMism {
+			err = fmt.Errorf("%s (%d != %d)", err, SchemaVersion, v)
+		}
+		return nil, err
+	}
+
 	exists, _, err := s.GetSnapshot().Exists(nextPortPath)
 	if err != nil {
 		return nil, err
