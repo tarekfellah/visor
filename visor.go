@@ -67,14 +67,6 @@ func (s *Store) Init() (*Store, error) {
 		return nil, err
 	}
 
-	v, err := cp.VerifySchema(SchemaVersion, s.GetSnapshot())
-	if err != nil {
-		if err == cp.ErrSchemaMism {
-			err = fmt.Errorf("%s (%d != %d)", err, SchemaVersion, v)
-		}
-		return nil, err
-	}
-
 	exists, _, err := s.GetSnapshot().Exists(nextPortPath)
 	if err != nil {
 		return nil, err
@@ -88,11 +80,19 @@ func (s *Store) Init() (*Store, error) {
 		s = s.Join(sp)
 	}
 
-	sp, err := cp.SetSchemaVersion(SchemaVersion, s.GetSnapshot())
-	if err != nil {
+	v, err := cp.VerifySchema(SchemaVersion, s.GetSnapshot())
+	if cp.IsErrNoEnt(err) {
+		sp, err := cp.SetSchemaVersion(SchemaVersion, s.GetSnapshot())
+		if err != nil {
+			return nil, err
+		}
+		s = s.Join(sp)
+	} else if err != nil {
+		if cp.IsErrSchemaMism(err) {
+			err = fmt.Errorf("%s (%d != %d)", err, SchemaVersion, v)
+		}
 		return nil, err
 	}
-	s = s.Join(sp)
 
 	return s, nil
 }
