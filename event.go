@@ -248,7 +248,7 @@ func enrichEvent(s *Store, src *cp.Event) (event *Event, err error) {
 				}
 				body := string(src.Body)
 				if body == "" {
-					etype = EvInsStart
+					break
 				} else {
 					fields := strings.Fields(body)
 					if len(fields) > 1 {
