@@ -97,23 +97,23 @@ func (r *Revision) Inspect() string {
 }
 
 func (s *Store) GetRevision(app *App, ref string) (*Revision, error) {
-  sp, err := s.GetSnapshot().FastForward()
-  if err != nil {
-    return nil, err
-  }
+	sp, err := s.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
 
 	path := app.Dir.Prefix(revsPath, ref)
 	codec := new(cp.StringCodec)
 
 	f, err := sp.GetFile(path+"/archive-url", codec)
 	if err != nil {
-	  if cp.IsErrNoEnt(err) {
-	    err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
-    }
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
+		}
 		return nil, err
 	}
 
-  r := &Revision{
+	r := &Revision{
 		Dir:        cp.Dir{sp, path},
 		App:        app,
 		Ref:        ref,
