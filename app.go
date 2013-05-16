@@ -270,11 +270,19 @@ func (a *App) Inspect() string {
 
 // GetApp fetches an app with the given name.
 func (s *Store) GetApp(name string) (app *App, err error) {
+	sp, err := s.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
+
 	app = s.NewApp(name, "", "")
 
-	f, err := s.GetSnapshot().GetFile(app.Dir.Prefix("attrs"), new(cp.JsonCodec))
+	f, err := sp.GetFile(app.Dir.Prefix("attrs"), new(cp.JsonCodec))
 	if err != nil {
-		return nil, errorf(ErrNotFound, `app "%s" not found`, name)
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, `app "%s" not found`, name)
+		}
+		return nil, err
 	}
 
 	value := f.Value.(map[string]interface{})
@@ -282,8 +290,9 @@ func (s *Store) GetApp(name string) (app *App, err error) {
 	app.RepoUrl = value["repo-url"].(string)
 	app.Stack = value["stack"].(string)
 	app.DeployType = value["deploy-type"].(string)
+	app.Dir.Snapshot = sp
 
-	f, err = s.GetSnapshot().GetFile(app.Dir.Prefix("head"), new(cp.StringCodec))
+	f, err = sp.GetFile(app.Dir.Prefix("head"), new(cp.StringCodec))
 	if err == nil {
 		app.Head = f.Value.(string)
 	} else if cp.IsErrNoEnt(err) {
