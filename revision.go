@@ -96,22 +96,31 @@ func (r *Revision) Inspect() string {
 	return fmt.Sprintf("%#v", r)
 }
 
-func (s *Store) GetRevision(app *App, ref string) (r *Revision, err error) {
+func (s *Store) GetRevision(app *App, ref string) (*Revision, error) {
+  sp, err := s.GetSnapshot().FastForward()
+  if err != nil {
+    return nil, err
+  }
+
 	path := app.Dir.Prefix(revsPath, ref)
 	codec := new(cp.StringCodec)
 
-	f, err := s.GetSnapshot().GetFile(path+"/archive-url", codec)
+	f, err := sp.GetFile(path+"/archive-url", codec)
 	if err != nil {
-		return nil, errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
+	  if cp.IsErrNoEnt(err) {
+	    err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
+    }
+		return nil, err
 	}
 
-	r = &Revision{
-		Dir:        cp.Dir{s.GetSnapshot(), path},
+  r := &Revision{
+		Dir:        cp.Dir{sp, path},
 		App:        app,
 		Ref:        ref,
 		ArchiveUrl: f.Value.(string),
 	}
-	return
+
+	return r, err
 }
 
 // Revisions returns an array of all registered revisions.
