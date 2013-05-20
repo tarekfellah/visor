@@ -38,8 +38,6 @@ func TestScaleErrors(t *testing.T) {
 	rev := genRevision(app)
 	pty := genProctype(app, "web")
 
-	s = s.Join(pty)
-
 	// Scale up
 
 	_, _, err := s.Scale("fnord", rev.Ref, pty.Name, scale)
@@ -63,8 +61,6 @@ func TestScale(t *testing.T) {
 	app := genApp(s)
 	rev := genRevision(app)
 	pty := genProctype(app, "web")
-
-	s = s.Join(pty)
 
 	// Scale up
 	_, current, err := s.Scale(app.Name, rev.Ref, pty.Name, scale)

@@ -36,42 +36,35 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 	s := runnerSetup()
 	addr := "127.0.0.1:9999"
 
-	r := s.NewRunner(addr, insId, new(net.Net))
-	r1, err := r.Register()
+	r, err := s.NewRunner(addr, insId, new(net.Net)).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	if r1.Addr != addr {
+	if r.Addr != addr {
 		t.Error("runner addr wasn't set correctly")
 	}
-	if r1.InstanceId != insId {
+	if r.InstanceId != insId {
 		t.Error("runner instance-id wasn't set correctly")
 	}
 
-	r2, err := s.Join(r1.Dir.Snapshot).GetRunner(addr)
+	r1, err := s.GetRunner(addr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if r2.Addr != r1.Addr {
+	if r1.Addr != r1.Addr {
 		t.Error("addrs don't match")
 	}
-	if r2.InstanceId != r1.InstanceId {
+	if r1.InstanceId != r1.InstanceId {
 		t.Error("instance ids don't match")
 	}
 
-	err = r2.Unregister()
+	err = r1.Unregister()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	sp, err := r2.Dir.Snapshot.FastForward()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	_, err = s.Join(sp).GetRunner(addr)
+	_, err = s.GetRunner(addr)
 	if !cp.IsErrNoEnt(err) {
 		t.Fatal("expected runner to be unregistered")
 	}
@@ -88,12 +81,12 @@ func TestRunnersByHost(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	r, err := s.NewRunner("10.0.1.2:7778", 8, new(net.Net)).Register()
+	_, err = s.NewRunner("10.0.1.2:7778", 8, new(net.Net)).Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	rs, err := s.Join(r.Dir.Snapshot).RunnersByHost("10.0.1.2")
+	rs, err := s.RunnersByHost("10.0.1.2")
 	if err != nil {
 		t.Fatal(err)
 	}

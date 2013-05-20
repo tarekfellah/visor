@@ -42,9 +42,7 @@ func TestProcTypeRegister(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.Join(pty)
-
-	check, _, err := s.GetSnapshot().Exists(pty.Dir.Name)
+	check, _, err := pty.GetSnapshot().Exists(pty.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -93,7 +91,7 @@ func TestProcTypeUnregister(t *testing.T) {
 		t.Error(err)
 	}
 
-	check, _, err := s.GetSnapshot().Exists(pty.Dir.Name)
+	check, _, err := s.GetSnapshot().Exists(pty.dir.Name)
 	if check {
 		t.Errorf("proctype %s is still registered", pty)
 	}
@@ -122,7 +120,6 @@ func TestProcTypeGetInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.Join(ins)
 	}
 
 	is, err := pty.GetInstances()
@@ -160,14 +157,12 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 			t.Fatal(err)
 		}
 		instances = append(instances, ins)
-		pty = pty.Join(ins)
 	}
 	for i := 0; i < 4; i++ {
-		ins, err := instances[i].Failed("10.0.0.1", errors.New("no reason."))
+		_, err := instances[i].Failed("10.0.0.1", errors.New("no reason."))
 		if err != nil {
 			t.Fatal(err)
 		}
-		pty = pty.Join(ins)
 	}
 
 	is, err := pty.GetFailedInstances()
@@ -190,7 +185,7 @@ func TestProcTypeAttributes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pty, err = s.Join(pty.Dir.Snapshot).GetProcType(app, "web")
+	pty, err = app.GetProcType("web")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +199,7 @@ func TestProcTypeAttributes(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pty, err = s.Join(pty.Dir.Snapshot).GetProcType(app, "web")
+	pty, err = app.GetProcType("web")
 	if err != nil {
 		t.Fatal(err)
 	}
