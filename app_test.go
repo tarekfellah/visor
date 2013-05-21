@@ -28,7 +28,6 @@ func appSetup(name string) (*Store, *App) {
 	}
 
 	app := s.NewApp(name, "git://cat.git", "whiskers")
-	app = app.Join(s)
 
 	return s, app
 }
@@ -36,7 +35,7 @@ func appSetup(name string) (*Store, *App) {
 func TestAppRegistration(t *testing.T) {
 	_, app := appSetup("lolcatapp")
 
-	check, _, err := app.Dir.Snapshot.Exists(app.Dir.Name)
+	check, _, err := app.GetSnapshot().Exists(app.dir.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,12 +43,12 @@ func TestAppRegistration(t *testing.T) {
 		t.Fatal("App already registered")
 	}
 
-	app2, err := app.Register()
+	app, err = app.Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	check, _, err = app2.Dir.Snapshot.Exists(app.Dir.Name)
+	check, _, err = app.GetSnapshot().Exists(app.dir.Name)
 	if err != nil {
 		t.Error(err)
 		return
@@ -59,10 +58,6 @@ func TestAppRegistration(t *testing.T) {
 		return
 	}
 	_, err = app.Register()
-	if err == nil {
-		t.Error("App allowed to be registered twice")
-	}
-	_, err = app2.Register()
 	if err == nil {
 		t.Error("App allowed to be registered twice")
 	}
@@ -107,13 +102,12 @@ func TestAppUnregister(t *testing.T) {
 		return
 	}
 
-	s, err := app.Dir.Snapshot.FastForward()
+	sp, err := app.GetSnapshot().FastForward()
 	if err != nil {
 		t.Error(err)
 	}
-	app = app.Join(s)
 
-	check, _, err := app.Dir.Snapshot.Exists(app.Dir.Name)
+	check, _, err := sp.Exists(app.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -125,7 +119,13 @@ func TestAppUnregister(t *testing.T) {
 func TestAppUnregistrationFailure(t *testing.T) {
 	_, app := appSetup("dog-fail")
 
-	app2, err := app.Register()
+	app, err := app.Register()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = app.Unregister()
 	if err != nil {
 		t.Error(err)
 		return
@@ -133,27 +133,10 @@ func TestAppUnregistrationFailure(t *testing.T) {
 
 	err = app.Unregister()
 	if err == nil {
-		t.Error("App allowed to be unregistered with old revision")
-		return
+		t.Error("App not present still unregistered")
 	}
-
-	err = app2.Unregister()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	s, err := app.Dir.Snapshot.FastForward()
-	if err != nil {
-		t.Error(err)
-		return
-	}
-
-	app3 := app2.Join(s)
-	_, err = app3.Register()
-	if err != nil {
-		t.Error(err)
-		return
+	if err != nil && !IsErrNotFound(err) {
+		t.Fatal(err)
 	}
 }
 
@@ -238,10 +221,9 @@ func TestAppGetProcTypes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		s = s.Join(pty)
 	}
 
-	ptys, err := app.Join(pty).GetProcTypes()
+	ptys, err := app.GetProcTypes()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -266,10 +248,9 @@ func TestApps(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		s = s.Join(a)
 	}
 
-	apps, err := s.Apps()
+	apps, err := s.GetApps()
 	if err != nil {
 		t.Error(err)
 	}

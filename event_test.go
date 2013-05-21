@@ -84,9 +84,7 @@ func TestEventAppUnregistered(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s = s.Join(app)
-
-	go s.WatchEvent(l)
+	go app.WatchEvent(l)
 
 	err = app.Unregister()
 	if err != nil {
@@ -107,11 +105,9 @@ func TestEventRevRegistered(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
-	s = s.Join(app)
+	s = storeFromSnapshotable(app)
 
 	rev := s.NewRevision(app, "stable")
-	rev = rev.Join(s)
 
 	go s.WatchEvent(l)
 
@@ -138,17 +134,13 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.Join(app)
-
 	rev := s.NewRevision(app, "stable")
-	rev, err = rev.Join(s).Register()
+	rev, err = rev.Register()
 	if err != nil {
 		t.Error(err)
 		return
 	}
-	s = s.Join(rev)
-
-	go s.WatchEvent(l)
+	go storeFromSnapshotable(rev).WatchEvent(l)
 
 	err = rev.Unregister()
 	if err != nil {
@@ -170,18 +162,14 @@ func TestEventProcTypeRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	s = s.Join(app)
-
 	rev := s.NewRevision(app, "bang")
-	rev, err = rev.Join(s).Register()
+	rev, err = rev.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.Join(rev)
-
 	pty := s.NewProcType(app, "all")
 
-	go s.WatchEvent(l)
+	go storeFromSnapshotable(rev).WatchEvent(l)
 
 	_, err = pty.Register()
 	if err != nil {
@@ -207,9 +195,7 @@ func TestEventProcTypeUnregistered(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s = s.Join(pty)
-
-	go s.WatchEvent(l)
+	go storeFromSnapshotable(pty).WatchEvent(l)
 
 	err = pty.Unregister()
 	if err != nil {
@@ -248,9 +234,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.Join(ins)
-
-	go s.WatchEvent(l)
+	go storeFromSnapshotable(ins).WatchEvent(l)
 
 	err = ins.Unregister()
 	if err != nil {
@@ -273,14 +257,12 @@ func TestEventInstanceStateChange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s = s.Join(ins)
-
 	ins, err = ins.Claim(ip)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	go s.WatchEvent(l)
+	go storeFromSnapshotable(ins).WatchEvent(l)
 
 	ins, err = ins.Started(ip, port, host)
 	if err != nil {

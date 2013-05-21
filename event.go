@@ -107,7 +107,7 @@ func (s *Store) WatchEventRaw(listener chan *Event) error {
 		}
 		sp = sp.Join(ev)
 
-		event, err := enrichEvent(s.Join(ev), &ev)
+		event, err := enrichEvent(&ev, ev)
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func (s *Store) WatchEvent(listener chan *Event) error {
 		}
 		sp = sp.Join(ev)
 
-		event, err := enrichEvent(s.Join(ev), &ev)
+		event, err := enrichEvent(&ev, ev)
 		if err != nil {
 			return err
 		}
@@ -141,7 +141,7 @@ func (s *Store) WatchEvent(listener chan *Event) error {
 	return nil
 }
 
-func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) (source cp.Snapshotable, err error) {
+func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snapshotable) (source cp.Snapshotable, err error) {
 	var (
 		app *App
 		rev *Revision
@@ -150,7 +150,7 @@ func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) 
 	)
 
 	if uncanonicalized.App != nil {
-		app, err = s.GetApp(*uncanonicalized.App)
+		app, err = getApp(*uncanonicalized.App, s)
 
 		if err != nil {
 			return
@@ -158,7 +158,7 @@ func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) 
 	}
 
 	if uncanonicalized.Revision != nil {
-		rev, err = s.GetRevision(app, *uncanonicalized.Revision)
+		rev, err = getRevision(app, *uncanonicalized.Revision, s)
 
 		if err != nil {
 			return
@@ -166,7 +166,7 @@ func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) 
 	}
 
 	if uncanonicalized.Proctype != nil {
-		pty, err = s.GetProcType(app, *uncanonicalized.Proctype)
+		pty, err = getProcType(app, *uncanonicalized.Proctype, s)
 		if err != nil {
 			return
 		}
@@ -177,7 +177,7 @@ func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) 
 		if id, err = strconv.ParseInt(*uncanonicalized.Instance, 10, 64); err != nil {
 			return
 		}
-		if ins, err = s.GetInstance(id); err != nil {
+		if ins, err = getInstance(id, s); err != nil {
 			return
 		}
 	}
@@ -196,7 +196,7 @@ func canonicalizeMetadata(s *Store, etype EventType, uncanonicalized EventData) 
 	return
 }
 
-func enrichEvent(s *Store, src *cp.Event) (event *Event, err error) {
+func enrichEvent(src *cp.Event, s cp.Snapshotable) (event *Event, err error) {
 	var canonicalized cp.Snapshotable
 
 	path := src.Path
@@ -276,7 +276,7 @@ func enrichEvent(s *Store, src *cp.Event) (event *Event, err error) {
 	}
 
 	if src.IsSet() {
-		canonicalized, err = canonicalizeMetadata(s, etype, uncanonicalized)
+		canonicalized, err = canonicalizeMetadata(etype, uncanonicalized, s)
 		if err != nil {
 			return nil, fmt.Errorf("error canonicalizing inputs: %s", err)
 		}

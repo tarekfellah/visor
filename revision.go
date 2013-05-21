@@ -13,7 +13,7 @@ import (
 // A Revision represents an application revision,
 // identifiable by its `ref`.
 type Revision struct {
-	Dir        cp.Dir
+	dir        *cp.Dir
 	App        *App
 	Ref        string
 	ArchiveUrl string
@@ -24,108 +24,69 @@ const revsPath = "revs"
 // NewRevision returns a new instance of Revision.
 func (s *Store) NewRevision(app *App, ref string) (rev *Revision) {
 	rev = &Revision{App: app, Ref: ref}
-	rev.Dir = cp.Dir{s.GetSnapshot(), app.Dir.Prefix(revsPath, ref)}
+	rev.dir = cp.NewDir(app.dir.Prefix(revsPath, ref), s.GetSnapshot())
 
 	return
 }
 
 func (r *Revision) GetSnapshot() cp.Snapshot {
-	return r.Dir.Snapshot
-}
-
-// Join advances the Revision in time. It returns a new
-// instance of Revision at the rev of the supplied
-// cp.Snapshotable.
-func (r *Revision) Join(s cp.Snapshotable) *Revision {
-	tmp := *r
-	tmp.Dir.Snapshot = s.GetSnapshot()
-	return &tmp
+	return r.dir.Snapshot
 }
 
 // Register registers a new Revision with the registry.
-func (r *Revision) Register() (revision *Revision, err error) {
-	// Explicit FastForward to assure existence
-	// check against latest state
-	s, err := r.Dir.Snapshot.FastForward()
+func (r *Revision) Register() (*Revision, error) {
+	sp, err := r.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
 	}
-	r = r.Join(s)
 
-	exists, _, err := r.Dir.Snapshot.Exists(r.Dir.Name)
+	exists, _, err := sp.Exists(r.dir.Name)
 	if err != nil {
-		return
+		return nil, err
 	}
 	if exists {
-		return nil, cp.ErrKeyConflict
+		return nil, ErrConflict
 	}
 
-	_, err = r.Dir.Set("archive-url", r.ArchiveUrl)
+	d, err := r.dir.Join(sp).Set("archive-url", r.ArchiveUrl)
 	if err != nil {
-		return
+		return nil, err
 	}
-	d, err := r.Dir.Set("registered", timestamp())
+	d, err = r.dir.Set("registered", timestamp())
 	if err != nil {
-		return
+		return nil, err
 	}
 
-	revision = r.Join(d)
+	r.dir = d
 
-	return
+	return r, nil
 }
 
 // Unregister unregisters a revision from the registry.
-func (r *Revision) Unregister() (err error) {
-	return r.Dir.Del("/")
-}
-
-func (r *Revision) SetArchiveUrl(url string) (revision *Revision, err error) {
-	d, err := r.Dir.Set("archive-url", url)
+func (r *Revision) Unregister() error {
+	sp, err := r.GetSnapshot().FastForward()
 	if err != nil {
-		return
+		return err
 	}
-	revision = r.Join(d)
-	return
+	return r.dir.Join(sp).Del("/")
 }
 
 func (r *Revision) String() string {
 	return fmt.Sprintf("Revision<%s:%s>", r.App.Name, r.Ref)
 }
 
-func (r *Revision) Inspect() string {
-	return fmt.Sprintf("%#v", r)
-}
-
-func (s *Store) GetRevision(app *App, ref string) (*Revision, error) {
-	sp, err := s.GetSnapshot().FastForward()
+func (a *App) GetRevision(ref string) (*Revision, error) {
+	sp, err := a.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
 	}
+	return getRevision(a, ref, sp)
 
-	path := app.Dir.Prefix(revsPath, ref)
-	codec := new(cp.StringCodec)
-
-	f, err := sp.GetFile(path+"/archive-url", codec)
-	if err != nil {
-		if cp.IsErrNoEnt(err) {
-			err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
-		}
-		return nil, err
-	}
-
-	r := &Revision{
-		Dir:        cp.Dir{sp, path},
-		App:        app,
-		Ref:        ref,
-		ArchiveUrl: f.Value.(string),
-	}
-
-	return r, err
 }
 
 // Revisions returns an array of all registered revisions.
-func (s *Store) Revisions() (revisions []*Revision, err error) {
-	apps, err := s.Apps()
+func (s *Store) GetRevisions() (revisions []*Revision, err error) {
+	apps, err := s.GetApps()
 	if err != nil {
 		return
 	}
@@ -141,4 +102,27 @@ func (s *Store) Revisions() (revisions []*Revision, err error) {
 	}
 
 	return
+}
+
+func getRevision(app *App, ref string, s cp.Snapshotable) (*Revision, error) {
+	sp := s.GetSnapshot()
+	path := app.dir.Prefix(revsPath, ref)
+	codec := new(cp.StringCodec)
+
+	f, err := sp.GetFile(path+"/archive-url", codec)
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
+		}
+		return nil, err
+	}
+
+	r := &Revision{
+		dir:        cp.NewDir(path, sp),
+		App:        app,
+		Ref:        ref,
+		ArchiveUrl: f.Value.(string),
+	}
+
+	return r, nil
 }
