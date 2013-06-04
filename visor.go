@@ -260,3 +260,7 @@ func storeFromSnapshotable(sp cp.Snapshotable) *Store {
 func timestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
+
+func parseTimestamp(val string) (time.Time, error) {
+	return time.Parse(time.RFC3339, val)
+}

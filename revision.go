@@ -8,6 +8,7 @@ package visor
 import (
 	"fmt"
 	cp "github.com/soundcloud/cotterpin"
+	"time"
 )
 
 // A Revision represents an application revision,
@@ -17,9 +18,14 @@ type Revision struct {
 	App        *App
 	Ref        string
 	ArchiveUrl string
+	Registered time.Time
 }
 
-const revsPath = "revs"
+const (
+	archiveUrlPath = "archive-url"
+	registeredPath = "registered"
+	revsPath       = "revs"
+)
 
 // NewRevision returns a new instance of Revision.
 func (s *Store) NewRevision(app *App, ref string) (rev *Revision) {
@@ -48,11 +54,11 @@ func (r *Revision) Register() (*Revision, error) {
 		return nil, ErrConflict
 	}
 
-	d, err := r.dir.Join(sp).Set("archive-url", r.ArchiveUrl)
+	d, err := r.dir.Join(sp).Set(archiveUrlPath, r.ArchiveUrl)
 	if err != nil {
 		return nil, err
 	}
-	d, err = r.dir.Set("registered", timestamp())
+	d, err = r.dir.Set(registeredPath, timestamp())
 	if err != nil {
 		return nil, err
 	}
@@ -105,23 +111,35 @@ func (s *Store) GetRevisions() (revisions []*Revision, err error) {
 }
 
 func getRevision(app *App, ref string, s cp.Snapshotable) (*Revision, error) {
-	sp := s.GetSnapshot()
-	path := app.dir.Prefix(revsPath, ref)
-	codec := new(cp.StringCodec)
+	r := &Revision{
+		dir: cp.NewDir(app.dir.Prefix(revsPath, ref), s.GetSnapshot()),
+		App: app,
+		Ref: ref,
+	}
 
-	f, err := sp.GetFile(path+"/archive-url", codec)
+	f, err := r.dir.GetFile(archiveUrlPath, new(cp.StringCodec))
 	if err != nil {
 		if cp.IsErrNoEnt(err) {
 			err = errorf(ErrNotFound, "archive-url not found for %s:%s", app.Name, ref)
 		}
 		return nil, err
 	}
+	r.ArchiveUrl = f.Value.(string)
 
-	r := &Revision{
-		dir:        cp.NewDir(path, sp),
-		App:        app,
-		Ref:        ref,
-		ArchiveUrl: f.Value.(string),
+	f, err = r.dir.GetFile(registeredPath, new(cp.StringCodec))
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "registered not found for %s:%s", app.Name, ref)
+		}
+		return nil, err
+	}
+	r.Registered, err = parseTimestamp(f.Value.(string))
+	if err != nil {
+		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
+		r.Registered, err = time.Parse("2006-01-02 15:04:05 -0700 MST", f.Value.(string))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return r, nil
