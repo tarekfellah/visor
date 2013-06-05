@@ -115,11 +115,11 @@ func (s *Store) Scale(app string, revision string, processName string, factor in
 
 	s.snapshot = sp
 
-	list, err := getInstanceIds(app, revision, processName, sp)
+	ids, err := getInstanceIds(app, revision, processName, sp)
 	if err != nil {
 		return nil, -1, err
 	}
-	current = len(list)
+	current = len(ids)
 
 	if factor > current {
 		// Scale up
@@ -140,9 +140,17 @@ func (s *Store) Scale(app string, revision string, processName string, factor in
 		// Scale down
 		stops := current - factor
 		for i := 0; i < stops; i++ {
-			s, err = s.StopInstance(list[i])
+			ins, err := getInstance(ids[i], s)
 			if err != nil {
-				return
+				return nil, -1, err
+			}
+
+			err = ins.Stop()
+			if err != nil {
+				if IsErrInvalidState(err) {
+					err = errorf(ErrInvalidState, "instance '%d' isn't running", ins.Id)
+				}
+				return nil, -1, err
 			}
 		}
 	}

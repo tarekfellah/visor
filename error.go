@@ -58,3 +58,7 @@ func IsErrNotFound(e error) bool {
 func IsErrInsClaimed(e error) bool {
 	return e.(*Error).Err == ErrInsClaimed
 }
+
+func IsErrInvalidState(e error) bool {
+	return e == ErrInvalidState
+}

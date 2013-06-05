@@ -63,14 +63,10 @@ func TestScale(t *testing.T) {
 	pty := genProctype(app, "web")
 
 	// Scale up
-	_, current, err := s.Scale(app.Name, rev.Ref, pty.Name, scale)
+	ins, current, err := s.Scale(app.Name, rev.Ref, pty.Name, scale)
 	if current != 0 {
 		t.Fatal("expected current scale to = 0")
 	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	s, err = s.FastForward()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,36 +80,24 @@ func TestScale(t *testing.T) {
 	}
 
 	// Scale down
+	err = setInstancesToStarted(ins)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, -1)
 	if err == nil {
 		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	_, current, err = s.Scale(app.Name, rev.Ref, pty.Name, 1)
-	if current != 5 {
-		t.Fatalf("expected current scale (%d) to = %d", current, 5)
-	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	s, err = s.FastForward()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
-	if scale1 != scale {
-		t.Fatalf("expected %d instances, got %d", scale, scale1)
-	}
-
 	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s, err = s.FastForward()
-	if err != nil {
-		t.Fatal(err)
+
+	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 0)
+	if err == nil {
+		t.Fatal("expected error when scaling down instances twice")
 	}
 
 	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
@@ -179,4 +163,23 @@ func TestGetScale(t *testing.T) {
 	if scale != 0 {
 		t.Errorf("expected scale to be 0")
 	}
+}
+
+func setInstancesToStarted(ins []*Instance) error {
+	host := "127.0.0.1"
+	hostname := "localhost"
+	port := 5000
+
+	for _, i := range ins {
+		i, err := i.Claim(host)
+		if err != nil {
+			return err
+		}
+		i, err = i.Started(host, port, hostname)
+		if err != nil {
+			return err
+		}
+		port += 1
+	}
+	return nil
 }

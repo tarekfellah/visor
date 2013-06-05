@@ -173,23 +173,6 @@ func (s *Store) RegisterInstance(app string, rev string, pty string) (ins *Insta
 	return
 }
 
-func (s *Store) StopInstance(id int64) (*Store, error) {
-	//
-	//   instances/
-	//       6868/
-	//           ...
-	// +         stop =
-	//
-	// TODO Check that instance is started
-	d := cp.NewDir(instancePath(id), s.GetSnapshot())
-	d, err := d.Set("stop", "")
-	if err != nil {
-		return nil, err
-	}
-
-	return storeFromSnapshotable(d), nil
-}
-
 func instancePath(id int64) string {
 	return path.Join(instancesPath, strconv.FormatInt(id, 10))
 }
@@ -343,6 +326,24 @@ func (i *Instance) Started(host string, port int, hostname string) (*Instance, e
 	i.dir = i.dir.Join(start)
 
 	return i, nil
+}
+
+func (i *Instance) Stop() error {
+	//
+	//   instances/
+	//       6868/
+	//           ...
+	// +         stop =
+	//
+	if i.Status != InsStatusRunning {
+		return ErrInvalidState
+	}
+	_, err := i.dir.Set("stop", "")
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Restarted tells the coordinator that the instance has been restarted.

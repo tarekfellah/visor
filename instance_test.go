@@ -203,7 +203,12 @@ func TestInstanceStop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = s.StopInstance(ins.Id)
+	ins, err = ins.Started(ip, 5555, "localhost")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ins.Stop()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,7 +237,7 @@ func TestInstanceExited(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	s, err = s.StopInstance(ins.Id)
+	err = ins.Stop()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -332,6 +337,15 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 		t.Errorf("expected instance, got timeout")
 	}
 
+	ins, err = ins.Claim("10.0.0.1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ins, err = ins.Started("10.0.0.1", 5555, "localhost")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Stop test
 
 	ch := make(chan *Instance)
@@ -344,7 +358,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 		ch <- ins
 	}()
 
-	s, err = s.StopInstance(ins.Id)
+	err = ins.Stop()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -353,9 +367,6 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	case ins1 := <-ch:
 		if ins1 == nil {
 			t.Error("instance is nil")
-		}
-		if s.GetSnapshot().Rev != ins1.dir.Snapshot.Rev {
-			t.Errorf("instance revs don't match: %d != %d", s.GetSnapshot().Rev, ins1.GetSnapshot().Rev)
 		}
 	case <-time.After(time.Second):
 		t.Errorf("expected instance, got timeout")
@@ -414,7 +425,7 @@ func TestInstanceWaitStop(t *testing.T) {
 	}
 
 	go func() {
-		if _, err := s.StopInstance(ins.Id); err != nil {
+		if err := ins.Stop(); err != nil {
 			panic(err)
 		}
 	}()
