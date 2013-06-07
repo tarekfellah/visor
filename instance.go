@@ -70,6 +70,7 @@ type Instance struct {
 	Status       InsStatus
 	Restarts     *InsRestarts
 	Registered   time.Time
+	Claimed      time.Time
 }
 
 func (s *Store) GetInstances() ([]*Instance, error) {
@@ -236,10 +237,12 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 		return i, err
 	}
 
-	d, err = i.claimDir().Join(d).Set(host, timestamp())
+	claimed := time.Now()
+	d, err = i.claimDir().Join(d).Set(host, formatTime(claimed))
 	if err != nil {
-		return i, err
+		return nil, err
 	}
+	i.Claimed = claimed
 	i.dir = i.dir.Join(d)
 	return i, err
 }
@@ -772,6 +775,18 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	f, err = i.claimDir().GetFile(i.Host, new(cp.StringCodec))
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			return i, nil
+		}
+		return nil, err
+	}
+	i.Claimed, err = parseTime(f.Value.(string))
+	if err != nil {
+		return nil, err
 	}
 
 	return i, nil
