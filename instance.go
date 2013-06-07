@@ -763,30 +763,32 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 
 	f, err = i.dir.GetFile(registeredPath, new(cp.StringCodec))
 	if err != nil {
-		if cp.IsErrNoEnt(err) {
-			err = errorf(ErrNotFound, "registered not found for %d", i.Id)
-		}
-		return nil, err
-	}
-	i.Registered, err = parseTime(f.Value.(string))
-	if err != nil {
-		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
-		i.Registered, err = time.Parse(UTCFormat, f.Value.(string))
-		if err != nil {
+		// FIXME remove as soon as instances have consistent registered field
+		if !cp.IsErrNoEnt(err) {
 			return nil, err
+		}
+	} else {
+		i.Registered, err = parseTime(f.Value.(string))
+		if err != nil {
+			// FIXME remove backwards compatible parsing of timestamps before b4fbef0
+			i.Registered, err = time.Parse(UTCFormat, f.Value.(string))
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
-	f, err = i.claimDir().GetFile(i.Host, new(cp.StringCodec))
+	f, err = i.claimDir().GetFile(i.Ip, new(cp.StringCodec))
 	if err != nil {
 		if cp.IsErrNoEnt(err) {
 			return i, nil
 		}
 		return nil, err
-	}
-	i.Claimed, err = parseTime(f.Value.(string))
-	if err != nil {
-		return nil, err
+	} else {
+		i.Claimed, err = parseTime(f.Value.(string))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return i, nil
