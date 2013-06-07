@@ -23,7 +23,6 @@ type Revision struct {
 
 const (
 	archiveUrlPath = "archive-url"
-	registeredPath = "registered"
 	revsPath       = "revs"
 )
 
@@ -58,10 +57,12 @@ func (r *Revision) Register() (*Revision, error) {
 	if err != nil {
 		return nil, err
 	}
-	d, err = r.dir.Set(registeredPath, timestamp())
+	reg := time.Now()
+	d, err = r.dir.Set(registeredPath, formatTime(reg))
 	if err != nil {
 		return nil, err
 	}
+	r.Registered = reg
 
 	r.dir = d
 
@@ -133,10 +134,10 @@ func getRevision(app *App, ref string, s cp.Snapshotable) (*Revision, error) {
 		}
 		return nil, err
 	}
-	r.Registered, err = parseTimestamp(f.Value.(string))
+	r.Registered, err = parseTime(f.Value.(string))
 	if err != nil {
 		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
-		r.Registered, err = time.Parse("2006-01-02 15:04:05 -0700 MST", f.Value.(string))
+		r.Registered, err = time.Parse(UTCFormat, f.Value.(string))
 		if err != nil {
 			return nil, err
 		}

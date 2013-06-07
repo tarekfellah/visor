@@ -11,15 +11,19 @@ import (
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const claimsPath = "claims"
-const instancesPath = "instances"
-const failedPath = "failed"
-const startPath = "start"
-const statusPath = "status"
-const stopPath = "stop"
-const restartsPath = "restarts"
+const (
+	claimsPath    = "claims"
+	instancesPath = "instances"
+	failedPath    = "failed"
+	objectPath    = "object"
+	startPath     = "start"
+	statusPath    = "status"
+	stopPath      = "stop"
+	restartsPath  = "restarts"
+)
 
 type InsRestarts struct {
 	OOM, Fail int
@@ -65,6 +69,7 @@ type Instance struct {
 	Host         string
 	Status       InsStatus
 	Restarts     *InsRestarts
+	Registered   time.Time
 }
 
 func (s *Store) GetInstances() ([]*Instance, error) {
@@ -159,10 +164,17 @@ func (s *Store) RegisterInstance(app string, rev string, pty string) (ins *Insta
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.GetSnapshot().Set(ins.ptyInstancesPath(), timestamp())
+	reg := time.Now()
+	_, err = ins.dir.Set(registeredPath, formatTime(reg))
 	if err != nil {
 		return
 	}
+	ins.Registered = reg
+	_, err = s.GetSnapshot().Set(ins.ptyInstancesPath(), formatTime(reg))
+	if err != nil {
+		return
+	}
+
 	start := cp.NewFile(ins.dir.Prefix(startPath), "", new(cp.StringCodec), s.GetSnapshot())
 	start, err = start.Save()
 	if err != nil {
@@ -682,82 +694,85 @@ func (i *Instance) IdString() string {
 	return fmt.Sprintf("INSTANCE[%d]", i.Id)
 }
 
-func getInstance(id int64, s cp.Snapshotable) (ins *Instance, err error) {
-	sp := s.GetSnapshot()
-	p := instancePath(id)
-	status := InsStatusPending
+func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
+	i := &Instance{
+		Id:     id,
+		Status: InsStatusPending,
+		dir:    cp.NewDir(instancePath(id), s.GetSnapshot()),
+	}
 
-	var (
-		ip   string
-		port int
-		host string
-	)
-
-	f, err := sp.GetFile(p+"/start", new(cp.ListCodec))
+	f, err := i.dir.GetFile(startPath, new(cp.ListCodec))
 	if cp.IsErrNoEnt(err) {
 		// Ignore
 	} else if err != nil {
-		return
+		return nil, err
 	} else {
 		fields := f.Value.([]string)
 
 		if len(fields) > 0 { // IP
-			status = InsStatusClaimed
-			ip = fields[0]
+			i.Status = InsStatusClaimed
+			i.Ip = fields[0]
 		}
 		if len(fields) > 1 { // Port
-			status = InsStatusRunning
-			port, err = strconv.Atoi(fields[1])
+			i.Status = InsStatusRunning
+			i.Port, err = strconv.Atoi(fields[1])
 			if err != nil {
 				panic("invalid port number: " + fields[1])
 			}
 		}
 		if len(fields) > 2 { // Hostname
-			host = fields[2]
+			i.Host = fields[2]
 		}
 	}
 
-	statusStr, _, err := sp.Get(p + "/status")
+	statusStr, _, err := i.dir.Get(statusPath)
 	if cp.IsErrNoEnt(err) {
 		err = nil
 	} else if err == nil {
-		status = InsStatus(statusStr)
+		i.Status = InsStatus(statusStr)
 	} else {
-		return
+		return nil, err
 	}
 
-	if status == InsStatusRunning {
-		_, _, err := sp.Get(p + "/stop")
+	if i.Status == InsStatusRunning {
+		_, _, err := i.dir.Get(stopPath)
 		if err == nil {
-			status = InsStatusStopping
+			i.Status = InsStatusStopping
 		} else if !cp.IsErrNoEnt(err) {
 			return nil, err
 		}
 	}
 
-	f, err = sp.GetFile(p+"/object", new(cp.ListCodec))
+	f, err = i.dir.GetFile(objectPath, new(cp.ListCodec))
 	if err != nil {
 		return nil, errorf(ErrNotFound, "object file not found for instance %d", id)
 	}
 	fields := f.Value.([]string)
 
-	ins = &Instance{
-		Id:           id,
-		AppName:      fields[0],
-		RevisionName: fields[1],
-		ProcessName:  fields[2],
-		Status:       status,
-		Ip:           ip,
-		Port:         port,
-		Host:         host,
-		dir:          cp.NewDir(instancePath(id), sp),
-	}
+	i.AppName = fields[0]
+	i.RevisionName = fields[1]
+	i.ProcessName = fields[2]
 
-	restarts, _, err := ins.getRestarts()
+	i.Restarts, _, err = i.getRestarts()
 	if err != nil {
-		return
+		return nil, err
 	}
-	ins.Restarts = restarts
 
-	return
+	f, err = i.dir.GetFile(registeredPath, new(cp.StringCodec))
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "registered not found for %d", i.Id)
+		}
+		return nil, err
+	}
+	i.Registered, err = parseTime(f.Value.(string))
+	if err != nil {
+		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
+		i.Registered, err = time.Parse(UTCFormat, f.Value.(string))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return i, nil
 }

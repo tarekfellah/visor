@@ -10,6 +10,7 @@ import (
 	cp "github.com/soundcloud/cotterpin"
 	"path"
 	"strings"
+	"time"
 )
 
 const appsPath = "apps"
@@ -25,6 +26,7 @@ type App struct {
 	Head       string
 	Env        Env
 	DeployType string
+	Registered time.Time
 }
 
 // NewApp returns a new App given a name, repository url and stack.
@@ -79,10 +81,12 @@ func (a *App) Register() (*App, error) {
 		}
 	}
 
-	d, err := a.dir.Set("registered", timestamp())
+	reg := time.Now()
+	d, err := a.dir.Set(registeredPath, formatTime(reg))
 	if err != nil {
 		return nil, err
 	}
+	a.Registered = reg
 
 	a.dir = d
 
@@ -348,5 +352,22 @@ func getApp(name string, s cp.Snapshotable) (*App, error) {
 	} else if cp.IsErrNoEnt(err) {
 		err = nil
 	}
+
+	f, err = app.dir.GetFile(registeredPath, new(cp.StringCodec))
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "registered not found for %s", app.Name)
+		}
+		return nil, err
+	}
+	app.Registered, err = parseTime(f.Value.(string))
+	if err != nil {
+		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
+		app.Registered, err = time.Parse(UTCFormat, f.Value.(string))
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return app, nil
 }

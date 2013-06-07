@@ -18,11 +18,12 @@ var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
 // ProcType represents a process type with a certain scale.
 type ProcType struct {
-	dir   *cp.Dir
-	Name  string
-	App   *App
-	Port  int
-	Attrs ProcTypeAttrs
+	dir        *cp.Dir
+	Name       string
+	App        *App
+	Port       int
+	Attrs      ProcTypeAttrs
+	Registered time.Time
 }
 
 // Mutable extra ProcType attributes.
@@ -84,10 +85,12 @@ func (p *ProcType) Register() (*ProcType, error) {
 		return nil, err
 	}
 
-	d, err := p.dir.Join(sp).Set("registered", timestamp())
+	reg := time.Now()
+	d, err := p.dir.Join(sp).Set(registeredPath, formatTime(reg))
 	if err != nil {
 		return nil, err
 	}
+	p.Registered = reg
 	p.dir = d
 
 	return p, nil
@@ -189,18 +192,37 @@ func (a *App) GetProcType(name string) (*ProcType, error) {
 }
 
 func getProcType(app *App, name string, s cp.Snapshotable) (*ProcType, error) {
-	sp := s.GetSnapshot()
-	p := storeFromSnapshotable(sp).NewProcType(app, name)
+	p := &ProcType{
+		dir:  cp.NewDir(app.dir.Prefix(procsPath, name), s.GetSnapshot()),
+		Name: name,
+		App:  app,
+	}
 
-	port, err := sp.GetFile(p.dir.Prefix(procsPortPath), new(cp.IntCodec))
+	port, err := p.dir.GetFile(procsPortPath, new(cp.IntCodec))
 	if err != nil {
 		return nil, errorf(ErrNotFound, "proctype %s not found for %s", name, app.Name)
 	}
 	p.Port = port.Value.(int)
 
-	_, err = sp.GetFile(p.dir.Prefix(procsAttrsPath), &cp.JsonCodec{DecodedVal: &p.Attrs})
+	_, err = p.dir.GetFile(procsAttrsPath, &cp.JsonCodec{DecodedVal: &p.Attrs})
 	if err != nil && !cp.IsErrNoEnt(err) {
 		return nil, err
+	}
+
+	f, err := p.dir.GetFile(registeredPath, new(cp.StringCodec))
+	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "registered not found for %s:%s", app.Name, name)
+		}
+		return nil, err
+	}
+	p.Registered, err = parseTime(f.Value.(string))
+	if err != nil {
+		// FIXME remove backwards compatible parsing of timestamps before b4fbef0
+		p.Registered, err = time.Parse(UTCFormat, f.Value.(string))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return p, nil

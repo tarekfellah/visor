@@ -17,12 +17,14 @@ import (
 const SchemaVersion = 2
 
 const (
-	DefaultUri   string = "doozer:?ca=localhost:8046"
-	DefaultRoot  string = "/visor"
-	startPort    int    = 8000
-	nextPortPath string = "/next-port"
-	proxyDir            = "/proxies"
-	pmDir               = "/pms"
+	DefaultUri     = "doozer:?ca=localhost:8046"
+	DefaultRoot    = "/visor"
+	startPort      = 8000
+	nextPortPath   = "/next-port"
+	proxyDir       = "/proxies"
+	pmDir          = "/pms"
+	UTCFormat      = "2006-01-02 15:04:05 -0700 MST"
+	registeredPath = "registered"
 )
 
 // Set *automatically* at link time (see Makefile)
@@ -265,10 +267,14 @@ func storeFromSnapshotable(sp cp.Snapshotable) *Store {
 	return &Store{sp.GetSnapshot()}
 }
 
+func formatTime(t time.Time) string {
+	return t.Format(time.RFC3339)
+}
+
 func timestamp() string {
 	return time.Now().UTC().Format(time.RFC3339)
 }
 
-func parseTimestamp(val string) (time.Time, error) {
+func parseTime(val string) (time.Time, error) {
 	return time.Parse(time.RFC3339, val)
 }
