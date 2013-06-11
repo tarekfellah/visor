@@ -704,6 +704,14 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 		dir:    cp.NewDir(instancePath(id), s.GetSnapshot()),
 	}
 
+	exists, _, err := s.GetSnapshot().Exists(i.dir.Name)
+	if err != nil {
+		return nil, err
+	}
+	if !exists {
+		return nil, errorf(ErrNotFound, `instance '%d' not found`, id)
+	}
+
 	f, err := i.dir.GetFile(startPath, new(cp.ListCodec))
 	if cp.IsErrNoEnt(err) {
 		// Ignore
