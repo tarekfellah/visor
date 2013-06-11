@@ -146,6 +146,7 @@ func (s *Store) Scale(app string, revision string, processName string, factor in
 			if err != nil {
 				return nil, -1, err
 			}
+			tickets = append(tickets, ins)
 
 			err = ins.Stop()
 			if err != nil {
