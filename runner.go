@@ -263,6 +263,9 @@ func getRunner(addr string, s cp.Snapshotable) (*Runner, error) {
 	sp := s.GetSnapshot()
 	f, err := sp.GetFile(runnerPath(addr), new(cp.ListCodec))
 	if err != nil {
+		if cp.IsErrNoEnt(err) {
+			err = errorf(ErrNotFound, "runner '%s' not found", addr)
+		}
 		return nil, err
 	}
 	data := f.Value.([]string)
