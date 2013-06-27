@@ -6,7 +6,6 @@
 package visor
 
 import (
-	cp "github.com/soundcloud/cotterpin"
 	"github.com/soundcloud/visor/net"
 	"testing"
 	"time"
@@ -65,7 +64,7 @@ func TestRunnerRegisterAndGet(t *testing.T) {
 	}
 
 	_, err = s.GetRunner(addr)
-	if !cp.IsErrNoEnt(err) {
+	if !IsErrNotFound(err) {
 		t.Fatal("expected runner to be unregistered")
 	}
 }

@@ -200,7 +200,7 @@ func getProcType(app *App, name string, s cp.Snapshotable) (*ProcType, error) {
 
 	port, err := p.dir.GetFile(procsPortPath, new(cp.IntCodec))
 	if err != nil {
-		return nil, errorf(ErrNotFound, "proctype %s not found for %s", name, app.Name)
+		return nil, errorf(ErrNotFound, "port not found for %s-%s", app.Name, name)
 	}
 	p.Port = port.Value.(int)
 
