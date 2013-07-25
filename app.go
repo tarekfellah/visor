@@ -16,22 +16,20 @@ import (
 const appsPath = "apps"
 const DeployLXC = "lxc"
 
-type Env map[string]string
-
 type App struct {
 	dir        *cp.Dir
 	Name       string
 	RepoUrl    string
 	Stack      string
 	Head       string
-	Env        Env
+	Env        map[string]string
 	DeployType string
 	Registered time.Time
 }
 
 // NewApp returns a new App given a name, repository url and stack.
 func (s *Store) NewApp(name string, repourl string, stack string) (app *App) {
-	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: Env{}}
+	app = &App{Name: name, RepoUrl: repourl, Stack: stack, Env: map[string]string{}}
 	app.dir = cp.NewDir(path.Join(appsPath, app.Name), s.GetSnapshot())
 
 	return
@@ -122,8 +120,8 @@ func (a *App) SetHead(head string) (a1 *App, err error) {
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
-func (a *App) EnvironmentVars() (vars Env, err error) {
-	vars = Env{}
+func (a *App) EnvironmentVars() (vars map[string]string, err error) {
+	vars = map[string]string{}
 
 	sp, err := a.GetSnapshot().FastForward()
 	if err != nil {
