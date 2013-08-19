@@ -9,8 +9,10 @@ import (
 	"errors"
 	"fmt"
 	cp "github.com/soundcloud/cotterpin"
+	"net"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,6 +23,7 @@ const (
 	DefaultRoot    = "/visor"
 	startPort      = 8000
 	nextPortPath   = "/next-port"
+	loggerDir      = "/loggers"
 	proxyDir       = "/proxies"
 	pmDir          = "/pms"
 	UTCFormat      = "2006-01-02 15:04:05 -0700 MST"
@@ -181,6 +184,22 @@ func (s *Store) GetScale(app string, revid string, pty string) (scale int, rev i
 	return count, rev, nil
 }
 
+// GetLoggers gets the list of bazooka-log services endpoints.
+func (s *Store) GetLoggers() ([]string, error) {
+	sp, err := s.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
+	names, err := sp.Getdir(loggerDir)
+	if err != nil {
+		return nil, err
+	}
+	for i, name := range names {
+		names[i] = strings.Replace(name, "-", ":", 1)
+	}
+	return names, nil
+}
+
 // GetProxies gets the list of bazooka-proxy service IPs
 func (s *Store) GetProxies() ([]string, error) {
 	sp, err := s.GetSnapshot().FastForward()
@@ -205,6 +224,27 @@ func (s *Store) GetAppNames() ([]string, error) {
 		return nil, err
 	}
 	return sp.Getdir("apps")
+}
+
+func (s *Store) RegisterLogger(addr, version string) (*Store, error) {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := s.GetSnapshot().Set(path.Join(loggerDir, host+"-"+port), timestamp()+" "+version)
+	if err != nil {
+		return nil, err
+	}
+	s.snapshot = sp
+	return s, nil
+}
+
+func (s *Store) UnregisterLogger(addr string) error {
+	host, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return err
+	}
+	return s.GetSnapshot().Del(path.Join(loggerDir, host+"-"+port))
 }
 
 func (s *Store) RegisterPm(host, version string) (*Store, error) {
