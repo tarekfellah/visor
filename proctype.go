@@ -163,6 +163,18 @@ func (p *ProcType) GetInstances() ([]*Instance, error) {
 	return getProcInstances(idStrs, sp)
 }
 
+func (p ProcType) GetRunningRevs() ([]string, error) {
+	sp, err := p.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
+	revs, err := sp.Getdir(p.dir.Prefix("instances"))
+	if err != nil {
+		return nil, err
+	}
+	return revs, nil
+}
+
 func (p *ProcType) StoreAttrs() (*ProcType, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
