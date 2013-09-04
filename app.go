@@ -108,15 +108,15 @@ func (a *App) Unregister() error {
 }
 
 // SetHead sets the application's latest revision
-func (a *App) SetHead(head string) (a1 *App, err error) {
+func (a *App) SetHead(head string) (*App, error) {
 	d, err := a.dir.Set("head", head)
 	if err != nil {
-		return
+		return nil, err
 	}
-	a1.Head = head
-	a1.dir = d
+	a.Head = head
+	a.dir = d
 
-	return
+	return a, nil
 }
 
 // EnvironmentVars returns all set variables for this app as a map.
