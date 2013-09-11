@@ -761,7 +761,11 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 	if err != nil {
 		return nil, errorf(ErrNotFound, "object file not found for instance %d", id)
 	}
+
 	fields := f.Value.([]string)
+	if len(fields) < 3 {
+		return nil, errorf(ErrInvalidFile, "object file has %d instead %d fields", len(fields), 3)
+	}
 
 	i.AppName = fields[0]
 	i.RevisionName = fields[1]
