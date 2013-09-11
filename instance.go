@@ -91,16 +91,19 @@ func (s *Store) GetInstances() ([]*Instance, error) {
 		}
 		return getInstance(id, sp)
 	})
+	errStr := ""
 	for i := 0; i < len(ids); i++ {
 		select {
 		case i := <-ch:
 			instances = append(instances, i.(*Instance))
 		case err := <-errch:
-			if err != nil {
-				return nil, err
-			}
+			errStr = fmt.Sprintf("%s\n%s", errStr, err)
 		}
 	}
+	if len(errStr) > 0 {
+		return instances, NewError(ErrNotFound, errStr)
+	}
+
 	return instances, nil
 }
 
