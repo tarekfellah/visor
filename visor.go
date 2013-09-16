@@ -11,6 +11,7 @@ import (
 	cp "github.com/soundcloud/cotterpin"
 	"net"
 	"path"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -94,6 +95,15 @@ func (s *Store) Init() (*Store, error) {
 }
 
 func (s *Store) Scale(app string, revision string, processName string, factor int) (tickets []*Instance, current int, err error) {
+	if err := validateInput(app); err != nil {
+		return nil, -1, errorf(err, "given app not valid: %s (%s)", app, err)
+	}
+	if err := validateInput(revision); err != nil {
+		return nil, -1, errorf(err, "given rev not valid: %s (%s)", revision, err)
+	}
+	if err := validateInput(processName); err != nil {
+		return nil, -1, errorf(err, "given proc not valid: %s (%s)", processName, err)
+	}
 	if factor < 0 {
 		return nil, -1, errors.New("scaling factor needs to be a positive integer")
 	}
@@ -318,4 +328,15 @@ func timestamp() string {
 
 func parseTime(val string) (time.Time, error) {
 	return time.Parse(time.RFC3339, val)
+}
+
+func validateInput(s string) error {
+	if len(s) < 1 {
+		return errorf(ErrInvalidArgument, "input can't be zero length")
+	}
+	validInput := regexp.MustCompile(`^[[:alnum:]\-]+$`)
+	if !validInput.MatchString(s) {
+		return errorf(ErrInvalidArgument, "input only allows alphanumeric characters and -")
+	}
+	return nil
 }

@@ -165,6 +165,29 @@ func TestGetScale(t *testing.T) {
 	}
 }
 
+func TestValidateInput(t *testing.T) {
+	err := validateInput("")
+	if err == nil || !IsErrInvalidArgument(err) {
+		t.Errorf("expected zero length string to not validate")
+	}
+	err = validateInput(" ")
+	if err == nil || !IsErrInvalidArgument(err) {
+		t.Errorf("expected empty string to not validate")
+	}
+	err = validateInput("app name")
+	if err == nil || !IsErrInvalidArgument(err) {
+		t.Errorf("expected whitespace in input to not validate")
+	}
+	err = validateInput("underscore_proc")
+	if err == nil || !IsErrInvalidArgument(err) {
+		t.Errorf("expected underscore in input to not validate")
+	}
+	err = validateInput("valid-name")
+	if err != nil {
+		t.Errorf("expected input '%s' to validate: %s", "valid-name", err)
+	}
+}
+
 func setInstancesToStarted(ins []*Instance) error {
 	host := "127.0.0.1"
 	hostname := "localhost"
