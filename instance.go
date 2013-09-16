@@ -772,7 +772,7 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 
 	fields := f.Value.([]string)
 	if len(fields) < 3 {
-		return nil, errorf(ErrInvalidFile, "object file has %d instead %d fields", len(fields), 3)
+		return nil, errorf(ErrInvalidFile, "object file for %d has %d instead %d fields", id, len(fields), 3)
 	}
 
 	i.AppName = fields[0]
