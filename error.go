@@ -12,13 +12,14 @@ import (
 )
 
 var (
-	ErrConflict     = errors.New("object already exists")
-	ErrInsClaimed   = errors.New("instance is already claimed")
-	ErrInvalidState = errors.New("invalid state")
-	ErrInvalidFile  = errors.New("invalid file")
-	ErrBadPtyName   = errors.New("invalid proc type name: only alphanumeric chars allowed")
-	ErrUnauthorized = errors.New("operation is not permitted")
-	ErrNotFound     = errors.New("object not found")
+	ErrConflict        = errors.New("object already exists")
+	ErrInsClaimed      = errors.New("instance is already claimed")
+	ErrInvalidArgument = errors.New("invalid argument")
+	ErrInvalidState    = errors.New("invalid state")
+	ErrInvalidFile     = errors.New("invalid file")
+	ErrBadPtyName      = errors.New("invalid proc type name: only alphanumeric chars allowed")
+	ErrUnauthorized    = errors.New("operation is not permitted")
+	ErrNotFound        = errors.New("object not found")
 )
 
 type Error struct {
@@ -66,4 +67,8 @@ func IsErrInvalidState(e error) bool {
 
 func IsErrInvalidFile(e error) bool {
 	return e.(*Error).Err == ErrInvalidFile
+}
+
+func IsErrInvalidArgument(e error) bool {
+	return e.(*Error).Err == ErrInvalidArgument
 }
