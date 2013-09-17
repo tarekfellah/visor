@@ -15,6 +15,7 @@ var (
 	ErrConflict        = errors.New("object already exists")
 	ErrInsClaimed      = errors.New("instance is already claimed")
 	ErrInvalidArgument = errors.New("invalid argument")
+	ErrInvalidKey      = errors.New("invalid key")
 	ErrInvalidState    = errors.New("invalid state")
 	ErrInvalidFile     = errors.New("invalid file")
 	ErrBadPtyName      = errors.New("invalid proc type name: only alphanumeric chars allowed")
@@ -29,10 +30,6 @@ type Error struct {
 
 func NewError(err error, msg string) *Error {
 	return &Error{err, msg}
-}
-
-func errorf(err error, format string, args ...interface{}) *Error {
-	return &Error{err, fmt.Sprintf(format, args...)}
 }
 
 func (e *Error) Error() string {
@@ -71,4 +68,12 @@ func IsErrInvalidFile(e error) bool {
 
 func IsErrInvalidArgument(e error) bool {
 	return e.(*Error).Err == ErrInvalidArgument
+}
+
+func IsErrInvalidKey(e error) bool {
+	return e.(*Error).Err == ErrInvalidKey
+}
+
+func errorf(err error, format string, args ...interface{}) *Error {
+	return NewError(err, fmt.Sprintf(format, args...))
 }

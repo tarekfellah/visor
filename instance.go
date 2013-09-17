@@ -65,6 +65,7 @@ type Instance struct {
 	AppName      string
 	RevisionName string
 	ProcessName  string
+	Env          string
 	Ip           string
 	Port         int
 	Host         string
@@ -123,9 +124,9 @@ func (p Int64Slice) Len() int           { return len(p) }
 func (p Int64Slice) Less(i, j int) bool { return p[i] < p[j] }
 func (p Int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
-func getInstanceIds(app, rev, pty string, s cp.Snapshotable) (ids Int64Slice, err error) {
+func getInstanceIds(app, rev, proc string, s cp.Snapshotable) (ids Int64Slice, err error) {
 	sp := s.GetSnapshot()
-	p := ptyInstancesPath(app, rev, pty)
+	p := ptyInstancesPath(app, rev, proc)
 	exists, _, err := sp.Exists(p)
 	if err != nil || !exists {
 		return
@@ -147,7 +148,7 @@ func getInstanceIds(app, rev, pty string, s cp.Snapshotable) (ids Int64Slice, er
 	return
 }
 
-func (s *Store) RegisterInstance(app string, rev string, pty string) (ins *Instance, err error) {
+func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err error) {
 	//
 	//   instances/
 	//       6868/
@@ -165,7 +166,8 @@ func (s *Store) RegisterInstance(app string, rev string, pty string) (ins *Insta
 		Id:           id,
 		AppName:      app,
 		RevisionName: rev,
-		ProcessName:  pty,
+		ProcessName:  proc,
+		Env:          env,
 		Status:       InsStatusPending,
 		dir:          cp.NewDir(instancePath(id), s.GetSnapshot()),
 		Restarts:     new(InsRestarts),
@@ -687,7 +689,7 @@ func (i *Instance) Fields() string {
 }
 
 func (i *Instance) objectArray() []string {
-	return []string{i.AppName, i.RevisionName, i.ProcessName}
+	return []string{i.AppName, i.RevisionName, i.ProcessName, i.Env}
 }
 
 func (i *Instance) startArray() []string {
@@ -700,7 +702,7 @@ func (i *Instance) portString() string {
 
 // String returns the Go-syntax representation of Instance.
 func (i *Instance) String() string {
-	return fmt.Sprintf("Instance{id=%d, app=%s, rev=%s, proc=%s, addr=%s:%d}", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
+	return fmt.Sprintf("Instance{id=%d, app=%s, rev=%s, proc=%s, env=%s, addr=%s:%d}", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Env, i.Ip, i.Port)
 }
 
 // IdString returns a string of the format "INSTANCE[id]"

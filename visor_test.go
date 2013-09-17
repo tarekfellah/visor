@@ -36,19 +36,20 @@ func TestScaleErrors(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	pty := genProctype(app, "web")
+	proc := genProctype(app, "web")
+	env := genEnv(app, "default", map[string]string{})
 
 	// Scale up
 
-	_, _, err := s.Scale("fnord", rev.Ref, pty.Name, scale)
+	_, _, err := s.Scale("fnord", rev.Ref, proc.Name, env.Ref, scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	_, _, err = s.Scale(app.Name, "fnord", pty.Name, scale)
+	_, _, err = s.Scale(app.Name, "fnord", proc.Name, env.Ref, scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
-	_, _, err = s.Scale(app.Name, rev.Ref, "fnord", scale)
+	_, _, err = s.Scale(app.Name, rev.Ref, "fnord", env.Ref, scale)
 	if err == nil {
 		t.Error("expected error (bad arguments)")
 	}
@@ -60,18 +61,22 @@ func TestScale(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	pty := genProctype(app, "web")
+	proc := genProctype(app, "web")
+	env := genEnv(app, "default", map[string]string{})
 
 	// Scale up
-	ins, current, err := s.Scale(app.Name, rev.Ref, pty.Name, scale)
+	ins, current, err := s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, scale)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if current != 0 {
-		t.Fatal("expected current scale to = 0")
+		t.Fatalf("expected current scale to = 0, but is %d", current)
 	}
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	scale1, _, err := s.GetScale(app.Name, rev.Ref, pty.Name)
+	scale1, _, err := s.GetScale(app.Name, rev.Ref, proc.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,22 +90,22 @@ func TestScale(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, -1)
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, "default", -1)
 	if err == nil {
 		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 0)
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 0)
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, 0)
 	if err == nil {
 		t.Fatal("expected error when scaling down instances twice")
 	}
 
-	scale1, _, err = s.GetScale(app.Name, rev.Ref, pty.Name)
+	scale1, _, err = s.GetScale(app.Name, rev.Ref, proc.Name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,28 +118,12 @@ func TestGetScale(t *testing.T) {
 	s := visorSetup("/getscale-test")
 	scale := 5
 
-	app := s.NewApp("scale-app", "git://scale.git", "scale-stack")
-	pty := s.NewProcType(app, "scaleproc")
-	rev := s.NewRevision(app, "scale-ref")
+	app := genApp(s)
+	rev := genRevision(app)
+	proc := genProctype(app, "scaleproc")
+	env := genEnv(app, "default", map[string]string{})
 
-	_, err := app.Register()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = rev.Register()
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, err = pty.Register()
-	if err != nil {
-		t.Fatal(err)
-	}
-	s, err = s.FastForward()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	scale, _, err = s.GetScale(app.Name, rev.Ref, string(pty.Name))
+	scale, _, err := s.GetScale(app.Name, rev.Ref, proc.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -142,7 +131,7 @@ func TestGetScale(t *testing.T) {
 		t.Error("expected initial scale of 0")
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, pty.Name, 9)
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, 9)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +140,7 @@ func TestGetScale(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	scale, _, err = s.GetScale(app.Name, rev.Ref, string(pty.Name))
+	scale, _, err = s.GetScale(app.Name, rev.Ref, proc.Name)
 	if err != nil {
 		t.Error(err)
 	}
@@ -159,7 +148,7 @@ func TestGetScale(t *testing.T) {
 		t.Errorf("expected scale of 9, got %d", scale)
 	}
 
-	scale, _, err = s.GetScale("invalid-app", rev.Ref, string(pty.Name))
+	scale, _, err = s.GetScale("invalid-app", rev.Ref, proc.Name)
 	if scale != 0 {
 		t.Errorf("expected scale to be 0")
 	}

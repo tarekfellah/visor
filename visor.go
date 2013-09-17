@@ -94,15 +94,15 @@ func (s *Store) Init() (*Store, error) {
 	return s, nil
 }
 
-func (s *Store) Scale(app string, revision string, processName string, factor int) (tickets []*Instance, current int, err error) {
+func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instance, current int, err error) {
 	if err := validateInput(app); err != nil {
 		return nil, -1, errorf(err, "given app not valid: %s (%s)", app, err)
 	}
-	if err := validateInput(revision); err != nil {
-		return nil, -1, errorf(err, "given rev not valid: %s (%s)", revision, err)
+	if err := validateInput(rev); err != nil {
+		return nil, -1, errorf(err, "given rev not valid: %s (%s)", rev, err)
 	}
-	if err := validateInput(processName); err != nil {
-		return nil, -1, errorf(err, "given proc not valid: %s (%s)", processName, err)
+	if err := validateInput(proc); err != nil {
+		return nil, -1, errorf(err, "given proc not valid: %s (%s)", proc, err)
 	}
 	if factor < 0 {
 		return nil, -1, errors.New("scaling factor needs to be a positive integer")
@@ -113,24 +113,24 @@ func (s *Store) Scale(app string, revision string, processName string, factor in
 		return
 	}
 
-	exists, _, err := sp.Exists(path.Join(appsPath, app, revsPath, revision))
+	exists, _, err := sp.Exists(path.Join(appsPath, app, revsPath, rev))
 	if err != nil {
 		return
 	}
 	if !exists {
-		return nil, -1, errorf(ErrNotFound, "rev '%s' not found", revision)
+		return nil, -1, errorf(ErrNotFound, "rev '%s' not found", rev)
 	}
-	exists, _, err = sp.Exists(path.Join(appsPath, app, procsPath, processName))
+	exists, _, err = sp.Exists(path.Join(appsPath, app, procsPath, proc))
 	if err != nil {
 		return
 	}
 	if !exists {
-		return nil, -1, errorf(ErrNotFound, "proc '%s' not found", processName)
+		return nil, -1, errorf(ErrNotFound, "proc '%s' not found", proc)
 	}
 
 	s.snapshot = sp
 
-	ids, err := getInstanceIds(app, revision, processName, sp)
+	ids, err := getInstanceIds(app, rev, proc, sp)
 	if err != nil {
 		return nil, -1, err
 	}
@@ -143,7 +143,7 @@ func (s *Store) Scale(app string, revision string, processName string, factor in
 		for i := 0; i < ntickets; i++ {
 			var ticket *Instance
 
-			ticket, err = s.RegisterInstance(app, revision, processName)
+			ticket, err = s.RegisterInstance(app, rev, proc, env)
 			if err != nil {
 				return
 			}

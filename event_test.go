@@ -215,7 +215,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 
 	go s.WatchEvent(l)
 
-	ins, err := s.RegisterInstance(app.Name, "stable", "web")
+	ins, err := s.RegisterInstance(app.Name, "stable", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -230,7 +230,7 @@ func TestEventInstanceRegistered(t *testing.T) {
 func TestEventInstanceUnregistered(t *testing.T) {
 	s, l := eventSetup()
 
-	ins, err := s.RegisterInstance("unregmouse", "stable", "web")
+	ins, err := s.RegisterInstance("unregmouse", "stable", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -253,7 +253,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 	host := "mouse.org"
 	s, l := eventSetup()
 
-	ins, err := s.RegisterInstance("statemouse", "stable-state", "web-state")
+	ins, err := s.RegisterInstance("statemouse", "stable-state", "web-state", "default-state")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -88,7 +88,6 @@ func (a *App) GetRevision(ref string) (*Revision, error) {
 		return nil, err
 	}
 	return getRevision(a, ref, sp)
-
 }
 
 // Revisions returns an array of all registered revisions.

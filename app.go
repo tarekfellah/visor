@@ -51,7 +51,7 @@ func (a *App) Register() (*App, error) {
 		return nil, err
 	}
 	if exists {
-		return nil, ErrConflict
+		return nil, errorf(ErrConflict, `app "%s" already exists`, a.Name)
 	}
 
 	if a.DeployType == "" {

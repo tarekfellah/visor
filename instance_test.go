@@ -31,7 +31,7 @@ func instanceSetup() *Store {
 func instanceSetupClaimed(name, host string) (i *Instance) {
 	s := instanceSetup()
 
-	i, err := s.RegisterInstance(name, "128af9", "web")
+	i, err := s.RegisterInstance(name, "128af9", "web", "default")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func instanceSetupClaimed(name, host string) (i *Instance) {
 func TestInstanceRegisterAndGet(t *testing.T) {
 	s := instanceSetup()
 
-	ins, err := s.RegisterInstance("cat", "128af9", "web")
+	ins, err := s.RegisterInstance("cat", "128af9", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,7 +78,7 @@ func TestInstanceClaiming(t *testing.T) {
 	host := "10.0.0.1"
 	s := instanceSetup()
 
-	ins, err := s.RegisterInstance("bat", "128af9", "web")
+	ins, err := s.RegisterInstance("bat", "128af9", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,15 +135,16 @@ func TestInstanceClaiming(t *testing.T) {
 }
 
 func TestInstanceStarted(t *testing.T) {
-	appid := "fat"
-	ptyid := "web"
-	revid := "128af9"
+	app := "fat"
+	rev := "128af9"
+	proc := "web"
+	env := "default"
 	ip := "10.0.0.1"
 	port := 25790
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
-	ins, err := s.RegisterInstance(appid, revid, ptyid)
+	ins, err := s.RegisterInstance(app, rev, proc, env)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +174,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Errorf("instance attributes not stored correctly for %#v", ins3)
 	}
 
-	ids, err := getInstanceIds(appid, revid, ptyid, ins3)
+	ids, err := getInstanceIds(app, rev, proc, ins3)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -186,7 +187,7 @@ func TestInstanceStarted(t *testing.T) {
 		}
 		return false
 	}() {
-		t.Errorf("instance wasn't found under proc '%s'", ptyid)
+		t.Errorf("instance wasn't found under proc '%s'", proc)
 	}
 }
 
@@ -194,7 +195,7 @@ func TestInstanceStop(t *testing.T) {
 	ip := "10.0.0.1"
 	s := instanceSetup()
 
-	ins, err := s.RegisterInstance("rat", "128af9", "web")
+	ins, err := s.RegisterInstance("rat", "128af9", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +224,7 @@ func TestInstanceExited(t *testing.T) {
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
-	ins, err := s.RegisterInstance("rat-cat", "128af9", "web")
+	ins, err := s.RegisterInstance("rat-cat", "128af9", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,15 +314,16 @@ func TestInstanceFailed(t *testing.T) {
 }
 
 func TestWatchInstanceStartAndStop(t *testing.T) {
-	appid := "w-app"
-	revid := "w-rev"
-	ptyid := "w-pty"
+	app := "w-app"
+	rev := "w-rev"
+	proc := "w-proc"
+	env := "w-env"
 	s := instanceSetup()
 	l := make(chan *Instance)
 
 	go s.WatchInstanceStart(l, make(chan error))
 
-	ins, err := s.RegisterInstance(appid, revid, ptyid)
+	ins, err := s.RegisterInstance(app, rev, proc, env)
 	if err != nil {
 		t.Error(err)
 	}
@@ -329,7 +331,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	select {
 	case ins = <-l:
 		// TODO Check other fields
-		if ins.AppName == appid && ins.RevisionName == revid && ins.ProcessName == ptyid {
+		if ins.AppName == app && ins.RevisionName == rev && ins.ProcessName == proc {
 			break
 		}
 		t.Errorf("received unexpected instance: %s", ins.String())
@@ -375,7 +377,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 
 func TestInstanceWait(t *testing.T) {
 	s := instanceSetup()
-	ins, err := s.RegisterInstance("bob", "985245a", "web")
+	ins, err := s.RegisterInstance("bob", "985245a", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -412,7 +414,7 @@ func TestInstanceWait(t *testing.T) {
 
 func TestInstanceWaitStop(t *testing.T) {
 	s := instanceSetup()
-	ins, err := s.RegisterInstance("bobby", "985245a", "web")
+	ins, err := s.RegisterInstance("bobby", "985245a", "web", "default")
 	if err != nil {
 		t.Fatal(err)
 	}

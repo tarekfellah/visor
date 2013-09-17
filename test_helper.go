@@ -39,6 +39,15 @@ func genProctype(app *App, name string) (pty *ProcType) {
 	return
 }
 
+func genEnv(app *App, ref string, vars map[string]string) *Env {
+	env := app.NewEnv(ref, vars)
+	env, err := env.Register()
+	if err != nil {
+		panic(err)
+	}
+	return env
+}
+
 //func Instance(pty *visor.ProcType, rev *visor.Revision, s visor.Snapshot) (ins *visor.Instance) {
 //	if pty == nil {
 //		pty = ProcType(nil, s, randItem(ptyNames))
