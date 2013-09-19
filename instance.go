@@ -780,6 +780,10 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 	i.AppName = fields[0]
 	i.RevisionName = fields[1]
 	i.ProcessName = fields[2]
+	// FIXME remove as soon as env migration is done
+	if len(fields) == 4 {
+		i.Env = fields[3]
+	}
 
 	i.Restarts, _, err = i.getRestarts()
 	if err != nil {
