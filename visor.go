@@ -104,6 +104,9 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 	if err := validateInput(proc); err != nil {
 		return nil, -1, errorf(err, "given proc not valid: %s (%s)", proc, err)
 	}
+	if err := validateInput(env); err != nil {
+		return nil, -1, errorf(err, "given env not valid: %s (%s)", env, err)
+	}
 	if factor < 0 {
 		return nil, -1, errors.New("scaling factor needs to be a positive integer")
 	}
