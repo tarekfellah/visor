@@ -121,7 +121,7 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 		return
 	}
 	if !exists {
-		return nil, -1, errorf(ErrNotFound, "rev '%s' not found", rev)
+		return nil, -1, errorf(ErrNotFound, "rev '%s' not found for app '%s'", rev, app)
 	}
 	exists, _, err = sp.Exists(path.Join(appsPath, app, procsPath, proc))
 	if err != nil {
