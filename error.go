@@ -37,7 +37,7 @@ func (e *Error) Error() string {
 }
 
 func IsErrConflict(e error) bool {
-	return e == ErrConflict
+	return e.(*Error).Err == ErrConflict
 }
 
 func IsErrUnauthorized(e error) bool {
