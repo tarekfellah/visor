@@ -304,7 +304,7 @@ func (s *Store) VerifySchema() (int, error) {
 		if cp.IsErrSchemaMism(err) {
 			err = fmt.Errorf("%s (%d != %d)", err, SchemaVersion, v)
 		}
-		return -1, err
+		return v, err
 	}
 	return v, nil
 }
