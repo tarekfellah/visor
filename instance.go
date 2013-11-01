@@ -19,6 +19,7 @@ const (
 	claimsPath    = "claims"
 	instancesPath = "instances"
 	failedPath    = "failed"
+	lostPath      = "lost"
 	objectPath    = "object"
 	startPath     = "start"
 	statusPath    = "status"
@@ -44,6 +45,7 @@ const (
 
 	InsStatusFailed = "failed"
 	InsStatusExited = "exited"
+	InsStatusLost   = "lost"
 )
 
 type InsStatus string
@@ -130,7 +132,7 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 		return
 	}
 	ins.Registered = reg
-	_, err = s.GetSnapshot().Set(ins.ptyInstancesPath(), formatTime(reg))
+	_, err = ins.updateLookup(ins.Status, ins.Status, formatTime(reg))
 	if err != nil {
 		return
 	}
@@ -146,14 +148,7 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 }
 
 func (i *Instance) Unregister() (err error) {
-	var path string
-
-	if i.Status == InsStatusFailed {
-		path = i.ptyFailedPath()
-	} else {
-		path = i.ptyInstancesPath()
-	}
-	err = i.dir.Snapshot.Del(path)
+	err = i.dir.Snapshot.Del(i.ptyStatusPath(i.Status))
 	if err != nil {
 		if cp.IsErrNoEnt(err) {
 			err = nil
@@ -332,21 +327,25 @@ func (i *Instance) Failed(host string, reason error) (*Instance, error) {
 	if err != nil {
 		return nil, err
 	}
+	current := i.Status
+
 	_, err = i.updateStatus(InsStatusFailed)
 	if err != nil {
 		return nil, err
 	}
-	sp, err := i.GetSnapshot().Set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
-	if err != nil {
-		return nil, err
-	}
-	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
-	if err != nil {
-		return nil, err
-	}
-	i.dir = i.dir.Join(sp)
+	return i.updateLookup(current, InsStatusFailed, fmt.Sprintf("%s %s", timestamp(), reason))
+}
 
-	return i, nil
+// Lost transitions the instance into lost state and updates the
+// coordinator with client and reason.
+func (i *Instance) Lost(client string, reason error) (*Instance, error) {
+	current := i.Status
+
+	_, err := i.updateStatus(InsStatusLost)
+	if err != nil {
+		return nil, err
+	}
+	return i.updateLookup(current, InsStatusLost, fmt.Sprintf("%s %s %s", timestamp(), client, reason))
 }
 
 // Exited tells the coordinator that the instance has exited.
@@ -358,7 +357,7 @@ func (i *Instance) Exited(host string) (i1 *Instance, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
+	err = i.dir.Snapshot.Del(i.ptyStatusPath(InsStatusExited))
 
 	return
 }
@@ -423,12 +422,25 @@ func (i *Instance) WaitFailed() (*Instance, error) {
 	return i, nil
 }
 
-func (i *Instance) GetStatusInfo() (info string, err error) {
-	if i.Status == InsStatusFailed {
-		info, _, err = i.dir.Snapshot.Get(i.ptyFailedPath())
-		info = strings.TrimSpace(info)
+func (i *Instance) WaitLost() (*Instance, error) {
+	for {
+		i, err := i.WaitStatus()
+		if err != nil {
+			return nil, err
+		}
+		if i.Status == InsStatusLost {
+			break
+		}
 	}
-	return
+	return i, nil
+}
+
+func (i *Instance) GetStatusInfo() (string, error) {
+	info, _, err := i.dir.Snapshot.Get(i.ptyStatusPath(i.Status))
+	if err != nil {
+		return "", err
+	}
+	return info, nil
 }
 
 func (i *Instance) RefString() string {
@@ -483,6 +495,10 @@ func (i *Instance) ptyFailedPath() string {
 
 func (i *Instance) ptyInstancesPath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.RevisionName, i.idString())
+}
+
+func (i *Instance) ptyLostPath() string {
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, lostPath, i.idString())
 }
 
 func (i *Instance) claimed(ip string) {
@@ -567,6 +583,42 @@ func (i *Instance) verifyClaimer(host string) error {
 		return ErrUnauthorized
 	}
 	return nil
+}
+
+func (i *Instance) ptyStatusPath(status InsStatus) string {
+	switch status {
+	case InsStatusFailed:
+		return i.ptyFailedPath()
+	case InsStatusLost:
+		return i.ptyLostPath()
+	default:
+		return i.ptyInstancesPath()
+	}
+}
+
+func (i *Instance) updateLookup(from, to InsStatus, value string) (*Instance, error) {
+	sp, err := i.GetSnapshot().Set(i.ptyStatusPath(to), value)
+	if err != nil {
+		return nil, err
+	}
+
+	i.dir = i.dir.Join(sp)
+
+	var p string
+
+	switch from {
+	case InsStatusRunning, InsStatusFailed, InsStatusLost:
+		p = i.ptyStatusPath(from)
+	default:
+		return i, nil
+	}
+
+	err = i.dir.Snapshot.Del(p)
+	if err != nil {
+		return nil, err
+	}
+
+	return i, nil
 }
 
 func (i *Instance) waitStartPath() (*Instance, error) {

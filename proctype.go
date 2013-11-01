@@ -113,6 +113,10 @@ func (p *ProcType) failedInstancesPath() string {
 	return p.dir.Prefix(failedPath)
 }
 
+func (p *ProcType) lostInstancesPath() string {
+	return p.dir.Prefix(lostPath)
+}
+
 func (p *ProcType) NumInstances() (int, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
@@ -140,6 +144,18 @@ func (p *ProcType) GetFailedInstances() ([]*Instance, error) {
 		return nil, err
 	}
 	ids, err := sp.Getdir(p.failedInstancesPath())
+	if err != nil {
+		return nil, err
+	}
+	return getProcInstances(ids, sp)
+}
+
+func (p *ProcType) GetLostInstances() ([]*Instance, error) {
+	sp, err := p.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
+	ids, err := sp.Getdir(p.lostInstancesPath())
 	if err != nil {
 		return nil, err
 	}

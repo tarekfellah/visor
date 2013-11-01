@@ -63,6 +63,7 @@ const (
 	EvInsStart  = EventType("instance-start")
 	EvInsFail   = EventType("instance-fail")
 	EvInsExit   = EventType("instance-exit")
+	EvInsLost   = EventType("instance-lost")
 	EvUnknown   = EventType("UNKNOWN")
 )
 
@@ -189,7 +190,7 @@ func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snaps
 		source = rev
 	case EvProcReg:
 		source = pty
-	case EvInsReg, EvInsStart, EvInsFail, EvInsExit:
+	case EvInsReg, EvInsStart, EvInsFail, EvInsExit, EvInsLost:
 		source = ins
 	}
 
@@ -269,6 +270,8 @@ func enrichEvent(src *cp.Event, s cp.Snapshotable) (event *Event, err error) {
 					etype = EvInsExit
 				case InsStatusFailed:
 					etype = EvInsFail
+				case InsStatusLost:
+					etype = EvInsLost
 				}
 			}
 			break

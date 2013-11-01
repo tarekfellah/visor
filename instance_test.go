@@ -313,6 +313,24 @@ func TestInstanceFailed(t *testing.T) {
 	// here. See the proctype tests & (*Proctype).GetFailedInstances()
 }
 
+func TestInstanceLost(t *testing.T) {
+	ip := "10.0.0.2"
+	ins := instanceSetupClaimed("slim-cat", ip)
+
+	ins, err := ins.Started(ip, 9898, "box00.vm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ins, err = ins.Lost("watchdog", errors.New("dunno if cat is dead or not"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	testInstanceStatus(storeFromSnapshotable(ins), t, ins.Id, InsStatusLost)
+
+	// Note: we do not test whether or not lost instances can be retrieved
+	// here. See the proctype tests & (*Proctype).GetLostInstances()
+}
+
 func TestWatchInstanceStartAndStop(t *testing.T) {
 	app := "w-app"
 	rev := "w-rev"
