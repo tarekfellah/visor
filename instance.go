@@ -26,16 +26,6 @@ const (
 	restartsPath  = "restarts"
 )
 
-type InsRestarts struct {
-	OOM, Fail int
-}
-
-func (r *InsRestarts) Fields() []int {
-	return []int{r.Fail, r.OOM}
-}
-
-type RestartReason string
-
 const (
 	RestartFail = "restart-fail"
 	RestartOOM  = "restart-oom"
@@ -45,8 +35,6 @@ const (
 	restartFailField = 0
 	restartOOMField  = 1
 )
-
-type InsStatus string
 
 const (
 	InsStatusPending  InsStatus = "pending"
@@ -58,7 +46,25 @@ const (
 	InsStatusExited = "exited"
 )
 
-// Instance represents application instances.
+type InsStatus string
+
+type InsRestarts struct {
+	OOM, Fail int
+}
+
+func (r *InsRestarts) Fields() []int {
+	return []int{r.Fail, r.OOM}
+}
+
+type RestartReason string
+
+type Int64Slice []int64
+
+func (p Int64Slice) Len() int           { return len(p) }
+func (p Int64Slice) Less(i, j int) bool { return p[i] < p[j] }
+func (p Int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+
+// Instance represents service instances.
 type Instance struct {
 	dir          *cp.Dir
 	Id           int64
@@ -75,38 +81,8 @@ type Instance struct {
 	Claimed      time.Time
 }
 
-func (s *Store) GetInstances() ([]*Instance, error) {
-	sp, err := s.GetSnapshot().FastForward()
-	if err != nil {
-		return nil, err
-	}
-	ids, err := sp.Getdir(instancesPath)
-	if err != nil {
-		return nil, err
-	}
-
-	instances := []*Instance{}
-	ch, errch := cp.GetSnapshotables(ids, func(idstr string) (cp.Snapshotable, error) {
-		id, err := parseInstanceId(idstr)
-		if err != nil {
-			return nil, err
-		}
-		return getInstance(id, sp)
-	})
-	errStr := ""
-	for i := 0; i < len(ids); i++ {
-		select {
-		case i := <-ch:
-			instances = append(instances, i.(*Instance))
-		case err := <-errch:
-			errStr = fmt.Sprintf("%s\n%s", errStr, err)
-		}
-	}
-	if len(errStr) > 0 {
-		return instances, NewError(ErrNotFound, errStr)
-	}
-
-	return instances, nil
+func (i *Instance) GetSnapshot() cp.Snapshot {
+	return i.dir.Snapshot
 }
 
 // GetInstance returns an Instance from the given id
@@ -116,36 +92,6 @@ func (s *Store) GetInstance(id int64) (ins *Instance, err error) {
 		return
 	}
 	return getInstance(id, sp)
-}
-
-type Int64Slice []int64
-
-func (p Int64Slice) Len() int           { return len(p) }
-func (p Int64Slice) Less(i, j int) bool { return p[i] < p[j] }
-func (p Int64Slice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
-func getInstanceIds(app, rev, proc string, s cp.Snapshotable) (ids Int64Slice, err error) {
-	sp := s.GetSnapshot()
-	p := ptyInstancesPath(app, rev, proc)
-	exists, _, err := sp.Exists(p)
-	if err != nil || !exists {
-		return
-	}
-
-	dir, err := sp.Getdir(p)
-	if err != nil {
-		return
-	}
-	ids = Int64Slice{}
-	for _, f := range dir {
-		id, e := parseInstanceId(f)
-		if e != nil {
-			return nil, e
-		}
-		ids = append(ids, id)
-	}
-	sort.Sort(ids)
-	return
 }
 
 func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err error) {
@@ -199,25 +145,23 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 	return
 }
 
-func instancePath(id int64) string {
-	return path.Join(instancesPath, strconv.FormatInt(id, 10))
-}
+func (i *Instance) Unregister() (err error) {
+	var path string
 
-func (i *Instance) GetSnapshot() cp.Snapshot {
-	return i.dir.Snapshot
-}
-
-// Claims returns the list of claimers.
-func (i *Instance) Claims() (claims []string, err error) {
-	sp, err := i.GetSnapshot().FastForward()
+	if i.Status == InsStatusFailed {
+		path = i.ptyFailedPath()
+	} else {
+		path = i.ptyInstancesPath()
+	}
+	err = i.dir.Snapshot.Del(path)
 	if err != nil {
-		return
+		if cp.IsErrNoEnt(err) {
+			err = nil
+		} else {
+			return
+		}
 	}
-	claims, err = sp.Getdir(i.dir.Prefix("claims"))
-	if cp.IsErrNoEnt(err) {
-		claims = []string{}
-		err = nil
-	}
+	err = i.dir.Del("/")
 	return
 }
 
@@ -260,73 +204,40 @@ func (i *Instance) Claim(host string) (*Instance, error) {
 	return i, err
 }
 
-func (i *Instance) Unregister() (err error) {
-	var path string
-
-	if i.Status == InsStatusFailed {
-		path = i.ptyFailedPath()
-	} else {
-		path = i.ptyInstancesPath()
-	}
-	err = i.dir.Snapshot.Del(path)
+// Claims returns the list of claimers.
+func (i *Instance) Claims() (claims []string, err error) {
+	sp, err := i.GetSnapshot().FastForward()
 	if err != nil {
-		if cp.IsErrNoEnt(err) {
-			err = nil
-		} else {
-			return
-		}
+		return
 	}
-	err = i.dir.Del("/")
+	claims, err = sp.Getdir(i.dir.Prefix("claims"))
+	if cp.IsErrNoEnt(err) {
+		claims = []string{}
+		err = nil
+	}
 	return
 }
 
-// Exited tells the coordinator that the instance has exited.
-func (i *Instance) Exited(host string) (i1 *Instance, err error) {
-	if err = i.verifyClaimer(host); err != nil {
-		return
-	}
-	i1, err = i.updateStatus(InsStatusExited)
+// Unclaim removes the lock applied by Claim of the Ticket.
+func (i *Instance) Unclaim(host string) (*Instance, error) {
+	//
+	//   instances/
+	//       6868/
+	// -         start = 10.0.0.1
+	// +         start =
+	//
+	err := i.verifyClaimer(host)
 	if err != nil {
 		return nil, err
 	}
-	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
 
-	return
-}
-
-func (i *Instance) started(ip string, port int, host string) {
-	i.Ip = ip
-	i.Port = port
-	i.Host = host
-	i.Status = InsStatusRunning
-}
-
-func (i *Instance) claimed(ip string) {
-	i.Ip = ip
-	i.Status = InsStatusClaimed
-}
-
-func (i *Instance) getRestarts() (*InsRestarts, *cp.File, error) {
-	sp, err := i.GetSnapshot().FastForward()
+	d, err := i.setClaimer("")
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	i.dir = i.dir.Join(sp)
+	i.dir = d
 
-	restarts := new(InsRestarts)
-	f, err := sp.GetFile(i.dir.Prefix(restartsPath), new(cp.ListIntCodec))
-	if err == nil {
-		fields := f.Value.([]int)
-
-		restarts.Fail = fields[restartFailField]
-
-		if len(fields) > 1 {
-			restarts.OOM = fields[restartOOMField]
-		}
-	} else if !cp.IsErrNoEnt(err) {
-		return nil, nil, err
-	}
-	return restarts, f, nil
+	return i, nil
 }
 
 func (i *Instance) Started(host string, port int, hostname string) (*Instance, error) {
@@ -354,24 +265,6 @@ func (i *Instance) Started(host string, port int, hostname string) (*Instance, e
 	i.dir = i.dir.Join(start)
 
 	return i, nil
-}
-
-func (i *Instance) Stop() error {
-	//
-	//   instances/
-	//       6868/
-	//           ...
-	// +         stop =
-	//
-	if i.Status != InsStatusRunning {
-		return ErrInvalidState
-	}
-	_, err := i.dir.Set("stop", "")
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Restarted tells the coordinator that the instance has been restarted.
@@ -416,6 +309,217 @@ func (i *Instance) Restarted(reason RestartReason, count int) (*Instance, error)
 	return i, nil
 }
 
+func (i *Instance) Stop() error {
+	//
+	//   instances/
+	//       6868/
+	//           ...
+	// +         stop =
+	//
+	if i.Status != InsStatusRunning {
+		return ErrInvalidState
+	}
+	_, err := i.dir.Set("stop", "")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (i *Instance) Failed(host string, reason error) (*Instance, error) {
+	err := i.verifyClaimer(host)
+	if err != nil {
+		return nil, err
+	}
+	_, err = i.updateStatus(InsStatusFailed)
+	if err != nil {
+		return nil, err
+	}
+	sp, err := i.GetSnapshot().Set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
+	if err != nil {
+		return nil, err
+	}
+	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
+	if err != nil {
+		return nil, err
+	}
+	i.dir = i.dir.Join(sp)
+
+	return i, nil
+}
+
+// Exited tells the coordinator that the instance has exited.
+func (i *Instance) Exited(host string) (i1 *Instance, err error) {
+	if err = i.verifyClaimer(host); err != nil {
+		return
+	}
+	i1, err = i.updateStatus(InsStatusExited)
+	if err != nil {
+		return nil, err
+	}
+	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
+
+	return
+}
+
+func (i *Instance) WaitStatus() (*Instance, error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), statusPath)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
+	if err != nil {
+		return nil, err
+	}
+	i.Status = InsStatus(string(ev.Body))
+	i.dir = i.dir.Join(ev)
+
+	return i, nil
+}
+
+func (i *Instance) WaitClaimed() (i1 *Instance, err error) {
+	return i.waitStartPathStatus(InsStatusClaimed)
+}
+
+func (i *Instance) WaitStarted() (i1 *Instance, err error) {
+	return i.waitStartPathStatus(InsStatusRunning)
+}
+
+func (i *Instance) WaitStop() (*Instance, error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), stopPath)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
+	if err != nil {
+		return nil, err
+	}
+	i.Status = InsStatusStopping
+	i.dir = i.dir.Join(ev)
+
+	return i, nil
+}
+
+func (i *Instance) WaitExited() (*Instance, error) {
+	for {
+		i, err := i.WaitStatus()
+		if err != nil {
+			return nil, err
+		}
+		if i.Status == InsStatusExited {
+			break
+		}
+	}
+	return i, nil
+}
+
+func (i *Instance) WaitFailed() (*Instance, error) {
+	for {
+		i, err := i.WaitStatus()
+		if err != nil {
+			return nil, err
+		}
+		if i.Status == InsStatusFailed {
+			break
+		}
+	}
+	return i, nil
+}
+
+func (i *Instance) GetStatusInfo() (info string, err error) {
+	if i.Status == InsStatusFailed {
+		info, _, err = i.dir.Snapshot.Get(i.ptyFailedPath())
+		info = strings.TrimSpace(info)
+	}
+	return
+}
+
+func (i *Instance) RefString() string {
+	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
+}
+
+func (i *Instance) ServiceName() string {
+	return fmt.Sprintf("%s-%s", i.AppName, i.ProcessName)
+}
+
+func (i *Instance) Fields() string {
+	return fmt.Sprintf("%d %s %s %s %s %d", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
+}
+
+// String returns the Go-syntax representation of Instance.
+func (i *Instance) String() string {
+	return fmt.Sprintf("Instance{id=%d, app=%s, rev=%s, proc=%s, env=%s, addr=%s:%d}", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Env, i.Ip, i.Port)
+}
+
+// IdString returns a string of the format "INSTANCE[id]"
+func (i *Instance) IdString() string {
+	return fmt.Sprintf("INSTANCE[%d]", i.Id)
+}
+
+func (i *Instance) claimPath(host string) string {
+	return i.dir.Prefix("claims", host)
+}
+
+func (i *Instance) claimDir() *cp.Dir {
+	return cp.NewDir(i.dir.Prefix(claimsPath), i.GetSnapshot())
+}
+
+func (i *Instance) idString() string {
+	return fmt.Sprintf("%d", i.Id)
+}
+
+func (i *Instance) objectArray() []string {
+	return []string{i.AppName, i.RevisionName, i.ProcessName, i.Env}
+}
+
+func (i *Instance) startArray() []string {
+	return []string{i.Ip, i.portString(), i.Host}
+}
+
+func (i *Instance) portString() string {
+	return fmt.Sprintf("%d", i.Port)
+}
+
+func (i *Instance) ptyFailedPath() string {
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, failedPath, i.idString())
+}
+
+func (i *Instance) ptyInstancesPath() string {
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.RevisionName, i.idString())
+}
+
+func (i *Instance) claimed(ip string) {
+	i.Ip = ip
+	i.Status = InsStatusClaimed
+}
+
+func (i *Instance) getRestarts() (*InsRestarts, *cp.File, error) {
+	sp, err := i.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, nil, err
+	}
+	i.dir = i.dir.Join(sp)
+
+	restarts := new(InsRestarts)
+	f, err := sp.GetFile(i.dir.Prefix(restartsPath), new(cp.ListIntCodec))
+	if err == nil {
+		fields := f.Value.([]int)
+
+		restarts.Fail = fields[restartFailField]
+
+		if len(fields) > 1 {
+			restarts.OOM = fields[restartOOMField]
+		}
+	} else if !cp.IsErrNoEnt(err) {
+		return nil, nil, err
+	}
+	return restarts, f, nil
+}
+
+func (i *Instance) started(ip string, port int, host string) {
+	i.Ip = ip
+	i.Port = port
+	i.Host = host
+	i.Status = InsStatusRunning
+}
+
 func (i *Instance) updateStatus(s InsStatus) (*Instance, error) {
 	d, err := i.dir.Set("status", string(s))
 	if err != nil {
@@ -455,28 +559,6 @@ func (i *Instance) setClaimer(claimer string) (*cp.Dir, error) {
 	return d, nil
 }
 
-// Unclaim removes the lock applied by Claim of the Ticket.
-func (i *Instance) Unclaim(host string) (*Instance, error) {
-	//
-	//   instances/
-	//       6868/
-	// -         start = 10.0.0.1
-	// +         start =
-	//
-	err := i.verifyClaimer(host)
-	if err != nil {
-		return nil, err
-	}
-
-	d, err := i.setClaimer("")
-	if err != nil {
-		return nil, err
-	}
-	i.dir = d
-
-	return i, nil
-}
-
 func (i *Instance) verifyClaimer(host string) error {
 	claimer, err := i.getClaimer()
 	if err != nil {
@@ -487,26 +569,79 @@ func (i *Instance) verifyClaimer(host string) error {
 	return nil
 }
 
-func (i *Instance) Failed(host string, reason error) (*Instance, error) {
-	err := i.verifyClaimer(host)
+func (i *Instance) waitStartPath() (*Instance, error) {
+	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
+	sp := i.GetSnapshot()
+	ev, err := sp.Wait(p)
 	if err != nil {
 		return nil, err
 	}
-	_, err = i.updateStatus(InsStatusFailed)
+	i.dir = i.dir.Join(ev)
+	parts, err := new(cp.ListCodec).Decode(ev.Body)
 	if err != nil {
 		return nil, err
 	}
-	sp, err := i.GetSnapshot().Set(i.ptyFailedPath(), timestamp()+" "+reason.Error())
-	if err != nil {
-		return nil, err
+	fields := parts.([]string)
+	if len(fields) >= 3 {
+		ip, host := fields[0], fields[2]
+		port, err := strconv.Atoi(fields[1])
+		if err != nil {
+			return nil, err
+		}
+		i.started(ip, port, host)
+	} else if len(fields) > 0 {
+		i.claimed(fields[0])
+	} else {
+		// TODO
 	}
-	err = i.dir.Snapshot.Del(i.ptyInstancesPath())
-	if err != nil {
-		return nil, err
-	}
-	i.dir = i.dir.Join(sp)
-
 	return i, nil
+}
+
+func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
+	for {
+		i, err = i.waitStartPath()
+		if err != nil {
+			return i, err
+		}
+		if i.Status == s {
+			break
+		}
+	}
+	return i, nil
+}
+
+func (s *Store) GetInstances() ([]*Instance, error) {
+	sp, err := s.GetSnapshot().FastForward()
+	if err != nil {
+		return nil, err
+	}
+	ids, err := sp.Getdir(instancesPath)
+	if err != nil {
+		return nil, err
+	}
+
+	instances := []*Instance{}
+	ch, errch := cp.GetSnapshotables(ids, func(idstr string) (cp.Snapshotable, error) {
+		id, err := parseInstanceId(idstr)
+		if err != nil {
+			return nil, err
+		}
+		return getInstance(id, sp)
+	})
+	errStr := ""
+	for i := 0; i < len(ids); i++ {
+		select {
+		case i := <-ch:
+			instances = append(instances, i.(*Instance))
+		case err := <-errch:
+			errStr = fmt.Sprintf("%s\n%s", errStr, err)
+		}
+	}
+	if len(errStr) > 0 {
+		return instances, NewError(ErrNotFound, errStr)
+	}
+
+	return instances, nil
 }
 
 func (s *Store) WatchInstanceStart(listener chan *Instance, errors chan error) {
@@ -539,113 +674,8 @@ func (s *Store) WatchInstanceStart(listener chan *Instance, errors chan error) {
 	}
 }
 
-func (i *Instance) WaitStop() (*Instance, error) {
-	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), stopPath)
-	sp := i.GetSnapshot()
-	ev, err := sp.Wait(p)
-	if err != nil {
-		return nil, err
-	}
-	i.Status = InsStatusStopping
-	i.dir = i.dir.Join(ev)
-
-	return i, nil
-}
-
-func (i *Instance) WaitStatus() (*Instance, error) {
-	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), statusPath)
-	sp := i.GetSnapshot()
-	ev, err := sp.Wait(p)
-	if err != nil {
-		return nil, err
-	}
-	i.Status = InsStatus(string(ev.Body))
-	i.dir = i.dir.Join(ev)
-
-	return i, nil
-}
-
-func (i *Instance) WaitClaimed() (i1 *Instance, err error) {
-	return i.waitStartPathStatus(InsStatusClaimed)
-}
-
-func (i *Instance) WaitStarted() (i1 *Instance, err error) {
-	return i.waitStartPathStatus(InsStatusRunning)
-}
-
-func (i *Instance) WaitExited() (*Instance, error) {
-	for {
-		i, err := i.WaitStatus()
-		if err != nil {
-			return nil, err
-		}
-		if i.Status == InsStatusExited {
-			break
-		}
-	}
-	return i, nil
-}
-
-func (i *Instance) WaitFailed() (*Instance, error) {
-	for {
-		i, err := i.WaitStatus()
-		if err != nil {
-			return nil, err
-		}
-		if i.Status == InsStatusFailed {
-			break
-		}
-	}
-	return i, nil
-}
-
-func (i *Instance) GetStatusInfo() (info string, err error) {
-	if i.Status == InsStatusFailed {
-		info, _, err = i.dir.Snapshot.Get(i.ptyFailedPath())
-		info = strings.TrimSpace(info)
-	}
-	return
-}
-
-func (i *Instance) waitStartPathStatus(s InsStatus) (i1 *Instance, err error) {
-	for {
-		i, err = i.waitStartPath()
-		if err != nil {
-			return i, err
-		}
-		if i.Status == s {
-			break
-		}
-	}
-	return i, nil
-}
-
-func (i *Instance) waitStartPath() (*Instance, error) {
-	p := path.Join(instancesPath, strconv.FormatInt(i.Id, 10), startPath)
-	sp := i.GetSnapshot()
-	ev, err := sp.Wait(p)
-	if err != nil {
-		return nil, err
-	}
-	i.dir = i.dir.Join(ev)
-	parts, err := new(cp.ListCodec).Decode(ev.Body)
-	if err != nil {
-		return nil, err
-	}
-	fields := parts.([]string)
-	if len(fields) >= 3 {
-		ip, host := fields[0], fields[2]
-		port, err := strconv.Atoi(fields[1])
-		if err != nil {
-			return nil, err
-		}
-		i.started(ip, port, host)
-	} else if len(fields) > 0 {
-		i.claimed(fields[0])
-	} else {
-		// TODO
-	}
-	return i, nil
+func instancePath(id int64) string {
+	return path.Join(instancesPath, strconv.FormatInt(id, 10))
 }
 
 func ptyInstancesPath(app, rev, pty string) string {
@@ -654,60 +684,6 @@ func ptyInstancesPath(app, rev, pty string) string {
 
 func parseInstanceId(idstr string) (int64, error) {
 	return strconv.ParseInt(idstr, 10, 64)
-}
-
-func (i *Instance) idString() string {
-	return fmt.Sprintf("%d", i.Id)
-}
-
-func (i *Instance) RefString() string {
-	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
-}
-
-func (i *Instance) ServiceName() string {
-	return fmt.Sprintf("%s-%s", i.AppName, i.ProcessName)
-}
-
-func (i *Instance) ptyFailedPath() string {
-	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, failedPath, i.idString())
-}
-
-func (i *Instance) ptyInstancesPath() string {
-	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.RevisionName, i.idString())
-}
-
-func (i *Instance) claimPath(host string) string {
-	return i.dir.Prefix("claims", host)
-}
-
-func (i *Instance) claimDir() *cp.Dir {
-	return cp.NewDir(i.dir.Prefix(claimsPath), i.GetSnapshot())
-}
-
-func (i *Instance) Fields() string {
-	return fmt.Sprintf("%d %s %s %s %s %d", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
-}
-
-func (i *Instance) objectArray() []string {
-	return []string{i.AppName, i.RevisionName, i.ProcessName, i.Env}
-}
-
-func (i *Instance) startArray() []string {
-	return []string{i.Ip, i.portString(), i.Host}
-}
-
-func (i *Instance) portString() string {
-	return fmt.Sprintf("%d", i.Port)
-}
-
-// String returns the Go-syntax representation of Instance.
-func (i *Instance) String() string {
-	return fmt.Sprintf("Instance{id=%d, app=%s, rev=%s, proc=%s, env=%s, addr=%s:%d}", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Env, i.Ip, i.Port)
-}
-
-// IdString returns a string of the format "INSTANCE[id]"
-func (i *Instance) IdString() string {
-	return fmt.Sprintf("INSTANCE[%d]", i.Id)
 }
 
 func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
@@ -821,4 +797,28 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 	}
 
 	return i, nil
+}
+
+func getInstanceIds(app, rev, proc string, s cp.Snapshotable) (ids Int64Slice, err error) {
+	sp := s.GetSnapshot()
+	p := ptyInstancesPath(app, rev, proc)
+	exists, _, err := sp.Exists(p)
+	if err != nil || !exists {
+		return
+	}
+
+	dir, err := sp.Getdir(p)
+	if err != nil {
+		return
+	}
+	ids = Int64Slice{}
+	for _, f := range dir {
+		id, e := parseInstanceId(f)
+		if e != nil {
+			return nil, e
+		}
+		ids = append(ids, id)
+	}
+	sort.Sort(ids)
+	return
 }
