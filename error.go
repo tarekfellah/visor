@@ -41,7 +41,7 @@ func IsErrConflict(e error) bool {
 }
 
 func IsErrUnauthorized(e error) bool {
-	return e == ErrUnauthorized
+	return e.(*Error).Err == ErrUnauthorized
 }
 
 func IsErrNotFound(e error) bool {

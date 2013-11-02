@@ -20,6 +20,7 @@ const (
 	instancesPath = "instances"
 	failedPath    = "failed"
 	lostPath      = "lost"
+	lockPath      = "lock"
 	objectPath    = "object"
 	startPath     = "start"
 	statusPath    = "status"
@@ -443,6 +444,46 @@ func (i *Instance) GetStatusInfo() (string, error) {
 	return info, nil
 }
 
+func (i *Instance) Lock(client string, reason error) (*Instance, error) {
+	locked, err := i.IsLocked()
+	if err != nil {
+		return nil, err
+	}
+	if locked {
+		return nil, errorf(ErrUnauthorized, "instance %d is already locked", i.Id)
+	}
+
+	i.dir, err = i.dir.Set(lockPath, fmt.Sprintf("%s %s %s", timestamp(), client, reason))
+	if err != nil {
+		return nil, err
+	}
+
+	return i, nil
+}
+
+func (i *Instance) Unlock() (*Instance, error) {
+	err := i.dir.Del(lockPath)
+	if err != nil {
+		return nil, err
+	}
+	return i, nil
+}
+
+func (i *Instance) IsLocked() (bool, error) {
+	sp, err := i.GetSnapshot().FastForward()
+	if err != nil {
+		return false, err
+	}
+	exists, _, err := sp.Exists(i.dir.Prefix(lockPath))
+	if err != nil {
+		return false, err
+	}
+	if exists {
+		return true, nil
+	}
+	return false, nil
+}
+
 func (i *Instance) RefString() string {
 	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
 }
@@ -579,8 +620,14 @@ func (i *Instance) verifyClaimer(host string) error {
 	claimer, err := i.getClaimer()
 	if err != nil {
 		return err
-	} else if claimer == nil || *claimer != host {
-		return ErrUnauthorized
+	}
+
+	if claimer == nil {
+		return errorf(ErrUnauthorized, "instance %d is not claimed", i.Id)
+	}
+
+	if *claimer != host {
+		return errorf(ErrUnauthorized, "instance %d has different claimer: %s != %s", i.Id, *claimer, host)
 	}
 	return nil
 }
