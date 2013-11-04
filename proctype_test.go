@@ -165,12 +165,70 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 		}
 	}
 
-	is, err := pty.GetFailedInstances()
+	failed, err := pty.GetFailedInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(is) != 4 {
-		t.Errorf("list is missing instances: %s", is)
+	if len(failed) != 4 {
+		t.Errorf("list is missing instances: %s", len(failed))
+	}
+
+	is, err := pty.GetInstances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is) != 3 {
+		t.Errorf("remaining instances list wrong: %d", len(is))
+	}
+}
+
+func TestProcTypeGetLostInstances(t *testing.T) {
+	appid := "get-lost-instances-app"
+	s, app := proctypeSetup(appid)
+
+	pty, err := s.NewProcType(app, "worker").Register()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	instances := []*Instance{}
+
+	for i := 0; i < 9; i++ {
+		ins, err := s.RegisterInstance(appid, "83jad2f", "worker", "mem-leak")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Claim("10.3.2.1")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins, err = ins.Started("10.3.2.1", 9898, "box00.vm")
+		if err != nil {
+			t.Fatal(err)
+		}
+		instances = append(instances, ins)
+	}
+
+	for i := 0; i < 3; i++ {
+		_, err := instances[i].Lost("watchman", errors.New("it's gone!!!"))
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	lost, err := pty.GetLostInstances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(lost) != 3 {
+		t.Errorf("lost list is missing instances: %d", len(lost))
+	}
+
+	is, err := pty.GetInstances()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(is) != 6 {
+		t.Errorf("remaining instances list wrong: %d", len(is))
 	}
 }
 
