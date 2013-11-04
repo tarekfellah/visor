@@ -7,6 +7,7 @@ package visor
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -465,6 +466,43 @@ func TestInstanceWaitStop(t *testing.T) {
 	// if ins1.GetSnapshot().Rev <= ins.GetSnapshot().Rev {
 	// 	t.Error("expected new revision to be greater than previous")
 	// }
+}
+
+func TestInstanceLocking(t *testing.T) {
+	ip := "10.0.10.0"
+	ins := instanceSetupClaimed("grumpy-cat", ip)
+
+	ins, err := ins.Started(ip, 7676, "box01.vm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ins, err = ins.Lock("schroedinger", errors.New("to be rescheduled"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	locked, err := ins.IsLocked()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !locked {
+		t.Fatal("expected instance to be locked")
+	}
+	_, err = ins.Lock("somebody", errors.New("steal the lock"))
+	fmt.Printf("%#v\n", err)
+	if !IsErrUnauthorized(err) {
+		t.Fatal("expected to not allow aquire lock twice")
+	}
+	ins, err = ins.Unlock()
+	if err != nil {
+		t.Fatal(err)
+	}
+	locked, err = ins.IsLocked()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if locked {
+		t.Error("expected instance to not be locked")
+	}
 }
 
 func testInstanceStatus(s *Store, t *testing.T, id int64, status InsStatus) {
