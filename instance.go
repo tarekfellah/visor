@@ -133,9 +133,9 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 		return
 	}
 	ins.Registered = reg
-	_, err = ins.updateLookup(ins.Status, ins.Status, formatTime(reg))
+	_, err = ins.GetSnapshot().Set(ins.ptyStatusPath(InsStatusRunning), formatTime(reg))
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	start := cp.NewFile(ins.dir.Prefix(startPath), "", new(cp.StringCodec), s.GetSnapshot())
