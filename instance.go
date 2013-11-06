@@ -651,16 +651,7 @@ func (i *Instance) updateLookup(from, to InsStatus, value string) (*Instance, er
 
 	i.dir = i.dir.Join(sp)
 
-	var p string
-
-	switch from {
-	case InsStatusRunning, InsStatusFailed, InsStatusLost:
-		p = i.ptyStatusPath(from)
-	default:
-		return i, nil
-	}
-
-	err = i.dir.Snapshot.Del(p)
+	err = i.dir.Snapshot.Del(i.ptyStatusPath(from))
 	if err != nil {
 		return nil, err
 	}
