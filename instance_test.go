@@ -7,7 +7,6 @@ package visor
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 )
@@ -75,8 +74,55 @@ func TestInstanceRegisterAndGet(t *testing.T) {
 	}
 }
 
+func TestInstanceUnregister(t *testing.T) {
+	app := "dog"
+	rev := "7654321"
+	proc := "batch"
+	env := "prod"
+	ip := "10.10.0.5"
+	port := 58585
+	host := "box13.kool.aid"
+	s := instanceSetup()
+
+	i, err := s.RegisterInstance(app, rev, proc, env)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err = i.Claim(ip)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err = i.Started(ip, port, host)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err = i.Exited(ip)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = i.Unregister(ip, errors.New("exited"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = s.GetInstance(i.Id)
+	if !IsErrNotFound(err) {
+		t.Fatal(err)
+	}
+
+	done, err := i.IsDone()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !done {
+		t.Errorf("expected instance %d to be done", i.Id)
+	}
+}
+
 func TestInstanceClaiming(t *testing.T) {
-	host := "10.0.0.1"
+	hostA := "10.0.0.1"
+	hostB := "10.0.0.2"
+	hostC := "10.0.0.3"
 	s := instanceSetup()
 
 	ins, err := s.RegisterInstance("bat", "128af9", "web", "default")
@@ -84,17 +130,17 @@ func TestInstanceClaiming(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ins1, err := ins.Claim(host)
+	ins1, err := ins.Claim(hostA)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, err = ins.Claim(host) // Already claimed
+	_, err = ins.Claim(hostA) // Already claimed
 	if !IsErrInsClaimed(err) {
 		t.Error("expected re-claim to fail")
 	}
 
-	_, err = ins1.Claim(host) // Already claimed
+	_, err = ins1.Claim(hostA) // Already claimed
 	if !IsErrInsClaimed(err) {
 		t.Error("expected re-claim to fail")
 	}
@@ -107,11 +153,11 @@ func TestInstanceClaiming(t *testing.T) {
 	if len(claims) == 0 {
 		t.Error("instance claim was unsuccessful")
 	}
-	if claims[0] != host {
+	if claims[0] != hostA {
 		t.Error("instance claims doesn't include claimer")
 	}
 
-	ins2, err := ins1.Unclaim(host)
+	ins2, err := ins1.Unclaim(hostA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,14 +170,36 @@ func TestInstanceClaiming(t *testing.T) {
 		t.Error("ticket wasn't unclaimed properly")
 	}
 
-	_, err = ins1.Unclaim("9.9.9.9") // Wrong host
+	_, err = ins1.Unclaim(hostB) // Wrong host
 	if !IsErrUnauthorized(err) {
 		t.Error("expected unclaim to fail")
 	}
 
-	_, err = ins2.Unclaim(host) // Already unclaimed
+	_, err = ins2.Unclaim(hostA) // Already unclaimed
 	if !IsErrUnauthorized(err) {
 		t.Error("expected unclaim to fail")
+	}
+
+	i, err := ins1.Claim(hostB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err = i.Started(hostB, 9999, "box13.friday.net")
+	if err != nil {
+		t.Fatal(err)
+	}
+	i, err = i.Exited(hostB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = i.Unregister(hostB, errors.New("scaled down"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = ins.Claim(hostC)
+	if !IsErrUnauthorized(err) {
+		t.Error("expect claim of done ticket to fail")
 	}
 }
 
@@ -488,7 +556,6 @@ func TestInstanceLocking(t *testing.T) {
 		t.Fatal("expected instance to be locked")
 	}
 	_, err = ins.Lock("somebody", errors.New("steal the lock"))
-	fmt.Printf("%#v\n", err)
 	if !IsErrUnauthorized(err) {
 		t.Fatal("expected to not allow aquire lock twice")
 	}
