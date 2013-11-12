@@ -21,7 +21,7 @@ $ go get github.com/soundcloud/visor
 
 ## Documentation
 
-See [the gopkgdoc page](http://gopkgdoc.appspot.com/github.com/soundcloud/visor) for up-to-the-minute documentation and usage.
+See [the godoc page](http://godoc.org/github.com/soundcloud/visor) for up-to-the-minute documentation and usage.
 
 ## Contributing
 
