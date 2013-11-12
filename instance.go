@@ -18,6 +18,7 @@ import (
 const (
 	claimsPath    = "claims"
 	instancesPath = "instances"
+	donePath      = "done"
 	failedPath    = "failed"
 	lostPath      = "lost"
 	lockPath      = "lock"
@@ -47,6 +48,7 @@ const (
 	InsStatusFailed = "failed"
 	InsStatusExited = "exited"
 	InsStatusLost   = "lost"
+	InsStatusDone   = "done"
 )
 
 type InsStatus string
@@ -148,21 +150,24 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 	return
 }
 
-func (i *Instance) Unregister() (err error) {
-	err = i.dir.Snapshot.Del(i.ptyStatusPath(i.Status))
+func (i *Instance) Unregister(client string, reason error) error {
+	i, err := i.updateLookup(i.Status, InsStatusDone, fmt.Sprintf("%s %s %s", timestamp(), client, reason))
 	if err != nil {
-		if cp.IsErrNoEnt(err) {
-			err = nil
-		} else {
-			return
-		}
+		return err
 	}
-	err = i.dir.Del("/")
-	return
+	return i.dir.Del("/")
 }
 
 // Claim locks the instance to the specified host.
 func (i *Instance) Claim(host string) (*Instance, error) {
+	done, err := i.IsDone()
+	if err != nil {
+		return nil, err
+	}
+	if done {
+		return nil, errorf(ErrUnauthorized, "%s is done", i)
+	}
+
 	//
 	//   instances/
 	//       6868/
@@ -484,6 +489,18 @@ func (i *Instance) IsLocked() (bool, error) {
 	return false, nil
 }
 
+func (i *Instance) IsDone() (bool, error) {
+	sp, err := i.GetSnapshot().FastForward()
+	if err != nil {
+		return false, err
+	}
+	exists, _, err := sp.Exists(i.ptyDonePath())
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func (i *Instance) RefString() string {
 	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
 }
@@ -528,6 +545,10 @@ func (i *Instance) startArray() []string {
 
 func (i *Instance) portString() string {
 	return fmt.Sprintf("%d", i.Port)
+}
+
+func (i *Instance) ptyDonePath() string {
+	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, donePath, i.idString())
 }
 
 func (i *Instance) ptyFailedPath() string {
@@ -634,6 +655,8 @@ func (i *Instance) verifyClaimer(host string) error {
 
 func (i *Instance) ptyStatusPath(status InsStatus) string {
 	switch status {
+	case InsStatusDone:
+		return i.ptyDonePath()
 	case InsStatusFailed:
 		return i.ptyFailedPath()
 	case InsStatusLost:

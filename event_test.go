@@ -236,7 +236,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 	}
 	go storeFromSnapshotable(ins).WatchEvent(l)
 
-	err = ins.Unregister()
+	err = ins.Unregister("common-host", errors.New("exited"))
 	if err != nil {
 		t.Fatal(err)
 	}

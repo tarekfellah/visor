@@ -40,8 +40,14 @@ func IsErrConflict(e error) bool {
 	return e.(*Error).Err == ErrConflict
 }
 
-func IsErrUnauthorized(e error) bool {
-	return e.(*Error).Err == ErrUnauthorized
+func IsErrUnauthorized(err error) bool {
+	switch pe := err.(type) {
+	case nil:
+		return false
+	case *Error:
+		err = pe.Err
+	}
+	return err == ErrUnauthorized
 }
 
 func IsErrNotFound(e error) bool {
