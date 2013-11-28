@@ -337,7 +337,7 @@ func validateInput(s string) error {
 	if len(s) < 1 {
 		return errorf(ErrInvalidArgument, "input can't be zero length")
 	}
-	validInput := regexp.MustCompile(`^[[:alnum:]\-]+$`)
+	validInput := regexp.MustCompile(`^[[:alnum:]\-\.]+$`)
 	if !validInput.MatchString(s) {
 		return errorf(ErrInvalidArgument, "input only allows alphanumeric characters and -")
 	}
