@@ -616,9 +616,7 @@ func (i *Instance) getClaimer() (*string, error) {
 	}
 	i.dir = i.dir.Join(sp)
 	f, err := sp.GetFile(i.dir.Prefix(startPath), new(cp.ListCodec))
-	if cp.IsErrNoEnt(err) {
-		return nil, nil
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 	fields := f.Value.([]string)
