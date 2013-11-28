@@ -6,13 +6,14 @@
 package visor
 
 import (
+	"fmt"
 	"testing"
 )
 
 func appSetup(name string) (*Store, *App) {
 	s, err := DialUri(DefaultUri, "/app-test")
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("Failed to connect to doozer on '%s: %s", DefaultUri, err.Error()))
 	}
 	err = s.reset()
 	if err != nil {
