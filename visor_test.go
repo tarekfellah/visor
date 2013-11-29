@@ -155,25 +155,30 @@ func TestGetScale(t *testing.T) {
 }
 
 func TestValidateInput(t *testing.T) {
-	err := validateInput("")
-	if err == nil || !IsErrInvalidArgument(err) {
-		t.Errorf("expected zero length string to not validate")
+	invalidInputs := []string{
+		"",
+		" ",
+		"with space",
+		"with_underscore",
 	}
-	err = validateInput(" ")
-	if err == nil || !IsErrInvalidArgument(err) {
-		t.Errorf("expected empty string to not validate")
+	for _, input := range invalidInputs {
+		err := validateInput(input)
+		if err == nil || !IsErrInvalidArgument(err) {
+			t.Errorf("expected '%s' to not validate: %s", input, err)
+		}
 	}
-	err = validateInput("app name")
-	if err == nil || !IsErrInvalidArgument(err) {
-		t.Errorf("expected whitespace in input to not validate")
+
+	validInputs := []string{
+		"valid",
+		"valid-with-scores",
+		"valid.with.dots",
+		"0123456789",
 	}
-	err = validateInput("underscore_proc")
-	if err == nil || !IsErrInvalidArgument(err) {
-		t.Errorf("expected underscore in input to not validate")
-	}
-	err = validateInput("valid-name")
-	if err != nil {
-		t.Errorf("expected input '%s' to validate: %s", "valid-name", err)
+	for _, input := range validInputs {
+		err := validateInput(input)
+		if err != nil {
+			t.Errorf("expected '%s' to validate: %s", input, err)
+		}
 	}
 }
 
