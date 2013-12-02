@@ -55,7 +55,7 @@ func TestScaleErrors(t *testing.T) {
 	}
 }
 
-func TestScale(t *testing.T) {
+func TestScaleUp(t *testing.T) {
 	s := visorSetup("/scale-test")
 	scale := 5
 
@@ -64,8 +64,7 @@ func TestScale(t *testing.T) {
 	proc := genProctype(app, "web")
 	env := genEnv(app, "default", map[string]string{})
 
-	// Scale up
-	ins, current, err := s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, scale)
+	_, current, err := s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, scale)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,34 +82,58 @@ func TestScale(t *testing.T) {
 	if scale1 != scale {
 		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
+}
 
-	// Scale down
-	err = setInstancesToStarted(ins)
+func TestScaleDown(t *testing.T) {
+	s := visorSetup("/scale-test")
+	scale := 5
+
+	app := genApp(s)
+	rev := genRevision(app)
+	proc := genProctype(app, "downer")
+	env1 := genEnv(app, "to-scale", map[string]string{})
+	env2 := genEnv(app, "not-to-scale", map[string]string{})
+
+	ins := []*Instance{}
+
+	for i := 0; i < scale; i++ {
+		i, err := s.RegisterInstance(app.Name, rev.Ref, proc.Name, env1.Ref)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins = append(ins, i)
+	}
+
+	for i := 0; i < 3; i++ {
+		i, err := s.RegisterInstance(app.Name, rev.Ref, proc.Name, env2.Ref)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ins = append(ins, i)
+	}
+
+	err := setInstancesToStarted(ins)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, "default", -1)
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env1.Ref, -1)
 	if err == nil {
 		t.Error("expected error on a non-positive scaling factor")
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, 0)
+	tickets, _, err := s.Scale(app.Name, rev.Ref, proc.Name, env1.Ref, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, 0)
+	if len(tickets) != scale {
+		t.Fatalf("expected %d instances, got %d", scale, len(tickets))
+	}
+
+	_, _, err = s.Scale(app.Name, rev.Ref, proc.Name, env1.Ref, 0)
 	if err == nil {
 		t.Fatal("expected error when scaling down instances twice")
-	}
-
-	scale1, _, err = s.GetScale(app.Name, rev.Ref, proc.Name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if scale1 != scale {
-		t.Fatalf("expected %d instances, got %d", scale, scale1)
 	}
 }
 

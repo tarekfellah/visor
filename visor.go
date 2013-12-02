@@ -137,18 +137,32 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 	if err != nil {
 		return nil, -1, err
 	}
-	current = len(ids)
+
+	is := []*Instance{}
+	for _, id := range ids {
+		// TODO parallelize the instance retrieval and order after (xla)
+		i, err := getInstance(id, s)
+		if err != nil {
+			return nil, -1, err
+		}
+
+		if i.Env != env {
+			continue
+		}
+
+		is = append(is, i)
+	}
+
+	current = len(is)
 
 	if factor > current {
 		// Scale up
 		ntickets := factor - current
 
 		for i := 0; i < ntickets; i++ {
-			var ticket *Instance
-
-			ticket, err = s.RegisterInstance(app, rev, proc, env)
+			ticket, err := s.RegisterInstance(app, rev, proc, env)
 			if err != nil {
-				return
+				return nil, -1, err
 			}
 			tickets = append(tickets, ticket)
 
@@ -158,11 +172,7 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 		// Scale down
 		stops := current - factor
 		for i := 0; i < stops; i++ {
-			ins, err := getInstance(ids[i], s)
-			if err != nil {
-				return nil, -1, err
-			}
-			tickets = append(tickets, ins)
+			ins := is[i]
 
 			err = ins.Stop()
 			if err != nil {
@@ -171,6 +181,8 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 				}
 				return nil, -1, err
 			}
+
+			tickets = append(tickets, ins)
 		}
 	}
 	return
