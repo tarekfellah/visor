@@ -81,6 +81,7 @@ func TestInstanceUnregister(t *testing.T) {
 	env := "prod"
 	ip := "10.10.0.5"
 	port := 58585
+	tPort := 58586
 	host := "box13.kool.aid"
 	s := instanceSetup()
 
@@ -92,7 +93,7 @@ func TestInstanceUnregister(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	i, err = i.Started(ip, port, host)
+	i, err = i.Started(ip, host, port, tPort)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -184,7 +185,7 @@ func TestInstanceClaiming(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	i, err = i.Started(hostB, 9999, "box13.friday.net")
+	i, err = i.Started(hostB, "box13.friday.net", 9999, 10000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,6 +211,7 @@ func TestInstanceStarted(t *testing.T) {
 	env := "default"
 	ip := "10.0.0.1"
 	port := 25790
+	tPort := 25791
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
@@ -222,7 +224,7 @@ func TestInstanceStarted(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ins2, err := ins1.Started(ip, port, host)
+	ins2, err := ins1.Started(ip, host, port, tPort)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -273,7 +275,7 @@ func TestInstanceStop(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ins, err = ins.Started(ip, 5555, "localhost")
+	ins, err = ins.Started(ip, "localhost", 5555, 5556)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -290,6 +292,7 @@ func TestInstanceStop(t *testing.T) {
 func TestInstanceExited(t *testing.T) {
 	ip := "10.0.0.1"
 	port := 25790
+	tPort := 25791
 	host := "fat.the-pink-rabbit.co"
 	s := instanceSetup()
 
@@ -302,7 +305,7 @@ func TestInstanceExited(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ins, err = ins.Started(ip, port, host)
+	ins, err = ins.Started(ip, host, port, tPort)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -323,7 +326,7 @@ func TestInstanceRestarted(t *testing.T) {
 	ip := "10.0.0.1"
 	ins := instanceSetupClaimed("fat-pat", ip)
 
-	ins, err := ins.Started(ip, 9999, "fat-pat.com")
+	ins, err := ins.Started(ip, "fat-pat.com", 9999, 10000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -362,7 +365,7 @@ func TestInstanceFailed(t *testing.T) {
 	ip := "10.0.0.1"
 	ins := instanceSetupClaimed("fat-cat", ip)
 
-	ins, err := ins.Started(ip, 9999, "fat-cat.com")
+	ins, err := ins.Started(ip, "fat-cat.com", 9999, 10000)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,7 +389,7 @@ func TestInstanceLost(t *testing.T) {
 	ip := "10.0.0.2"
 	ins := instanceSetupClaimed("slim-cat", ip)
 
-	ins, err := ins.Started(ip, 9898, "box00.vm")
+	ins, err := ins.Started(ip, "box00.vm", 9898, 9899)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +433,7 @@ func TestWatchInstanceStartAndStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ins, err = ins.Started("10.0.0.1", 5555, "localhost")
+	ins, err = ins.Started("10.0.0.1", "localhost", 5555, 5556)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -483,7 +486,7 @@ func TestInstanceWait(t *testing.T) {
 	}
 
 	go func() {
-		if _, err := ins1.Started("127.0.0.1", 9000, "localhost"); err != nil {
+		if _, err := ins1.Started("127.0.0.1", "localhost", 9000, 9001); err != nil {
 			panic(err)
 		}
 	}()
@@ -509,7 +512,7 @@ func TestInstanceWaitStop(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := ins.Started("127.0.0.1", 9000, "localhost"); err != nil {
+	if _, err := ins.Started("127.0.0.1", "localhost", 9000, 9001); err != nil {
 		t.Fatal(err)
 	}
 
@@ -540,7 +543,7 @@ func TestInstanceLocking(t *testing.T) {
 	ip := "10.0.10.0"
 	ins := instanceSetupClaimed("grumpy-cat", ip)
 
-	ins, err := ins.Started(ip, 7676, "box01.vm")
+	ins, err := ins.Started(ip, "box01.vm", 7676, 7677)
 	if err != nil {
 		t.Fatal(err)
 	}
