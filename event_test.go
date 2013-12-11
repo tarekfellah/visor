@@ -250,6 +250,7 @@ func TestEventInstanceUnregistered(t *testing.T) {
 func TestEventInstanceStateChange(t *testing.T) {
 	ip := "10.0.0.1"
 	port := 9999
+	tPort := 10000
 	host := "mouse.org"
 	s, l := eventSetup()
 
@@ -264,7 +265,7 @@ func TestEventInstanceStateChange(t *testing.T) {
 
 	go storeFromSnapshotable(ins).WatchEvent(l)
 
-	ins, err = ins.Started(ip, port, host)
+	ins, err = ins.Started(ip, host, port, tPort)
 	if err != nil {
 		t.Error(err)
 	}

@@ -209,13 +209,14 @@ func setInstancesToStarted(ins []*Instance) error {
 	host := "127.0.0.1"
 	hostname := "localhost"
 	port := 5000
+	tPort := 5001
 
 	for _, i := range ins {
 		i, err := i.Claim(host)
 		if err != nil {
 			return err
 		}
-		i, err = i.Started(host, port, hostname)
+		i, err = i.Started(host, hostname, port, tPort)
 		if err != nil {
 			return err
 		}

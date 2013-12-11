@@ -116,7 +116,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ins, err = ins.Started("10.0.0.1", 9999, appid+".org")
+		ins, err = ins.Started("10.0.0.1", appid+".org", 9999, 10000)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,7 +152,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ins, err = ins.Started("10.0.0.1", 9999, appid+".org")
+		ins, err = ins.Started("10.0.0.1", appid+".org", 9999, 10000)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -202,7 +202,7 @@ func TestProcTypeGetLostInstances(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		ins, err = ins.Started("10.3.2.1", 9898, "box00.vm")
+		ins, err = ins.Started("10.3.2.1", "box00.vm", 9898, 9899)
 		if err != nil {
 			t.Fatal(err)
 		}

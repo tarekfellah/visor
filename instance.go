@@ -79,6 +79,7 @@ type Instance struct {
 	Env          string
 	Ip           string
 	Port         int
+	TelePort     int
 	Host         string
 	Status       InsStatus
 	Restarts     *InsRestarts
@@ -241,13 +242,13 @@ func (i *Instance) Unclaim(host string) (*Instance, error) {
 	return i, nil
 }
 
-func (i *Instance) Started(host string, port int, hostname string) (*Instance, error) {
+func (i *Instance) Started(host, hostname string, port, telePort int) (*Instance, error) {
 	//
 	//   instances/
 	//       6868/
 	//           object = <app> <rev> <proc>
 	// -         start  = 10.0.0.1
-	// +         start  = 10.0.0.1 24690 localhost
+	// +         start  = 10.0.0.1 24690 localhost 24691
 	//
 	if i.Status == InsStatusRunning {
 		return i, nil
@@ -256,7 +257,7 @@ func (i *Instance) Started(host string, port int, hostname string) (*Instance, e
 	if err != nil {
 		return nil, err
 	}
-	i.started(host, port, hostname)
+	i.started(host, hostname, port, telePort)
 
 	start := cp.NewFile(i.dir.Prefix(startPath), i.startArray(), new(cp.ListCodec), i.GetSnapshot())
 	start, err = start.Save()
@@ -510,7 +511,7 @@ func (i *Instance) ServiceName() string {
 }
 
 func (i *Instance) Fields() string {
-	return fmt.Sprintf("%d %s %s %s %s %d", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port)
+	return fmt.Sprintf("%d %s %s %s %s %d %d", i.Id, i.AppName, i.RevisionName, i.ProcessName, i.Ip, i.Port, i.TelePort)
 }
 
 // String returns the Go-syntax representation of Instance.
@@ -540,11 +541,15 @@ func (i *Instance) objectArray() []string {
 }
 
 func (i *Instance) startArray() []string {
-	return []string{i.Ip, i.portString(), i.Host}
+	return []string{i.Ip, i.portString(), i.Host, i.telePortString()}
 }
 
 func (i *Instance) portString() string {
 	return fmt.Sprintf("%d", i.Port)
+}
+
+func (i *Instance) telePortString() string {
+	return fmt.Sprintf("%d", i.TelePort)
 }
 
 func (i *Instance) ptyDonePath() string {
@@ -591,9 +596,10 @@ func (i *Instance) getRestarts() (*InsRestarts, *cp.File, error) {
 	return restarts, f, nil
 }
 
-func (i *Instance) started(ip string, port int, host string) {
+func (i *Instance) started(ip, host string, port, telePort int) {
 	i.Ip = ip
 	i.Port = port
+	i.TelePort = telePort
 	i.Host = host
 	i.Status = InsStatusRunning
 }
@@ -699,7 +705,17 @@ func (i *Instance) waitStartPath() (*Instance, error) {
 		if err != nil {
 			return nil, err
 		}
-		i.started(ip, port, host)
+
+		// TODO (alx) This branch becomes unnecessary as soon as all components are migrated.
+		telePort := 0
+		if len(fields) >= 4 {
+			telePort, err = strconv.Atoi(fields[3])
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		i.started(ip, host, port, telePort)
 	} else if len(fields) > 0 {
 		i.claimed(fields[0])
 	} else {
@@ -833,6 +849,12 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 		}
 		if len(fields) > 2 { // Hostname
 			i.Host = fields[2]
+		}
+		if len(fields) > 3 { // TelePort
+			i.TelePort, err = strconv.Atoi(fields[3])
+			if err != nil {
+				panic("invalid port number: " + fields[3])
+			}
 		}
 	}
 
