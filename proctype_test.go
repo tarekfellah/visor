@@ -33,29 +33,29 @@ func proctypeSetup(appid string) (s *Store, app *App) {
 	return
 }
 
-func TestProcTypeRegister(t *testing.T) {
+func TestProcRegister(t *testing.T) {
 	s, app := proctypeSetup("reg123")
-	pty := s.NewProcType(app, "whoop")
+	proc := s.NewProc(app, "whoop")
 
-	pty, err := pty.Register()
+	proc, err := proc.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, _, err := pty.GetSnapshot().Exists(pty.dir.Name)
+	check, _, err := proc.GetSnapshot().Exists(proc.dir.Name)
 	if err != nil {
 		t.Error(err)
 	}
 	if !check {
-		t.Errorf("proctype %s isn't registered", pty)
+		t.Errorf("proctype %s isn't registered", proc)
 	}
 }
 
-func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
+func TestProcRegisterWithInvalidName1(t *testing.T) {
 	s, app := proctypeSetup("reg1232")
-	pty := s.NewProcType(app, "who-op")
+	proc := s.NewProc(app, "who-op")
 
-	pty, err := pty.Register()
+	proc, err := proc.Register()
 	if err != ErrBadPtyName {
 		t.Errorf("invalid proc type name (who-op) did not raise error")
 	}
@@ -64,11 +64,11 @@ func TestProcTypeRegisterWithInvalidName1(t *testing.T) {
 	}
 }
 
-func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
+func TestProcRegisterWithInvalidName2(t *testing.T) {
 	s, app := proctypeSetup("reg1233")
-	pty := s.NewProcType(app, "who_op")
+	proc := s.NewProc(app, "who_op")
 
-	pty, err := pty.Register()
+	proc, err := proc.Register()
 	if err != ErrBadPtyName {
 		t.Errorf("invalid proc type name (who_op) did not raise error")
 	}
@@ -77,32 +77,32 @@ func TestProcTypeRegisterWithInvalidName2(t *testing.T) {
 	}
 }
 
-func TestProcTypeUnregister(t *testing.T) {
+func TestProcUnregister(t *testing.T) {
 	s, app := proctypeSetup("unreg123")
-	pty := s.NewProcType(app, "whoop")
+	proc := s.NewProc(app, "whoop")
 
-	pty, err := pty.Register()
+	proc, err := proc.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	err = pty.Unregister()
+	err = proc.Unregister()
 	if err != nil {
 		t.Error(err)
 	}
 
-	check, _, err := s.GetSnapshot().Exists(pty.dir.Name)
+	check, _, err := s.GetSnapshot().Exists(proc.dir.Name)
 	if check {
-		t.Errorf("proctype %s is still registered", pty)
+		t.Errorf("proctype %s is still registered", proc)
 	}
 }
 
-func TestProcTypeGetInstances(t *testing.T) {
+func TestProcGetInstances(t *testing.T) {
 	appid := "get-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
-	pty, err := pty.Register()
+	proc := s.NewProc(app, "web")
+	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -122,7 +122,7 @@ func TestProcTypeGetInstances(t *testing.T) {
 		}
 	}
 
-	is, err := pty.GetInstances()
+	is, err := proc.GetInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,12 +131,12 @@ func TestProcTypeGetInstances(t *testing.T) {
 	}
 }
 
-func TestProcTypeGetFailedInstances(t *testing.T) {
+func TestProcGetFailedInstances(t *testing.T) {
 	appid := "get-failed-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
-	pty, err := pty.Register()
+	proc := s.NewProc(app, "web")
+	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 		}
 	}
 
-	failed, err := pty.GetFailedInstances()
+	failed, err := proc.GetFailedInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -173,7 +173,7 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 		t.Errorf("list is missing instances: %s", len(failed))
 	}
 
-	is, err := pty.GetInstances()
+	is, err := proc.GetInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,11 +182,11 @@ func TestProcTypeGetFailedInstances(t *testing.T) {
 	}
 }
 
-func TestProcTypeGetLostInstances(t *testing.T) {
+func TestProcGetLostInstances(t *testing.T) {
 	appid := "get-lost-instances-app"
 	s, app := proctypeSetup(appid)
 
-	pty, err := s.NewProcType(app, "worker").Register()
+	proc, err := s.NewProc(app, "worker").Register()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -215,7 +215,7 @@ func TestProcTypeGetLostInstances(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	lost, err := pty.GetLostInstances()
+	lost, err := proc.GetLostInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -223,7 +223,7 @@ func TestProcTypeGetLostInstances(t *testing.T) {
 		t.Errorf("lost list is missing instances: %d", len(lost))
 	}
 
-	is, err := pty.GetInstances()
+	is, err := proc.GetInstances()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -232,39 +232,39 @@ func TestProcTypeGetLostInstances(t *testing.T) {
 	}
 }
 
-func TestProcTypeAttributes(t *testing.T) {
+func TestProcAttributes(t *testing.T) {
 	appid := "app-with-attributes"
 	var memoryLimitMb = 100
 	s, app := proctypeSetup(appid)
 
-	pty := s.NewProcType(app, "web")
-	pty, err := pty.Register()
+	proc := s.NewProc(app, "web")
+	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pty, err = app.GetProcType("web")
+	proc, err = app.GetProc("web")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if pty.Attrs.Limits.MemoryLimitMb != nil {
+	if proc.Attrs.Limits.MemoryLimitMb != nil {
 		t.Fatal("MemoryLimitMb should not be set at this point")
 	}
 
-	pty.Attrs.Limits.MemoryLimitMb = &memoryLimitMb
-	pty, err = pty.StoreAttrs()
+	proc.Attrs.Limits.MemoryLimitMb = &memoryLimitMb
+	proc, err = proc.StoreAttrs()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pty, err = app.GetProcType("web")
+	proc, err = app.GetProc("web")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if pty.Attrs.Limits.MemoryLimitMb == nil {
+	if proc.Attrs.Limits.MemoryLimitMb == nil {
 		t.Fatalf("MemoryLimitMb is nil")
 	}
-	if *pty.Attrs.Limits.MemoryLimitMb != memoryLimitMb {
+	if *proc.Attrs.Limits.MemoryLimitMb != memoryLimitMb {
 		t.Fatalf("MemoryLimitMb does not contain the value that was set")
 	}
 }

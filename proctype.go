@@ -16,25 +16,25 @@ import (
 
 var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 
-// ProcType represents a process type with a certain scale.
-type ProcType struct {
+// Proc represents a process type with a certain scale.
+type Proc struct {
 	dir        *cp.Dir
 	Name       string
 	App        *App
 	Port       int
-	Attrs      ProcTypeAttrs
+	Attrs      ProcAttrs
 	Registered time.Time
 }
 
-// Mutable extra ProcType attributes.
-type ProcTypeAttrs struct {
+// Mutable extra Proc attributes.
+type ProcAttrs struct {
 	Limits ResourceLimits `json:"limits"`
 }
 
 // Per-proctype resource limits.
 type ResourceLimits struct {
-	// Maximum memory allowance in MB for an instance of this ProcType.
-	MemoryLimitMb *int `json:"memory-limit-mb,omitempty"`
+	// Maximum memory allowance in MB for an instance of this Proc.
+	MemoryLimitMb *int `json:"memory-limit-mb,omitemproc"`
 }
 
 const (
@@ -43,20 +43,20 @@ const (
 	procsAttrsPath = "attrs"
 )
 
-func (s *Store) NewProcType(app *App, name string) *ProcType {
-	return &ProcType{
+func (s *Store) NewProc(app *App, name string) *Proc {
+	return &Proc{
 		Name: name,
 		App:  app,
 		dir:  cp.NewDir(app.dir.Prefix(procsPath, string(name)), s.GetSnapshot()),
 	}
 }
 
-func (p *ProcType) GetSnapshot() cp.Snapshot {
+func (p *Proc) GetSnapshot() cp.Snapshot {
 	return p.dir.Snapshot
 }
 
 // Register registers a proctype with the registry.
-func (p *ProcType) Register() (*ProcType, error) {
+func (p *Proc) Register() (*Proc, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -97,7 +97,7 @@ func (p *ProcType) Register() (*ProcType, error) {
 }
 
 // Unregister unregisters a proctype from the registry.
-func (p *ProcType) Unregister() error {
+func (p *Proc) Unregister() error {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return err
@@ -105,19 +105,19 @@ func (p *ProcType) Unregister() error {
 	return p.dir.Join(sp).Del("/")
 }
 
-func (p *ProcType) instancesPath() string {
+func (p *Proc) instancesPath() string {
 	return p.dir.Prefix(instancesPath)
 }
 
-func (p *ProcType) failedInstancesPath() string {
+func (p *Proc) failedInstancesPath() string {
 	return p.dir.Prefix(failedPath)
 }
 
-func (p *ProcType) lostInstancesPath() string {
+func (p *Proc) lostInstancesPath() string {
 	return p.dir.Prefix(lostPath)
 }
 
-func (p *ProcType) NumInstances() (int, error) {
+func (p *Proc) NumInstances() (int, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return -1, err
@@ -138,7 +138,7 @@ func (p *ProcType) NumInstances() (int, error) {
 	return total, nil
 }
 
-func (p *ProcType) GetFailedInstances() ([]*Instance, error) {
+func (p *Proc) GetFailedInstances() ([]*Instance, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -150,7 +150,7 @@ func (p *ProcType) GetFailedInstances() ([]*Instance, error) {
 	return getProcInstances(ids, sp)
 }
 
-func (p *ProcType) GetLostInstances() ([]*Instance, error) {
+func (p *Proc) GetLostInstances() ([]*Instance, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func (p *ProcType) GetLostInstances() ([]*Instance, error) {
 	return getProcInstances(ids, sp)
 }
 
-func (p *ProcType) GetInstances() ([]*Instance, error) {
+func (p *Proc) GetInstances() ([]*Instance, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -179,7 +179,7 @@ func (p *ProcType) GetInstances() ([]*Instance, error) {
 	return getProcInstances(idStrs, sp)
 }
 
-func (p ProcType) GetRunningRevs() ([]string, error) {
+func (p Proc) GetRunningRevs() ([]string, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (p ProcType) GetRunningRevs() ([]string, error) {
 	return revs, nil
 }
 
-func (p *ProcType) StoreAttrs() (*ProcType, error) {
+func (p *Proc) StoreAttrs() (*Proc, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
@@ -206,21 +206,21 @@ func (p *ProcType) StoreAttrs() (*ProcType, error) {
 	return p, nil
 }
 
-func (p *ProcType) String() string {
-	return fmt.Sprintf("ProcType<%s:%s>", p.App.Name, p.Name)
+func (p *Proc) String() string {
+	return fmt.Sprintf("Proc<%s:%s>", p.App.Name, p.Name)
 }
 
-// GetProcType fetches a ProcType from the coordinator
-func (a *App) GetProcType(name string) (*ProcType, error) {
+// GetProc fetches a Proc from the coordinator
+func (a *App) GetProc(name string) (*Proc, error) {
 	sp, err := a.GetSnapshot().FastForward()
 	if err != nil {
 		return nil, err
 	}
-	return getProcType(a, name, sp)
+	return getProc(a, name, sp)
 }
 
-func getProcType(app *App, name string, s cp.Snapshotable) (*ProcType, error) {
-	p := &ProcType{
+func getProc(app *App, name string, s cp.Snapshotable) (*Proc, error) {
+	p := &Proc{
 		dir:  cp.NewDir(app.dir.Prefix(procsPath, name), s.GetSnapshot()),
 		Name: name,
 		App:  app,
@@ -276,7 +276,7 @@ func getProcInstances(ids []string, s cp.Snapshotable) ([]*Instance, error) {
 	return ins, nil
 }
 
-func getProcInstanceIds(p *ProcType, s cp.Snapshotable) ([]int64, error) {
+func getProcInstanceIds(p *Proc, s cp.Snapshotable) ([]int64, error) {
 	sp := s.GetSnapshot()
 	revs, err := sp.Getdir(p.dir.Prefix("instances"))
 	if err != nil {

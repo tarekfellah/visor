@@ -54,9 +54,9 @@ func (e *Env) Register() (*Env, error) {
 		return nil, errorf(ErrConflict, `env "%s" can't be overwritten`, e.Ref)
 	}
 
-	for k, _ := range e.Vars {
+	for k := range e.Vars {
 		if len(k) == 0 {
-			return nil, errorf(ErrInvalidKey, `env keys can't be empty`)
+			return nil, errorf(ErrInvalidKey, `env keys can't be emproc`)
 		}
 		if strings.Contains(k, "=") {
 			return nil, errorf(ErrInvalidKey, `env keys can't contain "="`)

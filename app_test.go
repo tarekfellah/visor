@@ -209,30 +209,30 @@ func TestEnvironmentVars(t *testing.T) {
 	}
 }
 
-func TestAppGetProcTypes(t *testing.T) {
+func TestAppGetProcs(t *testing.T) {
 	s, app := appSetup("bob-the-sponge")
 	names := map[string]bool{"api": true, "web": true, "worker": true}
 
-	var pty *ProcType
+	var proc *Proc
 	var err error
 
 	for name := range names {
-		pty = s.NewProcType(app, name)
-		pty, err = pty.Register()
+		proc = s.NewProc(app, name)
+		proc, err = proc.Register()
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	ptys, err := app.GetProcTypes()
+	procs, err := app.GetProcs()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(ptys) != len(names) {
-		t.Errorf("expected length %d returned length %d", len(names), len(ptys))
+	if len(procs) != len(names) {
+		t.Errorf("expected length %d returned length %d", len(names), len(procs))
 	} else {
-		for i := range ptys {
-			if !names[ptys[i].Name] {
+		for i := range procs {
+			if !names[procs[i].Name] {
 				t.Errorf("expected proctype to be in map")
 			}
 		}

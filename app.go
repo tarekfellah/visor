@@ -240,8 +240,8 @@ func (a *App) GetRevisions() ([]*Revision, error) {
 	return revisions, nil
 }
 
-// GetProcTypes returns all registered ProcTypes for the App
-func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
+// GetProcs returns all registered Procs for the App
+func (a *App) GetProcs() (procs []*Proc, err error) {
 	sp, err := a.GetSnapshot().FastForward()
 	if err != nil {
 		return
@@ -254,12 +254,12 @@ func (a *App) GetProcTypes() (ptys []*ProcType, err error) {
 		return
 	}
 	ch, errch := cp.GetSnapshotables(names, func(name string) (cp.Snapshotable, error) {
-		return getProcType(a, name, sp)
+		return getProc(a, name, sp)
 	})
 	for i := 0; i < len(names); i++ {
 		select {
 		case r := <-ch:
-			ptys = append(ptys, r.(*ProcType))
+			procs = append(procs, r.(*Proc))
 		case err := <-errch:
 			return nil, err
 		}

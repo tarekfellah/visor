@@ -136,7 +136,7 @@ func (s *Store) RegisterInstance(app, rev, proc, env string) (ins *Instance, err
 		return
 	}
 	ins.Registered = reg
-	_, err = ins.GetSnapshot().Set(ins.ptyStatusPath(InsStatusRunning), formatTime(reg))
+	_, err = ins.GetSnapshot().Set(ins.procStatusPath(InsStatusRunning), formatTime(reg))
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func (i *Instance) Exited(host string) (i1 *Instance, err error) {
 	if err != nil {
 		return nil, err
 	}
-	err = i.dir.Snapshot.Del(i.ptyStatusPath(InsStatusExited))
+	err = i.dir.Snapshot.Del(i.procStatusPath(InsStatusExited))
 
 	return
 }
@@ -443,7 +443,7 @@ func (i *Instance) WaitLost() (*Instance, error) {
 }
 
 func (i *Instance) GetStatusInfo() (string, error) {
-	info, _, err := i.dir.Snapshot.Get(i.ptyStatusPath(i.Status))
+	info, _, err := i.dir.Snapshot.Get(i.procStatusPath(i.Status))
 	if err != nil {
 		return "", err
 	}
@@ -495,7 +495,7 @@ func (i *Instance) IsDone() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	exists, _, err := sp.Exists(i.ptyDonePath())
+	exists, _, err := sp.Exists(i.procDonePath())
 	if err != nil {
 		return false, err
 	}
@@ -552,19 +552,19 @@ func (i *Instance) telePortString() string {
 	return fmt.Sprintf("%d", i.TelePort)
 }
 
-func (i *Instance) ptyDonePath() string {
+func (i *Instance) procDonePath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, donePath, i.idString())
 }
 
-func (i *Instance) ptyFailedPath() string {
+func (i *Instance) procFailedPath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, failedPath, i.idString())
 }
 
-func (i *Instance) ptyInstancesPath() string {
+func (i *Instance) procInstancesPath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, instancesPath, i.RevisionName, i.idString())
 }
 
-func (i *Instance) ptyLostPath() string {
+func (i *Instance) procLostPath() string {
 	return path.Join(appsPath, i.AppName, procsPath, i.ProcessName, lostPath, i.idString())
 }
 
@@ -657,28 +657,28 @@ func (i *Instance) verifyClaimer(host string) error {
 	return nil
 }
 
-func (i *Instance) ptyStatusPath(status InsStatus) string {
+func (i *Instance) procStatusPath(status InsStatus) string {
 	switch status {
 	case InsStatusDone:
-		return i.ptyDonePath()
+		return i.procDonePath()
 	case InsStatusFailed:
-		return i.ptyFailedPath()
+		return i.procFailedPath()
 	case InsStatusLost:
-		return i.ptyLostPath()
+		return i.procLostPath()
 	default:
-		return i.ptyInstancesPath()
+		return i.procInstancesPath()
 	}
 }
 
 func (i *Instance) updateLookup(from, to InsStatus, value string) (*Instance, error) {
-	sp, err := i.GetSnapshot().Set(i.ptyStatusPath(to), value)
+	sp, err := i.GetSnapshot().Set(i.procStatusPath(to), value)
 	if err != nil {
 		return nil, err
 	}
 
 	i.dir = i.dir.Join(sp)
 
-	err = i.dir.Snapshot.Del(i.ptyStatusPath(from))
+	err = i.dir.Snapshot.Del(i.procStatusPath(from))
 	if err != nil {
 		return nil, err
 	}
@@ -805,8 +805,8 @@ func instancePath(id int64) string {
 	return path.Join(instancesPath, strconv.FormatInt(id, 10))
 }
 
-func ptyInstancesPath(app, rev, pty string) string {
-	return path.Join(appsPath, app, procsPath, pty, instancesPath, rev)
+func procInstancesPath(app, rev, proc string) string {
+	return path.Join(appsPath, app, procsPath, proc, instancesPath, rev)
 }
 
 func parseInstanceId(idstr string) (int64, error) {
@@ -934,7 +934,7 @@ func getInstance(id int64, s cp.Snapshotable) (*Instance, error) {
 
 func getInstanceIds(app, rev, proc string, s cp.Snapshotable) (ids Int64Slice, err error) {
 	sp := s.GetSnapshot()
-	p := ptyInstancesPath(app, rev, proc)
+	p := procInstancesPath(app, rev, proc)
 	exists, _, err := sp.Exists(p)
 	if err != nil || !exists {
 		return

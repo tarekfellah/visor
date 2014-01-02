@@ -188,14 +188,14 @@ func (s *Store) Scale(app, rev, proc, env string, factor int) (tickets []*Instan
 	return
 }
 
-// GetScale returns the scale of an app:pty@rev tuple. If the scale isn't found, 0 is returned.
-func (s *Store) GetScale(app string, revid string, pty string) (scale int, rev int64, err error) {
+// GetScale returns the scale of an app:proc@rev tuple. If the scale isn't found, 0 is returned.
+func (s *Store) GetScale(app string, revid string, proc string) (scale int, rev int64, err error) {
 	sp, err := s.GetSnapshot().FastForward()
 	if err != nil {
 		return
 	}
 
-	path := ptyInstancesPath(app, revid, pty)
+	path := procInstancesPath(app, revid, proc)
 	count, rev, err := sp.Stat(path, &s.snapshot.Rev)
 
 	// File doesn't exist, assume scale = 0

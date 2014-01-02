@@ -144,10 +144,10 @@ func (s *Store) WatchEvent(listener chan *Event) error {
 
 func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snapshotable) (source cp.Snapshotable, err error) {
 	var (
-		app *App
-		rev *Revision
-		pty *ProcType
-		ins *Instance
+		app  *App
+		rev  *Revision
+		proc *Proc
+		ins  *Instance
 	)
 
 	if uncanonicalized.App != nil {
@@ -167,7 +167,7 @@ func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snaps
 	}
 
 	if uncanonicalized.Proctype != nil {
-		pty, err = getProcType(app, *uncanonicalized.Proctype, s)
+		proc, err = getProc(app, *uncanonicalized.Proctype, s)
 		if err != nil {
 			return
 		}
@@ -189,7 +189,7 @@ func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snaps
 	case EvRevReg:
 		source = rev
 	case EvProcReg:
-		source = pty
+		source = proc
 	case EvInsReg, EvInsStart, EvInsFail, EvInsExit, EvInsLost:
 		source = ins
 	}

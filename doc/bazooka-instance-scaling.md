@@ -97,7 +97,7 @@ if successful, the status is set to `exited`
                 stop   = 10.0.1.15 2012-07-19 16:41 UTC
       +         status = exited
 
-and the instance entry is deleted from the app/pty tree
+and the instance entry is deleted from the app/proc tree
 
         instances/
             5461/

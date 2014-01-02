@@ -153,7 +153,7 @@ func TestEventRevUnregistered(t *testing.T) {
 	}
 }
 
-func TestEventProcTypeRegistered(t *testing.T) {
+func TestEventProcRegistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup(s, "proc-register")
 
@@ -167,17 +167,17 @@ func TestEventProcTypeRegistered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pty := s.NewProcType(app, "all")
+	proc := s.NewProc(app, "all")
 
 	go storeFromSnapshotable(rev).WatchEvent(l)
 
-	_, err = pty.Register()
+	_, err = proc.Register()
 	if err != nil {
 		t.Error(err)
 	}
 
-	ev := expectEvent(EvProcReg, pty, l, t)
-	if ev.Path.Proctype == nil || (*ev.Path.Proctype != pty.Name) {
+	ev := expectEvent(EvProcReg, proc, l, t)
+	if ev.Path.Proctype == nil || (*ev.Path.Proctype != proc.Name) {
 		t.Error("event.Path doesn't contain expected data")
 	}
 	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
@@ -185,26 +185,26 @@ func TestEventProcTypeRegistered(t *testing.T) {
 	}
 }
 
-func TestEventProcTypeUnregistered(t *testing.T) {
+func TestEventProcUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup(s, "proc-unregister")
-	pty := s.NewProcType(app, "all")
+	proc := s.NewProc(app, "all")
 
-	pty, err := pty.Register()
+	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	go storeFromSnapshotable(pty).WatchEvent(l)
+	go storeFromSnapshotable(proc).WatchEvent(l)
 
-	err = pty.Unregister()
+	err = proc.Unregister()
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	ev := expectEvent(EvProcUnreg, nil, l, t)
 
-	if ev.Path.Proctype == nil || (*ev.Path.Proctype != pty.Name) {
+	if ev.Path.Proctype == nil || (*ev.Path.Proctype != proc.Name) {
 		t.Error("event.Path doesn't contain expected data")
 	}
 }
