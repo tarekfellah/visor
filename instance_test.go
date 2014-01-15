@@ -382,7 +382,7 @@ func TestInstanceFailed(t *testing.T) {
 	}
 
 	// Note: we do not test whether or not failed instances can be retrieved
-	// here. See the proctype tests & (*Proctype).GetFailedInstances()
+	// here. See the proc tests & (*Proc).GetFailedInstances()
 }
 
 func TestInstanceLost(t *testing.T) {
@@ -400,7 +400,7 @@ func TestInstanceLost(t *testing.T) {
 	testInstanceStatus(storeFromSnapshotable(ins), t, ins.Id, InsStatusLost)
 
 	// Note: we do not test whether or not lost instances can be retrieved
-	// here. See the proctype tests & (*Proctype).GetLostInstances()
+	// here. See the proc tests & (*Proc).GetLostInstances()
 }
 
 func TestWatchInstanceStartAndStop(t *testing.T) {

@@ -18,7 +18,7 @@ var (
 	ErrInvalidKey      = errors.New("invalid key")
 	ErrInvalidState    = errors.New("invalid state")
 	ErrInvalidFile     = errors.New("invalid file")
-	ErrBadPtyName      = errors.New("invalid proc type name: only alphanumeric chars allowed")
+	ErrBadProcName     = errors.New("invalid proc type name: only alphanumeric chars allowed")
 	ErrUnauthorized    = errors.New("operation is not permitted")
 	ErrNotFound        = errors.New("object not found")
 )

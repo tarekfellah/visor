@@ -233,7 +233,7 @@ func TestAppGetProcs(t *testing.T) {
 	} else {
 		for i := range procs {
 			if !names[procs[i].Name] {
-				t.Errorf("expected proctype to be in map")
+				t.Errorf("expected proc to be in map")
 			}
 		}
 	}

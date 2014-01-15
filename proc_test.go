@@ -10,8 +10,8 @@ import (
 	"testing"
 )
 
-func proctypeSetup(appid string) (s *Store, app *App) {
-	s, err := DialUri(DefaultUri, "/proctype-test")
+func procSetup(appid string) (s *Store, app *App) {
+	s, err := DialUri(DefaultUri, "/proc-test")
 	if err != nil {
 		panic(err)
 	}
@@ -28,13 +28,13 @@ func proctypeSetup(appid string) (s *Store, app *App) {
 		panic(err)
 	}
 
-	app = s.NewApp(appid, "git://proctype.git", "master")
+	app = s.NewApp(appid, "git://proc.git", "master")
 
 	return
 }
 
 func TestProcRegister(t *testing.T) {
-	s, app := proctypeSetup("reg123")
+	s, app := procSetup("reg123")
 	proc := s.NewProc(app, "whoop")
 
 	proc, err := proc.Register()
@@ -47,38 +47,38 @@ func TestProcRegister(t *testing.T) {
 		t.Error(err)
 	}
 	if !check {
-		t.Errorf("proctype %s isn't registered", proc)
+		t.Errorf("proc %s isn't registered", proc)
 	}
 }
 
 func TestProcRegisterWithInvalidName1(t *testing.T) {
-	s, app := proctypeSetup("reg1232")
+	s, app := procSetup("reg1232")
 	proc := s.NewProc(app, "who-op")
 
 	proc, err := proc.Register()
-	if err != ErrBadPtyName {
+	if err != ErrBadProcName {
 		t.Errorf("invalid proc type name (who-op) did not raise error")
 	}
-	if err != ErrBadPtyName && err != nil {
+	if err != ErrBadProcName && err != nil {
 		t.Fatal("wrong error was raised for invalid proc type name")
 	}
 }
 
 func TestProcRegisterWithInvalidName2(t *testing.T) {
-	s, app := proctypeSetup("reg1233")
+	s, app := procSetup("reg1233")
 	proc := s.NewProc(app, "who_op")
 
 	proc, err := proc.Register()
-	if err != ErrBadPtyName {
+	if err != ErrBadProcName {
 		t.Errorf("invalid proc type name (who_op) did not raise error")
 	}
-	if err != ErrBadPtyName && err != nil {
+	if err != ErrBadProcName && err != nil {
 		t.Fatal("wrong error was raised for invalid proc type name")
 	}
 }
 
 func TestProcUnregister(t *testing.T) {
-	s, app := proctypeSetup("unreg123")
+	s, app := procSetup("unreg123")
 	proc := s.NewProc(app, "whoop")
 
 	proc, err := proc.Register()
@@ -93,13 +93,13 @@ func TestProcUnregister(t *testing.T) {
 
 	check, _, err := s.GetSnapshot().Exists(proc.dir.Name)
 	if check {
-		t.Errorf("proctype %s is still registered", proc)
+		t.Errorf("proc %s is still registered", proc)
 	}
 }
 
 func TestProcGetInstances(t *testing.T) {
 	appid := "get-instances-app"
-	s, app := proctypeSetup(appid)
+	s, app := procSetup(appid)
 
 	proc := s.NewProc(app, "web")
 	proc, err := proc.Register()
@@ -133,7 +133,7 @@ func TestProcGetInstances(t *testing.T) {
 
 func TestProcGetFailedInstances(t *testing.T) {
 	appid := "get-failed-instances-app"
-	s, app := proctypeSetup(appid)
+	s, app := procSetup(appid)
 
 	proc := s.NewProc(app, "web")
 	proc, err := proc.Register()
@@ -184,7 +184,7 @@ func TestProcGetFailedInstances(t *testing.T) {
 
 func TestProcGetLostInstances(t *testing.T) {
 	appid := "get-lost-instances-app"
-	s, app := proctypeSetup(appid)
+	s, app := procSetup(appid)
 
 	proc, err := s.NewProc(app, "worker").Register()
 	if err != nil {
@@ -235,7 +235,7 @@ func TestProcGetLostInstances(t *testing.T) {
 func TestProcAttributes(t *testing.T) {
 	appid := "app-with-attributes"
 	var memoryLimitMb = 100
-	s, app := proctypeSetup(appid)
+	s, app := procSetup(appid)
 
 	proc := s.NewProc(app, "web")
 	proc, err := proc.Register()

@@ -31,7 +31,7 @@ type ProcAttrs struct {
 	Limits ResourceLimits `json:"limits"`
 }
 
-// Per-proctype resource limits.
+// Per-proc resource limits.
 type ResourceLimits struct {
 	// Maximum memory allowance in MB for an instance of this Proc.
 	MemoryLimitMb *int `json:"memory-limit-mb,omitemproc"`
@@ -55,7 +55,7 @@ func (p *Proc) GetSnapshot() cp.Snapshot {
 	return p.dir.Snapshot
 }
 
-// Register registers a proctype with the registry.
+// Register registers a proc with the registry.
 func (p *Proc) Register() (*Proc, error) {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
@@ -71,7 +71,7 @@ func (p *Proc) Register() (*Proc, error) {
 	}
 
 	if !reProcName.MatchString(p.Name) {
-		return nil, ErrBadPtyName
+		return nil, ErrBadProcName
 	}
 
 	p.Port, err = claimNextPort(sp)
@@ -96,7 +96,7 @@ func (p *Proc) Register() (*Proc, error) {
 	return p, nil
 }
 
-// Unregister unregisters a proctype from the registry.
+// Unregister unregisters a proc from the registry.
 func (p *Proc) Unregister() error {
 	sp, err := p.GetSnapshot().FastForward()
 	if err != nil {
