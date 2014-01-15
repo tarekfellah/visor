@@ -31,7 +31,7 @@ func genRevision(app *App) (rev *Revision) {
 
 func genProc(app *App, name string) (proc *Proc) {
 	s := storeFromSnapshotable(app)
-	proc = s.NewProc(app, name)
+	proc = s.NewProc(app, name, "./run.sh")
 	proc, err := proc.Register()
 	if err != nil {
 		panic(err)

@@ -167,7 +167,7 @@ func TestEventProcRegistered(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	proc := s.NewProc(app, "all")
+	proc := s.NewProc(app, "all", "./event.sh")
 
 	go storeFromSnapshotable(rev).WatchEvent(l)
 
@@ -188,7 +188,7 @@ func TestEventProcRegistered(t *testing.T) {
 func TestEventProcUnregistered(t *testing.T) {
 	s, l := eventSetup()
 	app := eventAppSetup(s, "proc-unregister")
-	proc := s.NewProc(app, "all")
+	proc := s.NewProc(app, "all", "./register.sh")
 
 	proc, err := proc.Register()
 	if err != nil {

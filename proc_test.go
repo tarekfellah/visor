@@ -35,11 +35,11 @@ func procSetup(appid string) (s *Store, app *App) {
 
 func TestProcRegister(t *testing.T) {
 	s, app := procSetup("reg123")
-	proc := s.NewProc(app, "whoop")
+	proc := s.NewProc(app, "whoop", "./whoop.sh")
 
 	proc, err := proc.Register()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	check, _, err := proc.GetSnapshot().Exists(proc.dir.Name)
@@ -49,11 +49,21 @@ func TestProcRegister(t *testing.T) {
 	if !check {
 		t.Errorf("proc %s isn't registered", proc)
 	}
+
+	proc1, err := app.GetProc("whoop")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if proc.Name != proc1.Name ||
+		proc.Cmd != proc1.Cmd ||
+		proc.Registered != proc1.Registered {
+		t.Errorf("procs differ: (%s,%s,%s) - (%s,%s,%s)", proc.Name, proc.Cmd, proc.Registered, proc1.Name, proc1.Cmd, proc1.Registered)
+	}
 }
 
 func TestProcRegisterWithInvalidName1(t *testing.T) {
 	s, app := procSetup("reg1232")
-	proc := s.NewProc(app, "who-op")
+	proc := s.NewProc(app, "who-op", "./op.sh")
 
 	proc, err := proc.Register()
 	if err != ErrBadProcName {
@@ -66,7 +76,7 @@ func TestProcRegisterWithInvalidName1(t *testing.T) {
 
 func TestProcRegisterWithInvalidName2(t *testing.T) {
 	s, app := procSetup("reg1233")
-	proc := s.NewProc(app, "who_op")
+	proc := s.NewProc(app, "who_op", "./invalid.sh")
 
 	proc, err := proc.Register()
 	if err != ErrBadProcName {
@@ -79,7 +89,7 @@ func TestProcRegisterWithInvalidName2(t *testing.T) {
 
 func TestProcUnregister(t *testing.T) {
 	s, app := procSetup("unreg123")
-	proc := s.NewProc(app, "whoop")
+	proc := s.NewProc(app, "whoop", "./whoop.sh")
 
 	proc, err := proc.Register()
 	if err != nil {
@@ -101,7 +111,7 @@ func TestProcGetInstances(t *testing.T) {
 	appid := "get-instances-app"
 	s, app := procSetup(appid)
 
-	proc := s.NewProc(app, "web")
+	proc := s.NewProc(app, "web", "./web")
 	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -135,7 +145,7 @@ func TestProcGetFailedInstances(t *testing.T) {
 	appid := "get-failed-instances-app"
 	s, app := procSetup(appid)
 
-	proc := s.NewProc(app, "web")
+	proc := s.NewProc(app, "web", "./web")
 	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)
@@ -186,7 +196,7 @@ func TestProcGetLostInstances(t *testing.T) {
 	appid := "get-lost-instances-app"
 	s, app := procSetup(appid)
 
-	proc, err := s.NewProc(app, "worker").Register()
+	proc, err := s.NewProc(app, "worker", "./worker.rb").Register()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -237,7 +247,7 @@ func TestProcAttributes(t *testing.T) {
 	var memoryLimitMb = 100
 	s, app := procSetup(appid)
 
-	proc := s.NewProc(app, "web")
+	proc := s.NewProc(app, "web", "./server")
 	proc, err := proc.Register()
 	if err != nil {
 		t.Fatal(err)

@@ -19,8 +19,9 @@ var reProcName = regexp.MustCompile("^[[:alnum:]]+$")
 // Proc represents a process type with a certain scale.
 type Proc struct {
 	dir        *cp.Dir
-	Name       string
 	App        *App
+	Name       string
+	Cmd        string
 	Port       int
 	Attrs      ProcAttrs
 	Registered time.Time
@@ -39,15 +40,17 @@ type ResourceLimits struct {
 
 const (
 	procsPath      = "procs"
+	procsCmdPath   = "cmd"
 	procsPortPath  = "port"
 	procsAttrsPath = "attrs"
 )
 
-func (s *Store) NewProc(app *App, name string) *Proc {
+func (s *Store) NewProc(app *App, name, cmd string) *Proc {
 	return &Proc{
-		Name: name,
-		App:  app,
 		dir:  cp.NewDir(app.dir.Prefix(procsPath, string(name)), s.GetSnapshot()),
+		App:  app,
+		Name: name,
+		Cmd:  cmd,
 	}
 }
 
@@ -85,8 +88,13 @@ func (p *Proc) Register() (*Proc, error) {
 		return nil, err
 	}
 
+	d, err := p.dir.Set(procsCmdPath, p.Cmd)
+	if err != nil {
+		return nil, err
+	}
+
 	reg := time.Now()
-	d, err := p.dir.Join(sp).Set(registeredPath, formatTime(reg))
+	d, err = p.dir.Join(d).Set(registeredPath, formatTime(reg))
 	if err != nil {
 		return nil, err
 	}
@@ -222,8 +230,8 @@ func (a *App) GetProc(name string) (*Proc, error) {
 func getProc(app *App, name string, s cp.Snapshotable) (*Proc, error) {
 	p := &Proc{
 		dir:  cp.NewDir(app.dir.Prefix(procsPath, name), s.GetSnapshot()),
-		Name: name,
 		App:  app,
+		Name: name,
 	}
 
 	port, err := p.dir.GetFile(procsPortPath, new(cp.IntCodec))
@@ -231,6 +239,11 @@ func getProc(app *App, name string, s cp.Snapshotable) (*Proc, error) {
 		return nil, errorf(ErrNotFound, "port not found for %s-%s", app.Name, name)
 	}
 	p.Port = port.Value.(int)
+
+	p.Cmd, _, err = p.dir.Get(procsCmdPath)
+	if err != nil {
+		return nil, err
+	}
 
 	_, err = p.dir.GetFile(procsAttrsPath, &cp.JsonCodec{DecodedVal: &p.Attrs})
 	if err != nil && !cp.IsErrNoEnt(err) {

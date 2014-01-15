@@ -334,7 +334,7 @@ func storeFromSnapshotable(sp cp.Snapshotable) *Store {
 }
 
 func formatTime(t time.Time) string {
-	return t.Format(time.RFC3339)
+	return t.Format(time.RFC3339Nano)
 }
 
 func timestamp() string {

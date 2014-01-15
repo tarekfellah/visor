@@ -217,7 +217,7 @@ func TestAppGetProcs(t *testing.T) {
 	var err error
 
 	for name := range names {
-		proc = s.NewProc(app, name)
+		proc = s.NewProc(app, name, "./cmd.sh")
 		proc, err = proc.Register()
 		if err != nil {
 			t.Fatal(err)
