@@ -177,7 +177,7 @@ func TestEventProcRegistered(t *testing.T) {
 	}
 
 	ev := expectEvent(EvProcReg, proc, l, t)
-	if ev.Path.Proctype == nil || (*ev.Path.Proctype != proc.Name) {
+	if ev.Path.Proc == nil || (*ev.Path.Proc != proc.Name) {
 		t.Error("event.Path doesn't contain expected data")
 	}
 	if ev.Path.App == nil || (*ev.Path.App != app.Name) {
@@ -204,7 +204,7 @@ func TestEventProcUnregistered(t *testing.T) {
 
 	ev := expectEvent(EvProcUnreg, nil, l, t)
 
-	if ev.Path.Proctype == nil || (*ev.Path.Proctype != proc.Name) {
+	if ev.Path.Proc == nil || (*ev.Path.Proc != proc.Name) {
 		t.Error("event.Path doesn't contain expected data")
 	}
 }

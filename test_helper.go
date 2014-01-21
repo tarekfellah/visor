@@ -29,7 +29,7 @@ func genRevision(app *App) (rev *Revision) {
 	return
 }
 
-func genProctype(app *App, name string) (proc *Proc) {
+func genProc(app *App, name string) (proc *Proc) {
 	s := storeFromSnapshotable(app)
 	proc = s.NewProc(app, name)
 	proc, err := proc.Register()

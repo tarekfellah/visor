@@ -5,7 +5,7 @@
 
 /*
 To understand how Visor works, we need to understand how it works with *time*. Each
-of the Visor data-types *App*, *Revision*, *Proctype* and *Instance* are snapshots of
+of the Visor data-types *App*, *Revision*, *Proc* and *Instance* are snapshots of
 a specific point in time in the coordinator. When a mutating operation is successfully
 performed on one of these data-types, a **new snapshot** is returned, representing the state
 of the coordinator *after* the operation. If the operation would fail, the old snapshot is

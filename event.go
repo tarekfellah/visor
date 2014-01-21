@@ -19,7 +19,7 @@ const charPat = `[-.[:alnum:]]`
 type EventData struct {
 	App      *string
 	Instance *string
-	Proctype *string
+	Proc     *string
 	Revision *string
 	Service  *string
 }
@@ -166,8 +166,8 @@ func canonicalizeMetadata(etype EventType, uncanonicalized EventData, s cp.Snaps
 		}
 	}
 
-	if uncanonicalized.Proctype != nil {
-		proc, err = getProc(app, *uncanonicalized.Proctype, s)
+	if uncanonicalized.Proc != nil {
+		proc, err = getProc(app, *uncanonicalized.Proc, s)
 		if err != nil {
 			return
 		}
@@ -226,7 +226,7 @@ func enrichEvent(src *cp.Event, s cp.Snapshotable) (event *Event, err error) {
 				}
 			case pathProc:
 				uncanonicalized.App = &match[1]
-				uncanonicalized.Proctype = &match[2]
+				uncanonicalized.Proc = &match[2]
 
 				if src.IsSet() {
 					etype = EvProcReg

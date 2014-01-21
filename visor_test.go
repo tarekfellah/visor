@@ -36,7 +36,7 @@ func TestScaleErrors(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	proc := genProctype(app, "web")
+	proc := genProc(app, "web")
 	env := genEnv(app, "default", map[string]string{})
 
 	// Scale up
@@ -61,7 +61,7 @@ func TestScaleUp(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	proc := genProctype(app, "web")
+	proc := genProc(app, "web")
 	env := genEnv(app, "default", map[string]string{})
 
 	_, current, err := s.Scale(app.Name, rev.Ref, proc.Name, env.Ref, scale)
@@ -90,7 +90,7 @@ func TestScaleDown(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	proc := genProctype(app, "downer")
+	proc := genProc(app, "downer")
 	env1 := genEnv(app, "to-scale", map[string]string{})
 	env2 := genEnv(app, "not-to-scale", map[string]string{})
 
@@ -143,7 +143,7 @@ func TestGetScale(t *testing.T) {
 
 	app := genApp(s)
 	rev := genRevision(app)
-	proc := genProctype(app, "scaleproc")
+	proc := genProc(app, "scaleproc")
 	env := genEnv(app, "default", map[string]string{})
 
 	scale, _, err := s.GetScale(app.Name, rev.Ref, proc.Name)
