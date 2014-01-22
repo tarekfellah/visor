@@ -502,8 +502,12 @@ func (i *Instance) IsDone() (bool, error) {
 	return exists, nil
 }
 
-func (i *Instance) RefString() string {
+func (i *Instance) RevString() string {
 	return fmt.Sprintf("%s:%s@%s", i.AppName, i.ProcessName, i.RevisionName)
+}
+
+func (i *Instance) RefString() string {
+	return fmt.Sprintf("%s:%s@%s#%s", i.AppName, i.ProcessName, i.RevisionName, i.Env)
 }
 
 func (i *Instance) ServiceName() string {
