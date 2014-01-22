@@ -21,7 +21,7 @@ func genApp(s *Store) (app *App) {
 func genRevision(app *App) (rev *Revision) {
 	s := storeFromSnapshotable(app)
 	name := randItem(revNames)
-	rev = s.NewRevision(app, name)
+	rev = s.NewRevision(app, name, "foo.img")
 	rev, err := rev.Register()
 	if err != nil {
 		panic(err)

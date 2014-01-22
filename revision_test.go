@@ -35,7 +35,7 @@ func revSetup() (s *Store, app *App) {
 
 func TestRevisionRegister(t *testing.T) {
 	s, app := revSetup()
-	rev := s.NewRevision(app, "stable")
+	rev := s.NewRevision(app, "stable", "stable.img")
 
 	check, _, err := s.GetSnapshot().Exists(rev.dir.Name)
 	if err != nil {
@@ -69,7 +69,7 @@ func TestRevisionRegister(t *testing.T) {
 
 func TestRevisionUnregister(t *testing.T) {
 	s, app := revSetup()
-	rev := s.NewRevision(app, "master")
+	rev := s.NewRevision(app, "master", "master.img")
 
 	rev, err := rev.Register()
 	if err != nil {

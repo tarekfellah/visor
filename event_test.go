@@ -107,7 +107,7 @@ func TestEventRevRegistered(t *testing.T) {
 	}
 	s = storeFromSnapshotable(app)
 
-	rev := s.NewRevision(app, "stable")
+	rev := s.NewRevision(app, "stable", "stable.img")
 
 	go s.WatchEvent(l)
 
@@ -134,7 +134,7 @@ func TestEventRevUnregistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	rev := s.NewRevision(app, "stable")
+	rev := s.NewRevision(app, "stable", "stable.img")
 	rev, err = rev.Register()
 	if err != nil {
 		t.Error(err)
@@ -162,7 +162,7 @@ func TestEventProcRegistered(t *testing.T) {
 		t.Error(err)
 	}
 
-	rev := s.NewRevision(app, "bang")
+	rev := s.NewRevision(app, "bang", "bang.img")
 	rev, err = rev.Register()
 	if err != nil {
 		t.Fatal(err)

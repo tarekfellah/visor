@@ -27,8 +27,8 @@ const (
 )
 
 // NewRevision returns a new instance of Revision.
-func (s *Store) NewRevision(app *App, ref string) (rev *Revision) {
-	rev = &Revision{App: app, Ref: ref}
+func (s *Store) NewRevision(app *App, ref, archiveUrl string) (rev *Revision) {
+	rev = &Revision{App: app, Ref: ref, ArchiveUrl: archiveUrl}
 	rev.dir = cp.NewDir(app.dir.Prefix(revsPath, ref), s.GetSnapshot())
 
 	return
