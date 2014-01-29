@@ -65,14 +65,6 @@ func (p *Proc) Register() (*Proc, error) {
 		return nil, err
 	}
 
-	exists, _, err := sp.Exists(p.dir.Name)
-	if err != nil {
-		return nil, err
-	}
-	if exists {
-		return nil, ErrConflict
-	}
-
 	if !reProcName.MatchString(p.Name) {
 		return nil, ErrBadProcName
 	}
